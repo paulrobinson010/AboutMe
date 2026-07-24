@@ -31,11 +31,18 @@
 
   html { scroll-behavior: smooth; }
 
+  /* overflow-x on html AND body, with clip where supported — iOS Safari
+     ignores overflow-x:hidden on body alone and lets the page pan sideways */
+  html, body {
+    overflow-x: hidden;
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
   body {
     background: var(--bg);
     color: var(--ink);
     font-family: "Space Grotesk", system-ui, sans-serif;
-    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -158,6 +165,11 @@
     transition: transform 0.4s var(--ease);
   }
   nav ul a:hover::after { transform: scaleX(1); transform-origin: left; }
+  @media (max-width: 560px) {
+    nav { gap: 14px; }
+    nav ul { gap: 12px; }
+    nav ul a { font-size: 0.66rem; letter-spacing: 0.1em; }
+  }
 
   /* ---------- hero ---------- */
   .hero {
@@ -545,6 +557,7 @@
     box-shadow: 0 6px 22px rgba(31, 34, 48, 0.1);
   }
   .tile-cap {
+    white-space: normal;
     margin-top: 16px;
     color: #7a8090;
     font-size: 0.78rem;
