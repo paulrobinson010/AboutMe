@@ -144,7 +144,7 @@
 
   main { position: relative; z-index: 1; }
 
-  .shell { max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 56px); }
+  .shell { max-width: 1280px; margin: 0 auto; padding-inline: clamp(20px, 4vw, 56px); }
 
   /* ---------- nav ---------- */
   nav {
@@ -290,7 +290,7 @@
   @keyframes marquee { to { transform: translateX(-50%); } }
 
   /* ---------- section headers ---------- */
-  section { padding: clamp(96px, 12vw, 160px) 0; }
+  section { padding-block: clamp(72px, 9vw, 120px); }
   .sec-head {
     display: flex;
     align-items: baseline;
