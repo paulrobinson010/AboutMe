@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Paul Robinson — I build things that keep score</title>
 <meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, It's Just a Game and DartsScorer — apps for running, riding, playing and scoring.">
+<meta name="theme-color" content="#0a0a0f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
@@ -39,7 +40,12 @@
     max-width: 100%;
   }
 
+  /* dark canvas even beyond the page — iOS paints white behind
+     rubber-band overscroll and toolbar regions otherwise */
+  html { background: var(--bg); }
+
   body {
+    min-height: 100svh;
     background: var(--bg);
     color: var(--ink);
     font-family: "Space Grotesk", system-ui, sans-serif;
