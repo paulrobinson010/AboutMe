@@ -377,8 +377,16 @@
   }
   .work-item:hover .tag { border-color: var(--c); color: var(--ink); }
 
-  .work-item .desc {
+  .work-item .season {
     margin-top: 14px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    color: var(--c);
+  }
+  .work-item .desc {
+    margin-top: 10px;
     max-width: 520px;
     color: var(--muted);
     line-height: 1.55;
@@ -517,6 +525,32 @@
   }
   .spot-shots img:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 24px 70px rgba(31, 34, 48, 0.2); }
   .spot-shots img.main { grid-column: 1 / -1; }
+  .tile-marquee {
+    overflow: hidden;
+    margin-top: clamp(32px, 5vw, 56px);
+    padding-top: clamp(24px, 3vw, 36px);
+    border-top: 1px solid #e0dac9;
+    white-space: nowrap;
+  }
+  .tile-marquee .track {
+    display: inline-flex;
+    animation: marquee 45s linear infinite;
+  }
+  .tile-marquee img {
+    height: clamp(84px, 9vw, 124px);
+    width: auto;
+    border-radius: 18px;
+    border: 1px solid #e0dac9;
+    margin-right: 14px;
+    box-shadow: 0 6px 22px rgba(31, 34, 48, 0.1);
+  }
+  .tile-cap {
+    margin-top: 16px;
+    color: #7a8090;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+  }
   .spot-watch {
     display: flex;
     flex-wrap: wrap;
@@ -717,6 +751,7 @@
           <div class="meta">
             <span class="tag">Fitness gaming</span><span class="tag">Phone · TV · Watch</span><span class="tag">treadgame.com</span>
           </div>
+          <p class="season">For winter</p>
           <p class="desc"><strong>Mini-games for your treadmill.</strong> Cast to a TV, pick from a roster of mini-games, and the action moves with your stride — the faster you run, the faster your runner goes. Optional watch controls; the clock takes care of itself.</p>
         </div>
         <div class="preview" aria-hidden="true">
@@ -738,6 +773,7 @@
           <div class="meta">
             <span class="tag">Radar HUD</span><span class="tag">iPhone + Apple Watch</span><span class="tag">cyclehud.robbo-online.uk</span>
           </div>
+          <p class="season">For summer</p>
           <p class="desc"><strong>Eyes on the road. Radar on your wrist.</strong> A radar-first cycling HUD — see every car approaching from behind, get wrist haptics so you never look down, follow quiet-road routes, and race the ghost of your own best ride.</p>
         </div>
         <div class="preview" aria-hidden="true">
@@ -760,6 +796,7 @@
           <div class="meta">
             <span class="tag">Party game</span><span class="tag">iOS · E2E encrypted</span><span class="tag">itsjustagame.robbo-online.uk</span>
           </div>
+          <p class="season">For all-year-round fun</p>
           <p class="desc"><strong>The party game for everyone.</strong> Quick-fire mini games for family and friends, ages 8 to 80 — spin the wheel to pick who chooses each round, play, rematch. Simple, silly, brilliant fun on the phones you already have.</p>
         </div>
         <div class="preview" aria-hidden="true">
@@ -783,6 +820,7 @@
           <div class="meta">
             <span class="tag">Camera scorer</span><span class="tag">Runs in the browser</span><span class="tag">darts-scorer.robbo-online.uk</span>
           </div>
+          <p class="season">For when exercise is done</p>
           <p class="desc"><strong>Point a camera at the board and it keeps score.</strong> Automatic dart detection, spoken announcements, full 501 down to 101 double-out plus free throw — everything on-device in the browser. No server, no uploads, no install.</p>
         </div>
         <div class="preview" aria-hidden="true">
@@ -823,6 +861,12 @@
         <img class="main reveal" src="assets/tread-play-1.webp" alt="TreadGame gameplay — Bank the Red, with live speed, pace and heart rate across the top" loading="lazy">
         <img class="reveal" src="assets/tread-play-2.webp" alt="TreadGame gameplay — Coin Collector on the open grid" loading="lazy">
         <img class="reveal" src="assets/tread-play-3.webp" alt="TreadGame gameplay — Arena round with the scoreboard" loading="lazy">
+      </div>
+      <div class="tile-marquee" aria-hidden="true">
+        <div class="track">
+          <img src="assets/tile-beacons.webp" alt="" loading="lazy"><img src="assets/tile-bingo.webp" alt="" loading="lazy"><img src="assets/tile-capture-the-flag.webp" alt="" loading="lazy"><img src="assets/tile-clocks.webp" alt="" loading="lazy"><img src="assets/tile-courier.webp" alt="" loading="lazy"><img src="assets/tile-drift.webp" alt="" loading="lazy"><img src="assets/tile-escape.webp" alt="" loading="lazy"><img src="assets/tile-floodlight.webp" alt="" loading="lazy"><img src="assets/tile-hide-and-seek.webp" alt="" loading="lazy"><img src="assets/tile-hive.webp" alt="" loading="lazy"><img src="assets/tile-beacons.webp" alt="" loading="lazy"><img src="assets/tile-bingo.webp" alt="" loading="lazy"><img src="assets/tile-capture-the-flag.webp" alt="" loading="lazy"><img src="assets/tile-clocks.webp" alt="" loading="lazy"><img src="assets/tile-courier.webp" alt="" loading="lazy"><img src="assets/tile-drift.webp" alt="" loading="lazy"><img src="assets/tile-escape.webp" alt="" loading="lazy"><img src="assets/tile-floodlight.webp" alt="" loading="lazy"><img src="assets/tile-hide-and-seek.webp" alt="" loading="lazy"><img src="assets/tile-hive.webp" alt="" loading="lazy">
+        </div>
+        <p class="tile-cap">Beacons · Bingo · Capture the Flag · Clocks · Courier · Drift · Escape · Floodlight · Hide &amp; Seek · Hive — and 22 more</p>
       </div>
       <div class="spot-watch reveal">
         <img src="assets/tread-watch-ultra.webp" alt="TreadGame controls on Apple Watch" loading="lazy">
