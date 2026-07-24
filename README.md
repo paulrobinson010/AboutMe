@@ -6,8 +6,13 @@ Self indulgent link site — a portfolio for Paul Robinson's projects:
 [ItsJustAGame](https://itsjustagame.robbo-online.uk) and
 [DartsScorer](https://darts-scorer.robbo-online.uk).
 
-The whole site is a single self-contained `index.html` (no build step, no
-dependencies) — open it in a browser or serve it with GitHub Pages.
+The site is a single `index.html` plus an `assets/` folder (no build step,
+no dependencies) — open it in a browser or serve it with GitHub Pages.
+
+Brand imagery in `assets/` is pulled from each project's own repo:
+logos and screenshots from `TreadGames/website`, `CycleHUD/docs`,
+`itsJustAGame/docs`, and a rendered capture of the DartsScorer web app.
+Accent colours mirror each product's real palette.
 
 ## Editing
 

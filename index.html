@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Paul Robinson — I build things that keep score</title>
-<meta name="description" content="Paul Robinson builds Treadgame, CycleHUD, ItsJustAGame and DartsScorer — apps for running, riding, playing and scoring.">
+<meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, It's Just a Game and DartsScorer — apps for running, riding, playing and scoring.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
@@ -14,11 +14,16 @@
     --ink: #f2f0ea;
     --muted: rgba(242, 240, 234, 0.55);
     --line: rgba(242, 240, 234, 0.14);
-    --accent: #ff5c33;
-    --c-tread: #ff5c33;
-    --c-cycle: #35d0ff;
-    --c-game: #b06bff;
-    --c-darts: #3dff8e;
+    --accent: #fa801e;
+    /* Brand accents pulled from each product's own palette */
+    --c-tread: #fa801e;   /* TreadGame path orange (site: warm cream + game accents) */
+    --c-cycle: #25e3ee;   /* CycleHUD cyan (gradient to purple/pink) */
+    --c-game:  #ff4dcc;   /* It's Just a Game pink (gradient from cyan) */
+    --c-darts: #28c46c;   /* DartsScorer board green */
+    --g-cycle: linear-gradient(100deg, #25e3ee 0%, #9b6bff 50%, #ff4fd8 100%);
+    --g-game:  linear-gradient(90deg, #33d9ff, #ff4dcc);
+    --g-tread: linear-gradient(100deg, #fa801e, #f0b71a);
+    --g-darts: linear-gradient(100deg, #28c46c 0%, #28c46c 55%, #efe4c4 100%);
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -278,9 +283,9 @@
   .work-list { border-top: 1px solid var(--line); }
   .work-item {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr minmax(0, 300px) auto;
     align-items: center;
-    gap: clamp(18px, 4vw, 56px);
+    gap: clamp(18px, 3vw, 44px);
     padding: clamp(26px, 4.5vw, 54px) clamp(8px, 1.5vw, 20px);
     border-bottom: 1px solid var(--line);
     text-decoration: none;
@@ -309,16 +314,50 @@
   }
   .work-item:hover .idx { color: var(--c); }
 
+  .work-item .title-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(14px, 2vw, 24px);
+  }
+  .work-item .mark {
+    width: clamp(44px, 5vw, 64px);
+    height: clamp(44px, 5vw, 64px);
+    border-radius: 16px;
+    flex-shrink: 0;
+    object-fit: cover;
+    background: rgba(242, 240, 234, 0.06);
+    border: 1px solid var(--line);
+    transition: transform 0.5s var(--ease), border-color 0.4s var(--ease), box-shadow 0.5s var(--ease);
+  }
+  .work-item .mark.emoji {
+    display: grid;
+    place-items: center;
+    font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+    background: #16301f; /* DartsScorer felt */
+  }
+  .work-item:hover .mark {
+    transform: rotate(-6deg) scale(1.08);
+    border-color: var(--c);
+    box-shadow: 0 8px 30px color-mix(in srgb, var(--c) 35%, transparent);
+  }
+
   .work-item .body h3 {
     font-family: "Syne", sans-serif;
     font-weight: 800;
-    font-size: clamp(1.9rem, 5.6vw, 4.6rem);
+    font-size: clamp(1.7rem, 5.2vw, 4.2rem);
     text-transform: uppercase;
     line-height: 1;
     letter-spacing: -0.015em;
-    transition: color 0.4s var(--ease), transform 0.5s var(--ease);
+    transition: transform 0.5s var(--ease);
   }
-  .work-item:hover .body h3 { color: var(--c); transform: translateX(6px); }
+  .work-item:hover .body h3 { transform: translateX(6px); }
+  /* Brand-gradient titles on hover */
+  .work-item:hover .body h3 {
+    background: var(--g);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 
   .work-item .meta {
     display: flex;
@@ -345,6 +384,37 @@
     line-height: 1.55;
     font-size: clamp(0.9rem, 1.3vw, 1rem);
   }
+  .work-item .desc strong { color: var(--ink); font-weight: 500; }
+
+  /* ---------- hover preview: fanned real screenshots ---------- */
+  .work-item .preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    min-height: 200px;
+  }
+  .work-item .preview img {
+    height: 200px;
+    width: auto;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transform: translateY(26px) rotate(0deg) scale(0.85);
+    transition: opacity 0.5s var(--ease), transform 0.6s var(--ease);
+  }
+  .work-item .preview img + img { margin-left: -46px; }
+  .work-item .preview img:nth-child(1) { transition-delay: 0s; }
+  .work-item .preview img:nth-child(2) { transition-delay: 0.06s; }
+  .work-item .preview img:nth-child(3) { transition-delay: 0.12s; }
+  .work-item:hover .preview img { opacity: 1; }
+  .work-item:hover .preview img:nth-child(1) { transform: translateY(0) rotate(-7deg) scale(1); }
+  .work-item:hover .preview img:nth-child(2) { transform: translateY(-8px) rotate(0deg) scale(1.04); z-index: 2; position: relative; }
+  .work-item:hover .preview img:nth-child(3) { transform: translateY(0) rotate(7deg) scale(1); }
+  .work-item .preview img.wide { height: 150px; }
+  .work-item .preview img.sq { height: 165px; }
+  .work-item .preview img.small { height: 120px; align-self: flex-end; }
 
   .work-item .arrow {
     width: clamp(44px, 5vw, 64px);
@@ -364,10 +434,31 @@
   }
   .work-item:hover .arrow svg { stroke: var(--bg); }
 
-  .work-item.t-tread { --c: var(--c-tread); }
-  .work-item.t-cycle { --c: var(--c-cycle); }
-  .work-item.t-game  { --c: var(--c-game); }
-  .work-item.t-darts { --c: var(--c-darts); }
+  .work-item.t-tread { --c: var(--c-tread); --g: var(--g-tread); }
+  .work-item.t-cycle { --c: var(--c-cycle); --g: var(--g-cycle); }
+  .work-item.t-game  { --c: var(--c-game);  --g: var(--g-game); }
+  .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
+
+  @media (max-width: 1000px) {
+    .work-item { grid-template-columns: auto 1fr auto; }
+    .work-item .preview {
+      grid-column: 1 / -1;
+      justify-content: flex-start;
+      min-height: 0;
+      margin-top: 18px;
+      overflow-x: auto;
+      pointer-events: auto;
+    }
+    .work-item .preview img,
+    .work-item:hover .preview img {
+      opacity: 1;
+      transform: none;
+      height: 130px;
+    }
+    .work-item .preview img + img { margin-left: 10px; }
+    .work-item .preview img.wide { height: 110px; }
+    .work-item .preview img.small { height: 100px; align-self: center; }
+  }
 
   /* ---------- about ---------- */
   .about-grid {
@@ -451,6 +542,7 @@
     *, *::before, *::after { animation: none !important; transition: none !important; }
     .hero h1 .row > span { transform: none; }
     .hero .sub, .reveal { opacity: 1; transform: none; }
+    .work-item .preview img { opacity: 1; transform: none; }
     html { scroll-behavior: auto; }
   }
 </style>
@@ -478,7 +570,7 @@
         <span class="row"><span>I build things</span></span>
         <span class="row outline"><span>that keep score</span></span>
       </h1>
-      <p class="sub">Four projects. One habit: turning <strong>running, riding, playing and throwing</strong> into something you can measure, replay and beat.</p>
+      <p class="sub">Four products. One habit: turning <strong>running, riding, playing and throwing</strong> into something you can measure, replay and beat.</p>
     </header>
     <div class="scroll-cue">Scroll</div>
   </div>
@@ -497,50 +589,79 @@
 
     <div class="work-list">
 
-      <a class="work-item t-tread reveal" href="https://treadgame.com" target="_blank" rel="noopener" data-hover data-accent="#ff5c33">
+      <a class="work-item t-tread reveal" href="https://treadgame.com" target="_blank" rel="noopener" data-hover data-accent="#fa801e">
         <span class="idx">/01</span>
         <div class="body">
-          <h3>Treadgame</h3>
-          <div class="meta">
-            <span class="tag">Fitness</span><span class="tag">Gaming</span><span class="tag">treadgame.com</span>
+          <div class="title-row">
+            <img class="mark" src="assets/tread-logo.png" alt="" loading="lazy">
+            <h3>TreadGame</h3>
           </div>
-          <p class="desc">Turn the treadmill into a game. Making the miles fly by — because runs are better when there's something to win.</p>
+          <div class="meta">
+            <span class="tag">Fitness gaming</span><span class="tag">Phone · TV · Watch</span><span class="tag">treadgame.com</span>
+          </div>
+          <p class="desc"><strong>Mini-games for your treadmill.</strong> Cast to a TV, pick from a roster of mini-games, and the action moves with your stride — the faster you run, the faster your runner goes. Optional watch controls; the clock takes care of itself.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img class="sq" src="assets/tread-shot-1.webp" alt="" loading="lazy">
+          <img class="sq" src="assets/tread-shot-2.webp" alt="" loading="lazy">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
 
-      <a class="work-item t-cycle reveal" href="https://cyclehud.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#35d0ff">
+      <a class="work-item t-cycle reveal" href="https://cyclehud.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#25e3ee">
         <span class="idx">/02</span>
         <div class="body">
-          <h3>CycleHUD</h3>
-          <div class="meta">
-            <span class="tag">Cycling</span><span class="tag">Heads-up display</span><span class="tag">cyclehud.robbo-online.uk</span>
+          <div class="title-row">
+            <img class="mark" src="assets/cycle-logo.png" alt="" loading="lazy" style="background: transparent; object-fit: contain;">
+            <h3>CycleHUD</h3>
           </div>
-          <p class="desc">A heads-up display for cyclists — live speed, stats and ride data right where you need them: in front of you, not in your pocket.</p>
+          <div class="meta">
+            <span class="tag">Radar HUD</span><span class="tag">iPhone + Apple Watch</span><span class="tag">cyclehud.robbo-online.uk</span>
+          </div>
+          <p class="desc"><strong>Eyes on the road. Radar on your wrist.</strong> A radar-first cycling HUD — see every car approaching from behind, get wrist haptics so you never look down, follow quiet-road routes, and race the ghost of your own best ride.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img src="assets/cycle-shot-1.webp" alt="" loading="lazy">
+          <img src="assets/cycle-shot-2.webp" alt="" loading="lazy">
+          <img class="small" src="assets/cycle-shot-3.webp" alt="" loading="lazy">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
 
-      <a class="work-item t-game reveal" href="https://itsjustagame.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#b06bff">
+      <a class="work-item t-game reveal" href="https://itsjustagame.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#ff4dcc">
         <span class="idx">/03</span>
         <div class="body">
-          <h3>ItsJustAGame</h3>
-          <div class="meta">
-            <span class="tag">Gaming</span><span class="tag">Just for fun</span><span class="tag">itsjustagame.robbo-online.uk</span>
+          <div class="title-row">
+            <img class="mark" src="assets/ijag-logo.png" alt="" loading="lazy">
+            <h3>It's Just a Game</h3>
           </div>
-          <p class="desc">Exactly what it says on the tin. No grind, no stakes, no lectures — it's just a game. Play it anyway.</p>
+          <div class="meta">
+            <span class="tag">Party game</span><span class="tag">iOS · E2E encrypted</span><span class="tag">itsjustagame.robbo-online.uk</span>
+          </div>
+          <p class="desc"><strong>The party game for everyone.</strong> Quick-fire mini games for family and friends, ages 8 to 80 — spin the wheel to pick who chooses each round, play, rematch. Simple, silly, brilliant fun on the phones you already have.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img src="assets/ijag-shot-1.webp" alt="" loading="lazy">
+          <img src="assets/ijag-shot-2.webp" alt="" loading="lazy">
+          <img src="assets/ijag-shot-3.webp" alt="" loading="lazy">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
 
-      <a class="work-item t-darts reveal" href="https://darts-scorer.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#3dff8e">
+      <a class="work-item t-darts reveal" href="https://darts-scorer.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#28c46c">
         <span class="idx">/04</span>
         <div class="body">
-          <h3>DartsScorer</h3>
-          <div class="meta">
-            <span class="tag">Darts</span><span class="tag">Scoring</span><span class="tag">darts-scorer.robbo-online.uk</span>
+          <div class="title-row">
+            <span class="mark emoji" role="img" aria-label="dartboard">🎯</span>
+            <h3>DartsScorer</h3>
           </div>
-          <p class="desc">Chalkboard arithmetic, retired. Fast, no-nonsense darts scoring so you can argue about the throw, not the maths.</p>
+          <div class="meta">
+            <span class="tag">Camera scorer</span><span class="tag">Runs in the browser</span><span class="tag">darts-scorer.robbo-online.uk</span>
+          </div>
+          <p class="desc"><strong>Point a camera at the board and it keeps score.</strong> Automatic dart detection, spoken announcements, full 501 down to 101 double-out plus free throw — everything on-device in the browser. No server, no uploads, no install.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img class="wide" src="assets/darts-shot-1.webp" alt="" loading="lazy">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
@@ -556,11 +677,11 @@
     <div class="about-grid">
       <div class="reveal">
         <p class="lede">I'm Paul — a maker who can't leave a hobby alone. If I run, ride, play or throw it, <em>sooner or later I build an app for it.</em></p>
-        <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." Treadgame came from long treadmill sessions, CycleHUD from rides where my phone was the wrong place for my stats, DartsScorer from one too many arguments over pub chalkboard maths — and ItsJustAGame because, honestly, it's just a game.</p>
+        <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." TreadGame exists to make the morning treadmill run something to actually look forward to. CycleHUD grew from wanting to know about every car behind me without taking my eyes off the road. DartsScorer lets a camera do the pub maths, out loud. And It's Just a Game — because the best games are the ones everyone in the room can play.</p>
       </div>
       <dl class="facts reveal">
         <div><dt>Name</dt><dd>Paul Robinson</dd></div>
-        <div><dt>Does</dt><dd>Apps, games &amp; scoreboards</dd></div>
+        <div><dt>Builds</dt><dd>iPhone &amp; Watch apps, games, browser CV</dd></div>
         <div><dt>Projects</dt><dd>Four and counting</dd></div>
         <div><dt>Fuelled by</dt><dd>Running, riding &amp; darts</dd></div>
         <div><dt>Status</dt><dd>Always building something</dd></div>
@@ -591,11 +712,11 @@
     el.addEventListener("mouseleave", () => cursor.classList.remove("is-hovering"));
   });
 
-  // page tints toward the hovered project's colour
+  // page tints toward the hovered project's brand colour
   const root = document.documentElement;
   document.querySelectorAll("[data-accent]").forEach((el) => {
     el.addEventListener("mouseenter", () => root.style.setProperty("--accent", el.dataset.accent));
-    el.addEventListener("mouseleave", () => root.style.setProperty("--accent", "#ff5c33"));
+    el.addEventListener("mouseleave", () => root.style.setProperty("--accent", "#fa801e"));
   });
 
   // scroll reveal
