@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paul Robinson — I build things that keep score</title>
+<meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, It's Just a Game and DartsScorer — apps for running, riding, playing and scoring.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --ink: #f2f0ea;
+    --muted: rgba(242, 240, 234, 0.55);
+    --line: rgba(242, 240, 234, 0.14);
+    --accent: #fa801e;
+    /* Brand accents pulled from each product's own palette */
+    --c-tread: #fa801e;   /* TreadGame path orange (site: warm cream + game accents) */
+    --c-cycle: #25e3ee;   /* CycleHUD cyan (gradient to purple/pink) */
+    --c-game:  #ff4dcc;   /* It's Just a Game pink (gradient from cyan) */
+    --c-darts: #28c46c;   /* DartsScorer board green */
+    --g-cycle: linear-gradient(100deg, #25e3ee 0%, #9b6bff 50%, #ff4fd8 100%);
+    --g-game:  linear-gradient(90deg, #33d9ff, #ff4dcc);
+    --g-tread: linear-gradient(100deg, #fa801e, #f0b71a);
+    --g-darts: linear-gradient(100deg, #28c46c 0%, #28c46c 55%, #efe4c4 100%);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  /* ---------- aurora background ---------- */
+  .aurora {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    filter: blur(90px) saturate(1.2);
+    opacity: 0.5;
+    transition: opacity 1s var(--ease);
+  }
+  .aurora span {
+    position: absolute;
+    border-radius: 50%;
+    mix-blend-mode: screen;
+    transition: background 0.9s var(--ease);
+  }
+  .aurora span:nth-child(1) {
+    width: 55vmax; height: 55vmax; top: -20vmax; left: -15vmax;
+    background: var(--accent);
+    animation: drift1 26s ease-in-out infinite alternate;
+    opacity: 0.55;
+  }
+  .aurora span:nth-child(2) {
+    width: 45vmax; height: 45vmax; bottom: -18vmax; right: -12vmax;
+    background: #2038c0;
+    animation: drift2 32s ease-in-out infinite alternate;
+    opacity: 0.5;
+  }
+  .aurora span:nth-child(3) {
+    width: 30vmax; height: 30vmax; top: 40%; left: 55%;
+    background: #401a66;
+    animation: drift3 38s ease-in-out infinite alternate;
+    opacity: 0.6;
+  }
+  @keyframes drift1 { to { transform: translate(12vmax, 10vmax) scale(1.15); } }
+  @keyframes drift2 { to { transform: translate(-10vmax, -8vmax) scale(0.9); } }
+  @keyframes drift3 { to { transform: translate(-14vmax, 6vmax) scale(1.25); } }
+
+  /* ---------- film grain ---------- */
+  .grain {
+    position: fixed;
+    inset: -100%;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grain 8s steps(10) infinite;
+  }
+  @keyframes grain {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-4%, 3%); }
+    40% { transform: translate(3%, -5%); }
+    60% { transform: translate(-3%, -2%); }
+    80% { transform: translate(4%, 4%); }
+  }
+
+  /* ---------- custom cursor ---------- */
+  .cursor {
+    position: fixed;
+    top: 0; left: 0;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--ink);
+    z-index: 100;
+    pointer-events: none;
+    mix-blend-mode: difference;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s var(--ease), height 0.3s var(--ease);
+    opacity: 0;
+  }
+  .cursor.is-active { opacity: 1; }
+  .cursor.is-hovering { width: 56px; height: 56px; }
+  @media (hover: none), (pointer: coarse) { .cursor { display: none; } }
+
+  main { position: relative; z-index: 1; }
+
+  .shell { max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 56px); }
+
+  /* ---------- nav ---------- */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(18px, 3vw, 28px) clamp(20px, 4vw, 56px);
+    mix-blend-mode: difference;
+  }
+  .logo {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  nav ul { display: flex; gap: clamp(16px, 3vw, 36px); list-style: none; }
+  nav ul a {
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    position: relative;
+  }
+  nav ul a::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: -5px;
+    width: 100%; height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.4s var(--ease);
+  }
+  nav ul a:hover::after { transform: scaleX(1); transform-origin: left; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 12vh;
+  }
+  .hero .kicker {
+    font-size: clamp(0.72rem, 1vw, 0.85rem);
+    text-transform: uppercase;
+    letter-spacing: 0.34em;
+    color: var(--muted);
+    margin-bottom: clamp(16px, 2.5vw, 28px);
+  }
+  .hero h1 {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(3.2rem, 12.5vw, 11.5rem);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+  .hero h1 .row { display: block; overflow: hidden; }
+  .hero h1 .row > span {
+    display: inline-block;
+    transform: translateY(115%);
+    animation: rise 1.1s var(--ease) forwards;
+  }
+  .hero h1 .row:nth-child(2) > span { animation-delay: 0.12s; }
+  .hero h1 .row.outline > span {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--ink);
+  }
+  @keyframes rise { to { transform: translateY(0); } }
+
+  .hero .sub {
+    margin-top: clamp(24px, 3.5vw, 44px);
+    max-width: 560px;
+    font-size: clamp(1rem, 1.6vw, 1.25rem);
+    line-height: 1.6;
+    color: var(--muted);
+    opacity: 0;
+    animation: fade 1s var(--ease) 0.55s forwards;
+  }
+  .hero .sub strong { color: var(--ink); font-weight: 500; }
+  @keyframes fade { to { opacity: 1; } }
+
+  .scroll-cue {
+    position: absolute;
+    bottom: 32px; right: clamp(20px, 4vw, 56px);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    writing-mode: vertical-rl;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .scroll-cue::after {
+    content: "";
+    width: 1px; height: 56px;
+    background: linear-gradient(var(--ink), transparent);
+    animation: cue 1.8s ease-in-out infinite;
+  }
+  @keyframes cue { 50% { transform: scaleY(0.4); opacity: 0.4; } }
+  .hero-wrap { position: relative; }
+
+  /* ---------- marquee ---------- */
+  .marquee {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    padding: clamp(14px, 2vw, 22px) 0;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+  }
+  .marquee .track {
+    display: inline-block;
+    animation: marquee 22s linear infinite;
+  }
+  .marquee span {
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.1rem, 2.4vw, 1.9rem);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 3rem;
+  }
+  .marquee span em {
+    font-style: normal;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--muted);
+  }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+
+  /* ---------- section headers ---------- */
+  section { padding: clamp(72px, 11vw, 150px) 0; }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    margin-bottom: clamp(36px, 5vw, 64px);
+  }
+  .sec-head .num {
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    transition: color 0.6s var(--ease);
+  }
+  .sec-head h2 {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 5vw, 3.6rem);
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  /* ---------- work list ---------- */
+  .work-list { border-top: 1px solid var(--line); }
+  .work-item {
+    display: grid;
+    grid-template-columns: auto 1fr minmax(0, 300px) auto;
+    align-items: center;
+    gap: clamp(18px, 3vw, 44px);
+    padding: clamp(26px, 4.5vw, 54px) clamp(8px, 1.5vw, 20px);
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    color: var(--ink);
+    position: relative;
+    isolation: isolate;
+    transition: padding-left 0.5s var(--ease);
+  }
+  .work-item::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 16%, transparent), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s var(--ease);
+  }
+  .work-item:hover { padding-left: clamp(16px, 3vw, 44px); }
+  .work-item:hover::before { opacity: 1; }
+
+  .work-item .idx {
+    font-size: clamp(0.75rem, 1vw, 0.9rem);
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    transition: color 0.4s var(--ease);
+  }
+  .work-item:hover .idx { color: var(--c); }
+
+  .work-item .title-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(14px, 2vw, 24px);
+  }
+  .work-item .mark {
+    width: clamp(44px, 5vw, 64px);
+    height: clamp(44px, 5vw, 64px);
+    border-radius: 16px;
+    flex-shrink: 0;
+    object-fit: cover;
+    background: rgba(242, 240, 234, 0.06);
+    border: 1px solid var(--line);
+    transition: transform 0.5s var(--ease), border-color 0.4s var(--ease), box-shadow 0.5s var(--ease);
+  }
+  .work-item .mark.emoji {
+    display: grid;
+    place-items: center;
+    font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+    background: #16301f; /* DartsScorer felt */
+  }
+  .work-item:hover .mark {
+    transform: rotate(-6deg) scale(1.08);
+    border-color: var(--c);
+    box-shadow: 0 8px 30px color-mix(in srgb, var(--c) 35%, transparent);
+  }
+
+  .work-item .body h3 {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.7rem, 5.2vw, 4.2rem);
+    text-transform: uppercase;
+    line-height: 1;
+    letter-spacing: -0.015em;
+    transition: transform 0.5s var(--ease);
+  }
+  .work-item:hover .body h3 { transform: translateX(6px); }
+  /* Brand-gradient titles on hover */
+  .work-item:hover .body h3 {
+    background: var(--g);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .work-item .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin-top: 12px;
+  }
+  .work-item .tag {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 5px 12px;
+    transition: border-color 0.4s var(--ease), color 0.4s var(--ease);
+  }
+  .work-item:hover .tag { border-color: var(--c); color: var(--ink); }
+
+  .work-item .desc {
+    margin-top: 14px;
+    max-width: 520px;
+    color: var(--muted);
+    line-height: 1.55;
+    font-size: clamp(0.9rem, 1.3vw, 1rem);
+  }
+  .work-item .desc strong { color: var(--ink); font-weight: 500; }
+
+  /* ---------- hover preview: fanned real screenshots ---------- */
+  .work-item .preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    min-height: 200px;
+  }
+  .work-item .preview img {
+    height: 200px;
+    width: auto;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transform: translateY(26px) rotate(0deg) scale(0.85);
+    transition: opacity 0.5s var(--ease), transform 0.6s var(--ease);
+  }
+  .work-item .preview img + img { margin-left: -46px; }
+  .work-item .preview img:nth-child(1) { transition-delay: 0s; }
+  .work-item .preview img:nth-child(2) { transition-delay: 0.06s; }
+  .work-item .preview img:nth-child(3) { transition-delay: 0.12s; }
+  .work-item:hover .preview img { opacity: 1; }
+  .work-item:hover .preview img:nth-child(1) { transform: translateY(0) rotate(-7deg) scale(1); }
+  .work-item:hover .preview img:nth-child(2) { transform: translateY(-8px) rotate(0deg) scale(1.04); z-index: 2; position: relative; }
+  .work-item:hover .preview img:nth-child(3) { transform: translateY(0) rotate(7deg) scale(1); }
+  .work-item .preview img.wide { height: 150px; }
+  .work-item .preview img.sq { height: 165px; }
+  .work-item .preview img.small { height: 120px; align-self: flex-end; }
+
+  .work-item .arrow {
+    width: clamp(44px, 5vw, 64px);
+    height: clamp(44px, 5vw, 64px);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    transition: background 0.4s var(--ease), border-color 0.4s var(--ease), transform 0.5s var(--ease);
+  }
+  .work-item .arrow svg { width: 38%; height: 38%; transition: stroke 0.4s var(--ease); stroke: var(--ink); }
+  .work-item:hover .arrow {
+    background: var(--c);
+    border-color: var(--c);
+    transform: rotate(45deg);
+  }
+  .work-item:hover .arrow svg { stroke: var(--bg); }
+
+  .work-item.t-tread { --c: var(--c-tread); --g: var(--g-tread); }
+  .work-item.t-cycle { --c: var(--c-cycle); --g: var(--g-cycle); }
+  .work-item.t-game  { --c: var(--c-game);  --g: var(--g-game); }
+  .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
+
+  @media (max-width: 1000px) {
+    .work-item { grid-template-columns: auto 1fr auto; }
+    .work-item .preview {
+      grid-column: 1 / -1;
+      justify-content: flex-start;
+      min-height: 0;
+      margin-top: 18px;
+      overflow-x: auto;
+      pointer-events: auto;
+    }
+    .work-item .preview img,
+    .work-item:hover .preview img {
+      opacity: 1;
+      transform: none;
+      height: 130px;
+    }
+    .work-item .preview img + img { margin-left: 10px; }
+    .work-item .preview img.wide { height: 110px; }
+    .work-item .preview img.small { height: 100px; align-self: center; }
+  }
+
+  /* ---------- about ---------- */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: clamp(36px, 6vw, 90px);
+    align-items: start;
+  }
+  .about-grid .lede {
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.4rem, 3vw, 2.3rem);
+    line-height: 1.3;
+  }
+  .about-grid .lede em {
+    font-style: normal;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--ink);
+  }
+  .about-grid p.copy {
+    margin-top: 24px;
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: clamp(0.95rem, 1.3vw, 1.05rem);
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 400;
+  }
+  .facts { border-top: 1px solid var(--line); }
+  .facts div {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.9rem;
+  }
+  .facts dt { color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.72rem; padding-top: 3px; }
+  .facts dd { text-align: right; }
+  @media (max-width: 760px) { .about-grid { grid-template-columns: 1fr; } }
+
+  /* ---------- footer / contact ---------- */
+  footer { padding: clamp(72px, 10vw, 140px) 0 40px; position: relative; z-index: 1; }
+  footer .big-link {
+    display: block;
+    text-decoration: none;
+    color: var(--ink);
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: clamp(2.2rem, 8.5vw, 7.5rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    transition: color 0.4s var(--ease), letter-spacing 0.5s var(--ease);
+  }
+  footer .big-link:hover { color: var(--accent); letter-spacing: 0.005em; }
+  footer .foot-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: clamp(40px, 6vw, 80px);
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  footer .foot-row a { color: var(--muted); text-decoration: none; transition: color 0.3s; }
+  footer .foot-row a:hover { color: var(--ink); }
+
+  /* ---------- scroll reveal ---------- */
+  .reveal {
+    opacity: 0;
+    transform: translateY(36px);
+    transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+  }
+  .reveal.in { opacity: 1; transform: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .hero h1 .row > span { transform: none; }
+    .hero .sub, .reveal { opacity: 1; transform: none; }
+    .work-item .preview img { opacity: 1; transform: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="cursor" aria-hidden="true"></div>
+
+<nav>
+  <a class="logo" href="#top">PR.</a>
+  <ul>
+    <li><a href="#work" data-hover>Work</a></li>
+    <li><a href="#about" data-hover>About</a></li>
+    <li><a href="#contact" data-hover>Contact</a></li>
+  </ul>
+</nav>
+
+<main id="top">
+  <div class="hero-wrap">
+    <header class="hero shell">
+      <p class="kicker">Paul Robinson — Maker of apps &amp; games</p>
+      <h1>
+        <span class="row"><span>I build things</span></span>
+        <span class="row outline"><span>that keep score</span></span>
+      </h1>
+      <p class="sub">Four products. One habit: turning <strong>running, riding, playing and throwing</strong> into something you can measure, replay and beat.</p>
+    </header>
+    <div class="scroll-cue">Scroll</div>
+  </div>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="track">
+      <span>Run <em>·</em> Ride <em>·</em> Play <em>·</em> Score <em>·</em></span><span>Run <em>·</em> Ride <em>·</em> Play <em>·</em> Score <em>·</em></span><span>Run <em>·</em> Ride <em>·</em> Play <em>·</em> Score <em>·</em></span><span>Run <em>·</em> Ride <em>·</em> Play <em>·</em> Score <em>·</em></span>
+    </div>
+  </div>
+
+  <section id="work" class="shell">
+    <div class="sec-head reveal">
+      <span class="num">01</span>
+      <h2>Selected Work</h2>
+    </div>
+
+    <div class="work-list">
+
+      <a class="work-item t-tread reveal" href="https://treadgame.com" target="_blank" rel="noopener" data-hover data-accent="#fa801e">
+        <span class="idx">/01</span>
+        <div class="body">
+          <div class="title-row">
+            <img class="mark" src="assets/tread-logo.png" alt="" loading="lazy">
+            <h3>TreadGame</h3>
+          </div>
+          <div class="meta">
+            <span class="tag">Fitness gaming</span><span class="tag">Phone · TV · Watch</span><span class="tag">treadgame.com</span>
+          </div>
+          <p class="desc"><strong>Mini-games for your treadmill.</strong> Cast to a TV, pick from a roster of mini-games, and the action moves with your stride — the faster you run, the faster your runner goes. Optional watch controls; the clock takes care of itself.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img class="sq" src="assets/tread-shot-1.webp" alt="" loading="lazy">
+          <img class="sq" src="assets/tread-shot-2.webp" alt="" loading="lazy">
+        </div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
+      </a>
+
+      <a class="work-item t-cycle reveal" href="https://cyclehud.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#25e3ee">
+        <span class="idx">/02</span>
+        <div class="body">
+          <div class="title-row">
+            <img class="mark" src="assets/cycle-logo.png" alt="" loading="lazy" style="background: transparent; object-fit: contain;">
+            <h3>CycleHUD</h3>
+          </div>
+          <div class="meta">
+            <span class="tag">Radar HUD</span><span class="tag">iPhone + Apple Watch</span><span class="tag">cyclehud.robbo-online.uk</span>
+          </div>
+          <p class="desc"><strong>Eyes on the road. Radar on your wrist.</strong> A radar-first cycling HUD — see every car approaching from behind, get wrist haptics so you never look down, follow quiet-road routes, and race the ghost of your own best ride.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img src="assets/cycle-shot-1.webp" alt="" loading="lazy">
+          <img src="assets/cycle-shot-2.webp" alt="" loading="lazy">
+          <img class="small" src="assets/cycle-shot-3.webp" alt="" loading="lazy">
+        </div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
+      </a>
+
+      <a class="work-item t-game reveal" href="https://itsjustagame.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#ff4dcc">
+        <span class="idx">/03</span>
+        <div class="body">
+          <div class="title-row">
+            <img class="mark" src="assets/ijag-logo.png" alt="" loading="lazy">
+            <h3>It's Just a Game</h3>
+          </div>
+          <div class="meta">
+            <span class="tag">Party game</span><span class="tag">iOS · E2E encrypted</span><span class="tag">itsjustagame.robbo-online.uk</span>
+          </div>
+          <p class="desc"><strong>The party game for everyone.</strong> Quick-fire mini games for family and friends, ages 8 to 80 — spin the wheel to pick who chooses each round, play, rematch. Simple, silly, brilliant fun on the phones you already have.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img src="assets/ijag-shot-1.webp" alt="" loading="lazy">
+          <img src="assets/ijag-shot-2.webp" alt="" loading="lazy">
+          <img src="assets/ijag-shot-3.webp" alt="" loading="lazy">
+        </div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
+      </a>
+
+      <a class="work-item t-darts reveal" href="https://darts-scorer.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#28c46c">
+        <span class="idx">/04</span>
+        <div class="body">
+          <div class="title-row">
+            <span class="mark emoji" role="img" aria-label="dartboard">🎯</span>
+            <h3>DartsScorer</h3>
+          </div>
+          <div class="meta">
+            <span class="tag">Camera scorer</span><span class="tag">Runs in the browser</span><span class="tag">darts-scorer.robbo-online.uk</span>
+          </div>
+          <p class="desc"><strong>Point a camera at the board and it keeps score.</strong> Automatic dart detection, spoken announcements, full 501 down to 101 double-out plus free throw — everything on-device in the browser. No server, no uploads, no install.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img class="wide" src="assets/darts-shot-1.webp" alt="" loading="lazy">
+        </div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
+      </a>
+
+    </div>
+  </section>
+
+  <section id="about" class="shell">
+    <div class="sec-head reveal">
+      <span class="num">02</span>
+      <h2>About</h2>
+    </div>
+    <div class="about-grid">
+      <div class="reveal">
+        <p class="lede">I'm Paul — a maker who can't leave a hobby alone. If I run, ride, play or throw it, <em>sooner or later I build an app for it.</em></p>
+        <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." TreadGame exists to make the morning treadmill run something to actually look forward to. CycleHUD grew from wanting to know about every car behind me without taking my eyes off the road. DartsScorer lets a camera do the pub maths, out loud. And It's Just a Game — because the best games are the ones everyone in the room can play.</p>
+      </div>
+      <dl class="facts reveal">
+        <div><dt>Name</dt><dd>Paul Robinson</dd></div>
+        <div><dt>Builds</dt><dd>iPhone &amp; Watch apps, games, browser CV</dd></div>
+        <div><dt>Projects</dt><dd>Four and counting</dd></div>
+        <div><dt>Fuelled by</dt><dd>Running, riding &amp; darts</dd></div>
+        <div><dt>Status</dt><dd>Always building something</dd></div>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<footer id="contact" class="shell">
+  <p class="kicker reveal" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.3em;color:var(--muted);margin-bottom:24px;">Got a project, a bug, or a darts challenge?</p>
+  <a class="big-link reveal" href="mailto:paulrobinson010@gmail.com" data-hover>Say hello&nbsp;&#8599;</a>
+  <div class="foot-row">
+    <span>&copy; <span id="year">2026</span> Paul Robinson</span>
+    <a href="https://github.com/paulrobinson010" target="_blank" rel="noopener" data-hover>GitHub</a>
+    <span>Run · Ride · Play · Score</span>
+  </div>
+</footer>
+
+<script>
+  // custom cursor
+  const cursor = document.querySelector(".cursor");
+  window.addEventListener("pointermove", (e) => {
+    cursor.classList.add("is-active");
+    cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+  });
+  document.querySelectorAll("[data-hover]").forEach((el) => {
+    el.addEventListener("mouseenter", () => cursor.classList.add("is-hovering"));
+    el.addEventListener("mouseleave", () => cursor.classList.remove("is-hovering"));
+  });
+
+  // page tints toward the hovered project's brand colour
+  const root = document.documentElement;
+  document.querySelectorAll("[data-accent]").forEach((el) => {
+    el.addEventListener("mouseenter", () => root.style.setProperty("--accent", el.dataset.accent));
+    el.addEventListener("mouseleave", () => root.style.setProperty("--accent", "#fa801e"));
+  });
+
+  // scroll reveal
+  const io = new IntersectionObserver(
+    (entries) => entries.forEach((en) => en.isIntersecting && en.target.classList.add("in")),
+    { threshold: 0.15 }
+  );
+  document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
