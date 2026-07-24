@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - claude/personal-portfolio-site-68jtxq
   workflow_dispatch:
 
 permissions:
