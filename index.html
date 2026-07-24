@@ -283,7 +283,7 @@
   .work-list { border-top: 1px solid var(--line); }
   .work-item {
     display: grid;
-    grid-template-columns: auto 1fr minmax(0, 300px) auto;
+    grid-template-columns: auto 1fr minmax(0, 340px) auto;
     align-items: center;
     gap: clamp(18px, 3vw, 44px);
     padding: clamp(26px, 4.5vw, 54px) clamp(8px, 1.5vw, 20px);
@@ -404,16 +404,22 @@
     transform: translateY(26px) rotate(0deg) scale(0.85);
     transition: opacity 0.5s var(--ease), transform 0.6s var(--ease);
   }
-  .work-item .preview img + img { margin-left: -46px; }
+  .work-item .preview img + img { margin-left: -52px; }
   .work-item .preview img:nth-child(1) { transition-delay: 0s; }
-  .work-item .preview img:nth-child(2) { transition-delay: 0.06s; }
-  .work-item .preview img:nth-child(3) { transition-delay: 0.12s; }
+  .work-item .preview img:nth-child(2) { transition-delay: 0.05s; }
+  .work-item .preview img:nth-child(3) { transition-delay: 0.1s; }
+  .work-item .preview img:nth-child(4) { transition-delay: 0.15s; }
+  .work-item .preview img:nth-child(5) { transition-delay: 0.2s; }
+  .work-item .preview img:nth-child(6) { transition-delay: 0.25s; }
   .work-item:hover .preview img { opacity: 1; }
-  .work-item:hover .preview img:nth-child(1) { transform: translateY(0) rotate(-7deg) scale(1); }
-  .work-item:hover .preview img:nth-child(2) { transform: translateY(-8px) rotate(0deg) scale(1.04); z-index: 2; position: relative; }
-  .work-item:hover .preview img:nth-child(3) { transform: translateY(0) rotate(7deg) scale(1); }
+  .work-item:hover .preview img:nth-child(1) { transform: translateY(2px) rotate(-9deg) scale(1); }
+  .work-item:hover .preview img:nth-child(2) { transform: translateY(-5px) rotate(-4deg) scale(1.02); z-index: 2; position: relative; }
+  .work-item:hover .preview img:nth-child(3) { transform: translateY(-9px) rotate(0deg) scale(1.04); z-index: 3; position: relative; }
+  .work-item:hover .preview img:nth-child(4) { transform: translateY(-5px) rotate(4deg) scale(1.02); z-index: 2; position: relative; }
+  .work-item:hover .preview img:nth-child(5) { transform: translateY(2px) rotate(8deg) scale(1); }
+  .work-item:hover .preview img:nth-child(6) { transform: translateY(6px) rotate(12deg) scale(0.98); }
   .work-item .preview img.wide { height: 150px; }
-  .work-item .preview img.sq { height: 165px; }
+  .work-item .preview img.sq { height: 130px; }
   .work-item .preview img.small { height: 120px; align-self: flex-end; }
 
   .work-item .arrow {
@@ -604,6 +610,8 @@
         <div class="preview" aria-hidden="true">
           <img class="sq" src="assets/tread-shot-1.webp" alt="" loading="lazy">
           <img class="sq" src="assets/tread-shot-2.webp" alt="" loading="lazy">
+          <img class="sq" src="assets/tread-shot-3.webp" alt="" loading="lazy">
+          <img class="small" src="assets/tread-watch.webp" alt="" loading="lazy">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
@@ -623,6 +631,8 @@
         <div class="preview" aria-hidden="true">
           <img src="assets/cycle-shot-1.webp" alt="" loading="lazy">
           <img src="assets/cycle-shot-2.webp" alt="" loading="lazy">
+          <img src="assets/cycle-shot-4.webp" alt="" loading="lazy">
+          <img src="assets/cycle-shot-5.webp" alt="" loading="lazy">
           <img class="small" src="assets/cycle-shot-3.webp" alt="" loading="lazy">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
@@ -642,8 +652,11 @@
         </div>
         <div class="preview" aria-hidden="true">
           <img src="assets/ijag-shot-1.webp" alt="" loading="lazy">
+          <img src="assets/ijag-shot-4.webp" alt="" loading="lazy">
           <img src="assets/ijag-shot-2.webp" alt="" loading="lazy">
+          <img src="assets/ijag-shot-5.webp" alt="" loading="lazy">
           <img src="assets/ijag-shot-3.webp" alt="" loading="lazy">
+          <img src="assets/ijag-shot-6.webp" alt="" loading="lazy">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
