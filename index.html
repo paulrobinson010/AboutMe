@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Paul Robinson — I build things that keep score</title>
 <meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, It's Just a Game and Darts Scorer — apps for running, riding, playing and scoring.">
 <meta name="theme-color" content="#0a0a0f">
@@ -154,7 +154,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: clamp(18px, 3vw, 28px) clamp(20px, 4vw, 56px);
+    padding: max(clamp(18px, 3vw, 28px), env(safe-area-inset-top)) clamp(20px, 4vw, 56px) clamp(18px, 3vw, 28px);
     mix-blend-mode: difference;
   }
   .logo {
@@ -290,7 +290,7 @@
   @keyframes marquee { to { transform: translateX(-50%); } }
 
   /* ---------- section headers ---------- */
-  section { padding: clamp(72px, 11vw, 150px) 0; }
+  section { padding: clamp(96px, 12vw, 160px) 0; }
   .sec-head {
     display: flex;
     align-items: baseline;
@@ -309,6 +309,11 @@
     font-size: clamp(2rem, 5vw, 3.6rem);
     text-transform: uppercase;
     letter-spacing: -0.01em;
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+  @media (max-width: 480px) {
+    .sec-head h2 { font-size: clamp(1.5rem, 7vw, 2rem); }
   }
 
   /* ---------- work list ---------- */
