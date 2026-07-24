@@ -6,10 +6,15 @@
 <title>Paul Robinson — I build things that keep score</title>
 <meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, It's Just a Game and Darts Scorer — apps for running, riding, playing and scoring.">
 <meta name="theme-color" content="#0a0a0f">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/fonts/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+  /* Self-hosted fonts (fontsource, OFL) — no external requests, and what
+     gets tested is exactly what visitors' phones render */
+  @font-face { font-family: "Syne"; font-weight: 700; font-display: swap; src: url("assets/fonts/syne-latin-700-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Syne"; font-weight: 800; font-display: swap; src: url("assets/fonts/syne-latin-800-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 400; font-display: swap; src: url("assets/fonts/space-grotesk-latin-400-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 500; font-display: swap; src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 700; font-display: swap; src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
   :root {
     --bg: #0a0a0f;
     --ink: #f2f0ea;
@@ -486,7 +491,10 @@
     .work-item .idx { grid-row: 1; grid-column: 1; }
     .work-item .body { grid-row: 1; grid-column: 2; }
     .work-item .arrow { grid-row: 1; grid-column: 3; }
-    .work-item .body h3 { font-size: clamp(1.5rem, 7.2vw, 2.6rem); }
+    .work-item .title-row { gap: 12px; flex-wrap: wrap; }
+    .work-item .mark { width: 40px; height: 40px; border-radius: 12px; }
+    .work-item .mark.emoji { font-size: 1.3rem; }
+    .work-item .body h3 { font-size: clamp(1.3rem, 5.6vw, 2.6rem); }
     .work-item .preview {
       grid-column: 1 / -1;
       justify-content: flex-start;
