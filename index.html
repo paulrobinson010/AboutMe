@@ -466,6 +466,43 @@
     .work-item .preview img.small { height: 100px; align-self: center; }
   }
 
+  /* ---------- ethos / manifesto ---------- */
+  .manifesto {
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.5rem, 3.6vw, 3rem);
+    line-height: 1.3;
+    max-width: 1050px;
+  }
+  .manifesto em {
+    font-style: normal;
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--ink);
+  }
+  .manifesto .sign {
+    display: block;
+    margin-top: 0.6em;
+    background: linear-gradient(95deg, var(--c-tread), var(--c-cycle) 35%, var(--c-game) 65%, var(--c-darts));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .pledges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    margin-top: clamp(28px, 4vw, 44px);
+  }
+  .pledges span {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 8px 16px;
+  }
+
   /* ---------- about ---------- */
   .about-grid {
     display: grid;
@@ -563,6 +600,7 @@
   <a class="logo" href="#top">PR.</a>
   <ul>
     <li><a href="#work" data-hover>Work</a></li>
+    <li><a href="#ethos" data-hover>The Deal</a></li>
     <li><a href="#about" data-hover>About</a></li>
     <li><a href="#contact" data-hover>Contact</a></li>
   </ul>
@@ -682,9 +720,26 @@
     </div>
   </section>
 
-  <section id="about" class="shell">
+  <section id="ethos" class="shell">
     <div class="sec-head reveal">
       <span class="num">02</span>
+      <h2>The Deal</h2>
+    </div>
+    <p class="manifesto reveal">Everything here is <em>free</em>. No caveats, no adverts, no snooping — <em>no data stored</em>, nothing tracked, nothing sold. Just things to help you get fitter, healthier and have more fun.
+      <span class="sign">Let's all do good things.</span>
+    </p>
+    <div class="pledges reveal" aria-label="Promises">
+      <span>100% free</span>
+      <span>No adverts</span>
+      <span>No tracking</span>
+      <span>No data stored</span>
+      <span>No accounts</span>
+    </div>
+  </section>
+
+  <section id="about" class="shell">
+    <div class="sec-head reveal">
+      <span class="num">03</span>
       <h2>About</h2>
     </div>
     <div class="about-grid">
@@ -696,6 +751,7 @@
         <div><dt>Name</dt><dd>Paul Robinson</dd></div>
         <div><dt>Builds</dt><dd>iPhone &amp; Watch apps, games, browser CV</dd></div>
         <div><dt>Projects</dt><dd>Four and counting</dd></div>
+        <div><dt>Price</dt><dd>Free. All of it. Always.</dd></div>
         <div><dt>Fuelled by</dt><dd>Running, riding &amp; darts</dd></div>
         <div><dt>Status</dt><dd>Always building something</dd></div>
       </dl>
