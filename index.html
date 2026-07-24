@@ -42,7 +42,12 @@
 
   /* dark canvas even beyond the page — iOS paints white behind
      rubber-band overscroll and toolbar regions otherwise */
-  html { background: var(--bg); }
+  html {
+    background: var(--bg);
+    /* stop iOS Safari auto-inflating text, which widens rows off screen */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
 
   body {
     min-height: 100svh;
@@ -336,6 +341,7 @@
   }
   .work-item:hover .idx { color: var(--c); }
 
+  .work-item .body { min-width: 0; }
   .work-item .title-row {
     display: flex;
     align-items: center;
@@ -476,7 +482,11 @@
   .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
 
   @media (max-width: 1000px) {
-    .work-item { grid-template-columns: auto 1fr auto; }
+    .work-item { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .work-item .idx { grid-row: 1; grid-column: 1; }
+    .work-item .body { grid-row: 1; grid-column: 2; }
+    .work-item .arrow { grid-row: 1; grid-column: 3; }
+    .work-item .body h3 { font-size: clamp(1.5rem, 7.2vw, 2.6rem); }
     .work-item .preview {
       grid-column: 1 / -1;
       justify-content: flex-start;
