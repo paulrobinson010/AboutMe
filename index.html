@@ -466,6 +466,80 @@
     .work-item .preview img.small { height: 100px; align-self: center; }
   }
 
+  /* ---------- treadgame spotlight (brand-flip band in TreadGame's palette) ---------- */
+  .spotlight {
+    background: #faf7f0;
+    color: #1f2230;
+    position: relative;
+    z-index: 1;
+  }
+  .spotlight ::selection { background: #fa801e; color: #faf7f0; }
+  .spotlight .sec-head .num { color: #fa801e; }
+  .spot-intro {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: clamp(28px, 5vw, 72px);
+    align-items: start;
+    margin-bottom: clamp(36px, 5vw, 60px);
+  }
+  .spot-lede {
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.3rem, 2.7vw, 2.1rem);
+    line-height: 1.3;
+  }
+  .spot-lede em { font-style: normal; color: #fa801e; }
+  .spot-copy { margin-top: 18px; color: #4a4f60; line-height: 1.7; font-size: clamp(0.95rem, 1.3vw, 1.05rem); }
+  .spot-stats { display: flex; flex-wrap: wrap; gap: 10px 12px; }
+  .spot-stats span {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #4a4f60;
+    border: 1px solid #e0dac9;
+    border-radius: 100px;
+    padding: 8px 16px;
+    background: #fff;
+  }
+  .spot-badges { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 22px; }
+  .spot-badges img { height: 48px; width: auto; display: block; }
+  .spot-badges a { transition: transform 0.3s var(--ease); }
+  .spot-badges a:hover { transform: translateY(-3px); }
+  .spot-shots { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(14px, 2vw, 24px); }
+  .spot-shots img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 18px;
+    border: 1px solid #e0dac9;
+    box-shadow: 0 14px 48px rgba(31, 34, 48, 0.14);
+    transition: transform 0.5s var(--ease), box-shadow 0.5s var(--ease);
+  }
+  .spot-shots img:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 24px 70px rgba(31, 34, 48, 0.2); }
+  .spot-shots img.main { grid-column: 1 / -1; }
+  .spot-watch {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: clamp(20px, 4vw, 48px);
+    margin-top: clamp(32px, 5vw, 56px);
+    padding-top: clamp(24px, 3vw, 36px);
+    border-top: 1px solid #e0dac9;
+  }
+  .spot-watch img { height: clamp(120px, 14vw, 180px); width: auto; }
+  .spot-watch p {
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.05rem, 1.8vw, 1.5rem);
+    max-width: 420px;
+    line-height: 1.4;
+  }
+  .spot-watch p span { color: #fa801e; }
+  @media (max-width: 820px) {
+    .spot-intro { grid-template-columns: 1fr; }
+    .spot-shots { grid-template-columns: 1fr; }
+  }
+
   /* ---------- ethos / manifesto ---------- */
   .manifesto {
     font-family: "Syne", sans-serif;
@@ -720,9 +794,47 @@
     </div>
   </section>
 
+  <section id="treadgame" class="spotlight">
+    <div class="shell">
+      <div class="sec-head reveal">
+        <span class="num">02</span>
+        <h2>Spotlight — TreadGame</h2>
+      </div>
+      <div class="spot-intro">
+        <div class="reveal">
+          <p class="spot-lede">The big one. Years of evenings poured into making the treadmill the <em>most fun place in the house</em>.</p>
+          <p class="spot-copy">A full Unity game that runs on your phone or tablet and casts to the TV. Pick from 32 mini-games — chase aliens, bank colours, collect coins, light trails — and your real pace drives your runner: speed up on the belt and your runner speeds up on screen. Live speed, pace, heart rate and calories sit across the top while you play, and a watch on your wrist doubles as the controller.</p>
+        </div>
+        <div class="reveal">
+          <div class="spot-stats">
+            <span>32 mini-games</span>
+            <span>Casts to TV</span>
+            <span>Speed = game speed</span>
+            <span>Live HR &amp; pace</span>
+            <span>iOS + Android</span>
+          </div>
+          <div class="spot-badges">
+            <a href="https://apps.apple.com/us/app/treadgame/id6770052574" target="_blank" rel="noopener" data-hover><img src="assets/blackAppleBadge.svg" alt="Download on the App Store"></a>
+            <a href="https://play.google.com/store/apps/details?id=com.treadgame.treadgame.one.game" target="_blank" rel="noopener" data-hover><img src="assets/googlePlayBadge.svg" alt="Get it on Google Play"></a>
+          </div>
+        </div>
+      </div>
+      <div class="spot-shots">
+        <img class="main reveal" src="assets/tread-play-1.webp" alt="TreadGame gameplay — Bank the Red, with live speed, pace and heart rate across the top" loading="lazy">
+        <img class="reveal" src="assets/tread-play-2.webp" alt="TreadGame gameplay — Coin Collector on the open grid" loading="lazy">
+        <img class="reveal" src="assets/tread-play-3.webp" alt="TreadGame gameplay — Arena round with the scoreboard" loading="lazy">
+      </div>
+      <div class="spot-watch reveal">
+        <img src="assets/tread-watch-ultra.webp" alt="TreadGame controls on Apple Watch" loading="lazy">
+        <img src="assets/tread-watch-galaxy.webp" alt="TreadGame controls on Galaxy Watch" loading="lazy">
+        <p>Buttons on your wrist — <span>Apple Watch and Wear OS</span> both work as controllers, so your hands never leave the rails.</p>
+      </div>
+    </div>
+  </section>
+
   <section id="ethos" class="shell">
     <div class="sec-head reveal">
-      <span class="num">02</span>
+      <span class="num">03</span>
       <h2>The Deal</h2>
     </div>
     <p class="manifesto reveal">Everything here is <em>free</em>. No caveats, no adverts, no snooping — <em>no data stored</em>, nothing tracked, nothing sold. Just things to help you get fitter, healthier and have more fun.
@@ -739,7 +851,7 @@
 
   <section id="about" class="shell">
     <div class="sec-head reveal">
-      <span class="num">03</span>
+      <span class="num">04</span>
       <h2>About</h2>
     </div>
     <div class="about-grid">

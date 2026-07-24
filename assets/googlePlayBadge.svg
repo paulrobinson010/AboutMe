@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="119.66407" height="40" viewBox="0 0 119.66407 40" role="img" aria-label="Get it on Google Play">
+  <title>Get it on Google Play</title>
+  <!-- Self-hosted to match the self-hosted Apple badge (Google's badge
+       generator CDN is unreliable to hot-link). Same 119.66×40 viewBox as
+       blackAppleBadge.svg so the .store-badges__img sizing applies unchanged.
+       Faithful flat reproduction of the official "Get it on Google Play"
+       black badge: rounded black field, thin grey border, four-colour Play
+       triangle, "GET IT ON / Google Play" lockup. -->
+  <rect x="0.5" y="0.5" width="118.66407" height="39" rx="6" ry="6" fill="#000000" stroke="#A6A6A6" stroke-width="1"/>
+  <!-- Google Play triangle: blue (top-left), green (bottom-left),
+       yellow (top-right), red (bottom-right), meeting at the fold seam. -->
+  <g>
+    <polygon points="11,32 22.5,25.4286 22.5,20 11,20" fill="#00A0FF"/>
+    <polygon points="11,20 22.5,20 22.5,14.5714 11,8" fill="#00E676"/>
+    <polygon points="22.5,25.4286 32,20 22.5,20" fill="#FFCE00"/>
+    <polygon points="22.5,20 32,20 22.5,14.5714" fill="#FF3D44"/>
+  </g>
+  <!-- Wordmark. textLength pins each line to the field width so it fits
+       no matter which fallback font the browser substitutes. -->
+  <text x="41" y="15.5" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="6" letter-spacing="1.2" textLength="40" lengthAdjust="spacingAndGlyphs">GET IT ON</text>
+  <text x="40.5" y="31" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="14.5" font-weight="500" textLength="73" lengthAdjust="spacingAndGlyphs">Google Play</text>
+</svg>
