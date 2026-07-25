@@ -493,6 +493,18 @@
   .work-item.t-game  { --c: var(--c-game);  --g: var(--g-game); }
   .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
   .work-item.t-xmarks { --c: var(--c-xmarks); --g: var(--g-xmarks); }
+  /* Darts Scorer: a real board for a mark, and a slow spin on hover */
+  .t-darts .mark { border-radius: 50%; background: transparent; border-color: transparent; }
+  .t-darts:hover .mark { transform: rotate(24deg) scale(1.1); box-shadow: 0 8px 30px color-mix(in srgb, var(--c-darts) 40%, transparent); }
+  .t-darts .preview img.board {
+    height: clamp(180px, 16vw, 230px);
+    width: auto;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  }
+  .t-darts:hover .preview img.board { animation: spin 30s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   /* X-Marks: the lockup IS the title — big, tilted, and wobbly on hover */
   .t-xmarks .wordmark {
     height: clamp(96px, 24vw, 190px);
@@ -877,27 +889,8 @@
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
 
-      <a class="work-item t-darts reveal" href="https://darts-scorer.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#28c46c">
-        <span class="idx">/04</span>
-        <div class="body">
-          <div class="title-row">
-            <span class="mark emoji" role="img" aria-label="dartboard">🎯</span>
-            <h3>Darts Scorer</h3>
-          </div>
-          <div class="meta">
-            <span class="tag">Camera scorer</span><span class="tag">Runs in the browser</span><span class="tag">darts-scorer.robbo-online.uk</span>
-          </div>
-          <p class="season">For when exercise is done</p>
-          <p class="desc"><strong>Point a camera at the board and it keeps score.</strong> Automatic dart detection, spoken announcements, full 501 down to 101 double-out plus free throw — everything on-device in the browser. No server, no uploads, no install.</p>
-        </div>
-        <div class="preview" aria-hidden="true">
-          <img class="wide" src="assets/darts-shot-1.webp" alt="" loading="lazy">
-        </div>
-        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
-      </a>
-
       <a class="work-item t-xmarks reveal" href="https://x-marks.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#f4c952">
-        <span class="idx">/05</span>
+        <span class="idx">/04</span>
         <div class="body">
           <div class="title-row">
             <img class="wordmark" src="assets/xmarks-wordmark.webp" alt="X-Marks — treasure hunts, big adventures" loading="lazy">
@@ -914,6 +907,26 @@
           <img src="assets/xmarks-shot-3.webp" alt="" loading="lazy">
           <img src="assets/xmarks-shot-4.webp" alt="" loading="lazy">
           <img src="assets/xmarks-shot-5.webp" alt="" loading="lazy">
+        </div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
+      </a>
+
+      <a class="work-item t-darts reveal" href="https://darts-scorer.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#28c46c">
+        <span class="idx">/05</span>
+        <div class="body">
+          <div class="title-row">
+            <img class="mark" src="assets/dartboard.svg" alt="" loading="lazy">
+            <h3>Darts Scorer</h3>
+          </div>
+          <div class="meta">
+            <span class="tag">Camera scorer</span><span class="tag">Runs in the browser</span><span class="tag">darts-scorer.robbo-online.uk</span>
+          </div>
+          <p class="season">For when exercise is done</p>
+          <p class="desc"><strong>Point a camera at the board and it keeps score.</strong> Automatic dart detection, spoken announcements, full 501 down to 101 double-out plus free throw — everything on-device in the browser. No server, no uploads, no install.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img class="board" src="assets/dartboard.svg" alt="" loading="lazy">
+          <img class="wide" src="assets/darts-shot-1.webp" alt="" loading="lazy">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
