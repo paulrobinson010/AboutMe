@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Paul Robinson — I build things that keep score</title>
-<meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, It's Just a Game and Darts Scorer — apps for running, riding, playing and scoring.">
+<meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, It's Just a Game, Darts Scorer and X-Marks — apps for running, riding, walking, playing and scoring.">
 <meta name="theme-color" content="#0a0a0f">
 <link rel="preload" href="assets/fonts/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -26,10 +26,12 @@
     --c-cycle: #25e3ee;   /* CycleHUD cyan (gradient to purple/pink) */
     --c-game:  #ff4dcc;   /* It's Just a Game pink (gradient from cyan) */
     --c-darts: #28c46c;   /* DartsScorer board green */
+    --c-xmarks: #f4c952;  /* X-Marks treasure gold (red X accent) */
     --g-cycle: linear-gradient(100deg, #25e3ee 0%, #9b6bff 50%, #ff4fd8 100%);
     --g-game:  linear-gradient(90deg, #33d9ff, #ff4dcc);
     --g-tread: linear-gradient(100deg, #fa801e, #f0b71a);
     --g-darts: linear-gradient(100deg, #28c46c 0%, #28c46c 55%, #efe4c4 100%);
+    --g-xmarks: linear-gradient(100deg, #e6392e 0%, #f4c952 60%, #3cc6e3 100%);
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -490,6 +492,8 @@
   .work-item.t-cycle { --c: var(--c-cycle); --g: var(--g-cycle); }
   .work-item.t-game  { --c: var(--c-game);  --g: var(--g-game); }
   .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
+  .work-item.t-xmarks { --c: var(--c-xmarks); --g: var(--g-xmarks); }
+  .work-item.t-xmarks h3 { white-space: nowrap; }
 
   @media (max-width: 1000px) {
     .work-item { grid-template-columns: auto minmax(0, 1fr) auto; }
@@ -768,14 +772,14 @@
         <span class="row"><span>I build things</span></span>
         <span class="row outline"><span>that keep score</span></span>
       </h1>
-      <p class="sub">Four products. One habit: turning <strong>running, riding, playing and throwing</strong> into something you can measure, replay and beat.</p>
+      <p class="sub">Five products. One habit: turning <strong>running, riding, walking, playing and throwing</strong> into something you can measure, replay and beat.</p>
     </header>
     <div class="scroll-cue">Scroll</div>
   </div>
 
   <div class="marquee" aria-hidden="true">
     <div class="track">
-      <span>Run <em>·</em> Ride <em>·</em> Play <em>·</em> Score <em>·</em></span><span>Run <em>·</em> Ride <em>·</em> Play <em>·</em> Score <em>·</em></span><span>Run <em>·</em> Ride <em>·</em> Play <em>·</em> Score <em>·</em></span><span>Run <em>·</em> Ride <em>·</em> Play <em>·</em> Score <em>·</em></span>
+      <span>Run <em>·</em> Ride <em>·</em> Walk <em>·</em> Play <em>·</em> Score <em>·</em></span><span>Run <em>·</em> Ride <em>·</em> Walk <em>·</em> Play <em>·</em> Score <em>·</em></span><span>Run <em>·</em> Ride <em>·</em> Walk <em>·</em> Play <em>·</em> Score <em>·</em></span><span>Run <em>·</em> Ride <em>·</em> Walk <em>·</em> Play <em>·</em> Score <em>·</em></span>
     </div>
   </div>
 
@@ -875,6 +879,26 @@
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
 
+      <a class="work-item t-xmarks reveal" href="https://x-marks.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#f4c952">
+        <span class="idx">/05</span>
+        <div class="body">
+          <div class="title-row">
+            <img class="mark" src="assets/xmarks-logo.png" alt="" loading="lazy" style="background: transparent; object-fit: contain;">
+            <h3>X-Marks</h3>
+          </div>
+          <div class="meta">
+            <span class="tag">GPS treasure hunts</span><span class="tag">iOS</span><span class="tag">x-marks.robbo-online.uk</span>
+          </div>
+          <p class="season">For family walks</p>
+          <p class="desc"><strong>Made to make a family walk more fun for the kids.</strong> Drop points on a map, add a prize, send the hunt over iMessage or WhatsApp — then they track each X down with a compass and a phone that buzzes when they're close. It's amazing how many of the points are in beer gardens.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img class="sq" src="assets/xmarks-shot-1.webp" alt="" loading="lazy">
+          <img class="sq" src="assets/xmarks-shot-2.webp" alt="" loading="lazy">
+        </div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
+      </a>
+
     </div>
   </section>
 
@@ -947,14 +971,14 @@
     <div class="about-grid">
       <div class="reveal">
         <p class="lede">I'm Paul — a maker who can't leave a hobby alone. If I run, ride, play or throw it, <em>sooner or later I build an app for it.</em></p>
-        <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." TreadGame was built because everything I could run with was really made for bikes and was no fun — so why not combine arcade and running? What's the worst that can happen! CycleHUD exists because my bike radar came with a terrible app and I'd rather use the phone in my pocket than buy a cycle computer. Darts Scorer exists because I'm a mathematician turned software developer — and as everyone knows, mathematicians can't actually add up, so a camera does the pub maths for me, out loud. And It's Just a Game was invented by my five-year-old — because the best games are the ones everyone in the room can play. Oh, and I do serious stuff too. Really serious stuff. But I get paid for that.</p>
+        <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." TreadGame was built because everything I could run with was really made for bikes and was no fun — so why not combine arcade and running? What's the worst that can happen! CycleHUD exists because my bike radar came with a terrible app and I'd rather use the phone in my pocket than buy a cycle computer. Darts Scorer exists because I'm a mathematician turned software developer — and as everyone knows, mathematicians can't actually add up, so a camera does the pub maths for me, out loud. It's Just a Game was invented by my five-year-old — because the best games are the ones everyone in the room can play. And X-Marks exists to make a family walk something the kids actually ask for — though it's amazing how many of the points turn out to be in beer gardens. Oh, and I do serious stuff too. Really serious stuff. But I get paid for that.</p>
       </div>
       <dl class="facts reveal">
         <div><dt>Name</dt><dd>Paul Robinson</dd></div>
         <div><dt>Trained as</dt><dd>Mathematician — can't add up</dd></div>
         <div><dt>Builds</dt><dd>iPhone &amp; Watch apps, games, browser CV</dd></div>
         <div><dt>By day</dt><dd>Really serious stuff (that bit's paid)</dd></div>
-        <div><dt>Projects</dt><dd>Four and counting</dd></div>
+        <div><dt>Projects</dt><dd>Five and counting</dd></div>
         <div><dt>Price</dt><dd>Free. All of it. Always.</dd></div>
         <div><dt>Fuelled by</dt><dd>Running, riding &amp; darts</dd></div>
         <div><dt>Status</dt><dd>Always building something</dd></div>
@@ -969,7 +993,7 @@
   <div class="foot-row">
     <span>&copy; <span id="year">2026</span> Paul Robinson</span>
     <a href="https://github.com/paulrobinson010" target="_blank" rel="noopener" data-hover>GitHub</a>
-    <span>Run · Ride · Play · Score</span>
+    <span>Run · Ride · Walk · Play · Score</span>
   </div>
 </footer>
 
