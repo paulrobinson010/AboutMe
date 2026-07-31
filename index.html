@@ -494,7 +494,55 @@
   .work-item.t-cycle { --c: var(--c-cycle); --g: var(--g-cycle); }
   .work-item.t-game  { --c: var(--c-game);  --g: var(--g-game); }
   .work-item.t-gait { --c: var(--c-gait); --g: var(--g-gait); }
-  .t-gait .mark { border-radius: 50%; }
+  /* Gaitway: the app's own cyberpunk voice — a logo that lights up, a
+     wordmark in its gradient, and the fork drawing itself on hover. */
+  .t-gait .mark {
+    border-radius: 50%;
+    transition: box-shadow 0.5s var(--ease), transform 0.5s var(--ease);
+  }
+  .t-gait:hover .mark {
+    transform: scale(1.08);
+    box-shadow: 0 0 26px color-mix(in srgb, var(--c-gait) 55%, transparent),
+                0 0 60px color-mix(in srgb, #ff2e9e 32%, transparent);
+  }
+  .t-gait:hover h3 {
+    background: var(--g-gait);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .gait-fork {
+    width: 34px;
+    height: 26px;
+    flex-shrink: 0;
+    overflow: visible;
+    fill: none;
+    stroke-linecap: round;
+    stroke-width: 2.4;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+  }
+  .gait-fork path { stroke-dasharray: 40; stroke-dashoffset: 40; transition: stroke-dashoffset 0.5s var(--ease); }
+  .gait-fork .stem { stroke: #cfd3e6; }
+  .gait-fork .up { stroke: var(--c-gait); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c-gait) 70%, transparent)); }
+  .gait-fork .down { stroke: #ff2e9e; filter: drop-shadow(0 0 5px rgba(255, 46, 158, 0.7)); }
+  .gait-fork .node { fill: var(--bg); stroke: #e8e9f2; stroke-width: 2; opacity: 0; transition: opacity 0.3s var(--ease) 0.28s; }
+  .t-gait:hover .gait-fork { opacity: 1; transform: none; }
+  .t-gait:hover .gait-fork path { stroke-dashoffset: 0; }
+  .t-gait:hover .gait-fork .up { transition-delay: 0.22s; }
+  .t-gait:hover .gait-fork .down { transition-delay: 0.22s; }
+  .t-gait:hover .gait-fork .node { opacity: 1; }
+  /* The screenshots are already neon; give them a matching rim. */
+  .t-gait:hover .preview img {
+    border-color: color-mix(in srgb, var(--c-gait) 45%, transparent);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55),
+                0 0 30px color-mix(in srgb, var(--c-gait) 22%, transparent);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gait-fork, .gait-fork path, .gait-fork .node { transition: none; }
+  }
   .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
   .work-item.t-xmarks { --c: var(--c-xmarks); --g: var(--g-xmarks); }
   /* Darts Scorer: a real board for a mark, and a slow spin on hover */
@@ -930,12 +978,18 @@
           <div class="title-row">
             <img class="mark" src="assets/gait-logo.png" alt="" loading="lazy">
             <h3>Gaitway</h3>
+            <svg class="gait-fork" viewBox="0 0 34 26" aria-hidden="true">
+              <path class="stem" d="M2 13 H16"/>
+              <path class="up" d="M16 13 L32 3"/>
+              <path class="down" d="M16 13 L32 23"/>
+              <circle class="node" cx="16" cy="13" r="2.6"/>
+            </svg>
           </div>
           <div class="meta">
             <span class="tag">Walk/run tracker</span><span class="tag">Apple Watch + iPhone</span><span class="tag">gaitway.robbo-online.uk</span>
           </div>
           <p class="season">For every run (and walk)</p>
-          <p class="desc"><strong>Walk or run — it works out which.</strong> A watch-first tracker that reads your gait, pauses when you stop, and learns your routes: at every fork it knows how long each way home takes, your past runs come back as ghosts to race, and your trainers are tracked to the kilometre.</p>
+          <p class="desc"><strong>Walk or run — it works out which.</strong> A watch-first tracker that reads your gait from step cadence, pauses when you stop, and learns your local map as you go. A hundred metres before any junction you've run before, your wrist prices each way on: the stretch ahead, your own fastest pace over it, and the quickest way home. Plan a route from your own network on the phone and the watch calls the turns.</p>
         </div>
         <div class="preview" aria-hidden="true">
           <img src="assets/gait-shot-1.webp" alt="" loading="lazy">
