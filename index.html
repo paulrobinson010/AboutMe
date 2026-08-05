@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Paul Robinson — I build things that keep score</title>
-<meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, It's Just a Game, Darts Scorer and X-Marks — apps for running, riding, walking, playing and scoring.">
+<meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, Gaitway, It's Just a Game, Darts Scorer and X-Marks — apps for running, riding, walking, playing and scoring.">
 <meta name="theme-color" content="#0a0a0f">
 <link rel="preload" href="assets/fonts/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -27,11 +27,13 @@
     --c-game:  #ff4dcc;   /* It's Just a Game pink (gradient from cyan) */
     --c-darts: #28c46c;   /* DartsScorer board green */
     --c-xmarks: #f4c952;  /* X-Marks treasure gold (red X accent) */
+    --c-gait:  #2bd9ff;   /* Gaitway electric cyan (gradient to magenta) */
     --g-cycle: linear-gradient(100deg, #25e3ee 0%, #9b6bff 50%, #ff4fd8 100%);
     --g-game:  linear-gradient(90deg, #33d9ff, #ff4dcc);
     --g-tread: linear-gradient(100deg, #fa801e, #f0b71a);
     --g-darts: linear-gradient(100deg, #28c46c 0%, #28c46c 55%, #efe4c4 100%);
     --g-xmarks: linear-gradient(100deg, #e6392e 0%, #f4c952 60%, #3cc6e3 100%);
+    --g-gait:  linear-gradient(100deg, #2bd9ff 0%, #b34dff 55%, #ff2e9e 100%);
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -491,6 +493,56 @@
   .work-item.t-tread { --c: var(--c-tread); --g: var(--g-tread); }
   .work-item.t-cycle { --c: var(--c-cycle); --g: var(--g-cycle); }
   .work-item.t-game  { --c: var(--c-game);  --g: var(--g-game); }
+  .work-item.t-gait { --c: var(--c-gait); --g: var(--g-gait); }
+  /* Gaitway: the app's own cyberpunk voice — a logo that lights up, a
+     wordmark in its gradient, and the fork drawing itself on hover. */
+  .t-gait .mark {
+    border-radius: 50%;
+    transition: box-shadow 0.5s var(--ease), transform 0.5s var(--ease);
+  }
+  .t-gait:hover .mark {
+    transform: scale(1.08);
+    box-shadow: 0 0 26px color-mix(in srgb, var(--c-gait) 55%, transparent),
+                0 0 60px color-mix(in srgb, #ff2e9e 32%, transparent);
+  }
+  .t-gait:hover h3 {
+    background: var(--g-gait);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .gait-fork {
+    width: 34px;
+    height: 26px;
+    flex-shrink: 0;
+    overflow: visible;
+    fill: none;
+    stroke-linecap: round;
+    stroke-width: 2.4;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+  }
+  .gait-fork path { stroke-dasharray: 40; stroke-dashoffset: 40; transition: stroke-dashoffset 0.5s var(--ease); }
+  .gait-fork .stem { stroke: #cfd3e6; }
+  .gait-fork .up { stroke: var(--c-gait); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c-gait) 70%, transparent)); }
+  .gait-fork .down { stroke: #ff2e9e; filter: drop-shadow(0 0 5px rgba(255, 46, 158, 0.7)); }
+  .gait-fork .node { fill: var(--bg); stroke: #e8e9f2; stroke-width: 2; opacity: 0; transition: opacity 0.3s var(--ease) 0.28s; }
+  .t-gait:hover .gait-fork { opacity: 1; transform: none; }
+  .t-gait:hover .gait-fork path { stroke-dashoffset: 0; }
+  .t-gait:hover .gait-fork .up { transition-delay: 0.22s; }
+  .t-gait:hover .gait-fork .down { transition-delay: 0.22s; }
+  .t-gait:hover .gait-fork .node { opacity: 1; }
+  /* The screenshots are already neon; give them a matching rim. */
+  .t-gait:hover .preview img {
+    border-color: color-mix(in srgb, var(--c-gait) 45%, transparent);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55),
+                0 0 30px color-mix(in srgb, var(--c-gait) 22%, transparent);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gait-fork, .gait-fork path, .gait-fork .node { transition: none; }
+  }
   .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
   .work-item.t-xmarks { --c: var(--c-xmarks); --g: var(--g-xmarks); }
   /* Darts Scorer: a real board for a mark, and a slow spin on hover */
@@ -920,8 +972,36 @@
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
 
-      <a class="work-item t-darts reveal" href="https://darts-scorer.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#28c46c">
+      <a class="work-item t-gait reveal" href="https://gaitway.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#2bd9ff">
         <span class="idx">/05</span>
+        <div class="body">
+          <div class="title-row">
+            <img class="mark" src="assets/gait-logo.png" alt="" loading="lazy">
+            <h3>Gaitway</h3>
+            <svg class="gait-fork" viewBox="0 0 34 26" aria-hidden="true">
+              <path class="stem" d="M2 13 H16"/>
+              <path class="up" d="M16 13 L32 3"/>
+              <path class="down" d="M16 13 L32 23"/>
+              <circle class="node" cx="16" cy="13" r="2.6"/>
+            </svg>
+          </div>
+          <div class="meta">
+            <span class="tag">Walk/run tracker</span><span class="tag">Apple Watch + iPhone</span><span class="tag">gaitway.robbo-online.uk</span>
+          </div>
+          <p class="season">For every run (and walk)</p>
+          <p class="desc"><strong>Walk or run — it works out which.</strong> A watch-first tracker that reads your gait from step cadence, pauses when you stop, and learns your local map as you go. A hundred metres before any junction you've run before, your wrist prices each way on: the stretch ahead, your own fastest pace over it, and the quickest way home. Plan a route from your own network on the phone and the watch calls the turns.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img src="assets/gait-shot-1.webp" alt="" loading="lazy">
+          <img src="assets/gait-shot-2.webp" alt="" loading="lazy">
+          <img src="assets/gait-shot-3.webp" alt="" loading="lazy">
+          <img class="small" src="assets/gait-watch.webp" alt="" loading="lazy">
+        </div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
+      </a>
+
+      <a class="work-item t-darts reveal" href="https://darts-scorer.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#28c46c">
+        <span class="idx">/06</span>
         <div class="body">
           <div class="title-row">
             <img class="mark" src="assets/dartboard.svg" alt="" loading="lazy">
@@ -1012,14 +1092,14 @@
     <div class="about-grid">
       <div class="reveal">
         <p class="lede">I'm Paul — a maker who can't leave a hobby alone. If I run, ride, play or throw it, <em>sooner or later I build an app for it.</em></p>
-        <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." TreadGame was built because everything I could run with was really made for bikes and was no fun — so why not combine arcade and running? What's the worst that can happen! CycleHUD exists because my bike radar came with a terrible app and I'd rather use the phone in my pocket than buy a cycle computer. Darts Scorer exists because I'm a mathematician turned software developer — and as everyone knows, mathematicians can't actually add up, so a camera does the pub maths for me, out loud. It's Just a Game was invented by my five-year-old — because the best games are the ones everyone in the room can play. And X-Marks exists to make a family walk something the kids actually ask for — though it's amazing how many of the points turn out to be in beer gardens. Oh, and I do serious stuff too. Really serious stuff. But I get paid for that.</p>
+        <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." TreadGame was built because everything I could run with was really made for bikes and was no fun — so why not combine arcade and running? What's the worst that can happen! CycleHUD exists because my bike radar came with a terrible app and I'd rather use the phone in my pocket than buy a cycle computer. Darts Scorer exists because I'm a mathematician turned software developer — and as everyone knows, mathematicians can't actually add up, so a camera does the pub maths for me, out loud. It's Just a Game was invented by my five-year-old — because the best games are the ones everyone in the room can play. And X-Marks exists to make a family walk something the kids actually ask for — though it's amazing how many of the points turn out to be in beer gardens. Gaitway is the newest, and it started with a question rather than a gadget: I run a lot of fields and little paths, and the routes all overlap without ever quite repeating. What if every run I'd ever done were joined up into one network — would it hand me routes I'd never thought to run, or new ways to push myself? So I built it to find out. Oh, and I do serious stuff too. Really serious stuff. But I get paid for that.</p>
       </div>
       <dl class="facts reveal">
         <div><dt>Name</dt><dd>Paul Robinson</dd></div>
         <div><dt>Trained as</dt><dd>Mathematician — can't add up</dd></div>
         <div><dt>Builds</dt><dd>iPhone &amp; Watch apps, games, browser CV</dd></div>
         <div><dt>By day</dt><dd>Really serious stuff (that bit's paid)</dd></div>
-        <div><dt>Projects</dt><dd>Five and counting</dd></div>
+        <div><dt>Projects</dt><dd>Six and counting</dd></div>
         <div><dt>Price</dt><dd>Free. All of it. Always.</dd></div>
         <div><dt>Fuelled by</dt><dd>Running, riding, darts, fun &amp; beer</dd></div>
         <div><dt>Status</dt><dd>Always building something</dd></div>
