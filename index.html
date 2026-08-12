@@ -1375,13 +1375,14 @@
       callout.textContent = text;
       callout.style.color = tone === "hot" ? "#f4c952" : tone === "bad" ? "#e0473f" : "#28c46c";
     };
+    const clearPins = () => { wrap.querySelectorAll(".pin").forEach((p) => p.remove()); };
     const scheduleVisitClear = () => {
-      clearTimer = setTimeout(() => { visit = []; clearTimer = null; render(); }, 1100);
+      clearTimer = setTimeout(() => { visit = []; clearTimer = null; clearPins(); render(); }, 1100);
     };
     const flushVisit = () => {
-      if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; visit = []; render(); }
+      if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; visit = []; clearPins(); render(); }
     };
-    const newLeg = () => { remaining = 501; turnStart = 501; visit = []; legDarts = 0; hist = []; render(); };
+    const newLeg = () => { remaining = 501; turnStart = 501; visit = []; legDarts = 0; hist = []; clearPins(); render(); };
 
     const open = (e) => { e.preventDefault(); e.stopPropagation(); oche.classList.add("open"); document.body.style.overflow = "hidden"; };
     const close = () => { oche.classList.remove("open"); document.body.style.overflow = ""; };
@@ -1442,16 +1443,17 @@
         const dist = Math.hypot(ux, uy);
         const deg = ((Math.atan2(ux, -uy) * 180) / Math.PI + 360) % 360;
         const num = RING[Math.floor(((deg + 9) % 360) / 18)];
-        let score = 0, say = "", label = "0", isDouble = false;
+        let score = 0, say = "", label = "0", isDouble = false, bounce = false;
         if (dist <= 11) { score = 50; isDouble = true; say = "BULLSEYE \u2014 50!"; label = "50"; }
         else if (dist <= 24) { score = 25; say = "Outer bull \u2014 25"; label = "25"; }
         else if (dist <= 88) { score = num; say = num + ""; label = "" + num; }
         else if (dist <= 100) { score = num * 3; say = "TREBLE " + num + " \u2014 " + score + "!"; label = "T" + num; }
         else if (dist <= 146) { score = num; say = num + ""; label = "" + num; }
         else if (dist <= 158) { score = num * 2; isDouble = true; say = "Double " + num + " \u2014 " + score; label = "D" + num; }
-        else if (dist <= 198) { say = "Wire! No score"; }
+        else if (dist <= 165) { bounce = true; say = "Wire \u2014 bounce-out!"; }
+        else if (dist <= 198) { say = "In the surround \u2014 no score"; }
         else { say = ["Off the board!", "The wall has it", "Mind the pint!"][Math.floor(Math.random() * 3)]; }
-        if (dist <= 198) {
+        if (dist <= 198 && !bounce) {
           const pin = document.createElement("i");
           pin.className = "pin";
           pin.style.left = ((tx - board.left) / board.width) * 100 + "%";
@@ -1488,9 +1490,20 @@
           }
         }
         render();
-        dart.style.transition = "none";
-        setDart(0, 0);
-        inFlight = false;
+        const settle = () => {
+          dart.style.transition = "none";
+          dart.style.opacity = "1";
+          setDart(0, 0);
+          inFlight = false;
+        };
+        if (bounce) {
+          dart.style.transition = "transform 0.45s cubic-bezier(0.5, 0, 0.75, 0.5), opacity 0.45s ease-in";
+          dart.style.transform = `translate(${tx - fromX + 34}px, ${ty - fromY + 400}px) scale(0.42) rotate(150deg)`;
+          dart.style.opacity = "0.1";
+          setTimeout(settle, 470);
+        } else {
+          settle();
+        }
       }, 440);
     });
   })();
