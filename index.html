@@ -953,6 +953,23 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .oche .aim {
+    position: absolute;
+    width: 20px; height: 20px;
+    border: 2px solid rgba(244, 201, 82, 0.75);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .oche .aim::after {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border-radius: 50%;
+    background: rgba(244, 201, 82, 0.8);
+  }
   .oche .lane { flex: 1; width: 100%; position: relative; min-height: 110px; }
   .oche .hint {
     position: absolute;
@@ -1303,8 +1320,9 @@
       <p class="chalk-hist" id="oche-hist">&nbsp;</p>
     </div>
   </div>
+  <div class="aim" id="oche-aim"></div>
   <div class="lane" id="oche-lane">
-    <p class="hint">Hold anywhere · drag up · release</p>
+    <p class="hint">Hold anywhere · drag up · release steady</p>
     <div class="power"><i id="oche-power"></i></div>
     <svg class="dart" id="oche-dart" viewBox="0 0 30 104" aria-hidden="true">
       <path d="M15 0 L19 16 L11 16 Z" fill="#e0473f"/>
@@ -1409,19 +1427,38 @@
 
     const setDart = (x, tilt) => { dart.style.transform = `translateX(${x}px) rotate(${tilt}deg)`; };
 
+    const aimEl = document.getElementById("oche-aim");
+    const aimPoint = (d) => {
+      // where a clean release right now would land
+      const board = wrap.getBoundingClientRect();
+      const cx = board.left + board.width / 2;
+      const cy = board.top + board.height / 2;
+      const R = board.width / 2;
+      const pull = Math.max(0, d.y0 - d.y);
+      const power = Math.min(1.35, pull / (innerHeight * 0.38));
+      return { x: cx + (d.x - innerWidth / 2) * 0.9, y: cy - (power - 1) * R * 2.4, R: R, power: power, cx: cx, cy: cy, board: board };
+    };
     oche.addEventListener("pointerdown", (e) => {
       if (inFlight || e.target.closest(".oche-close")) return;
       flushVisit();
-      drag = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY };
+      drag = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, trail: [] };
       oche.setPointerCapture && oche.setPointerCapture(e.pointerId);
     });
     oche.addEventListener("pointermove", (e) => {
       if (!drag) return;
       drag.x = e.clientX; drag.y = e.clientY;
-      const pull = Math.max(0, drag.y0 - drag.y);
-      const power = Math.min(1.35, pull / (innerHeight * 0.38));
-      powerBar.style.height = Math.min(100, power * 82) + "%";
+      drag.trail.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+      if (drag.trail.length > 7) drag.trail.shift();
+      const a = aimPoint(drag);
+      powerBar.style.height = Math.min(100, a.power * 82) + "%";
       setDart(drag.x - drag.x0, (drag.x - drag.x0) * 0.06);
+      if (a.power > 0.12) {
+        aimEl.style.display = "block";
+        aimEl.style.left = a.x + "px";
+        aimEl.style.top = a.y + "px";
+      } else {
+        aimEl.style.display = "none";
+      }
     });
     const endDrag = () => {
       if (!drag) return null;
@@ -1429,24 +1466,34 @@
       powerBar.style.height = "0%";
       return d;
     };
-    oche.addEventListener("pointercancel", () => { endDrag(); setDart(0, 0); });
+    oche.addEventListener("pointercancel", () => { endDrag(); setDart(0, 0); aimEl.style.display = "none"; });
     oche.addEventListener("pointerup", (e) => {
       const d = endDrag();
       if (!d || inFlight) return;
+      aimEl.style.display = "none";
       const pull = d.y0 - d.y;
       if (pull < 50) { setDart(0, 0); return; } // not a real throw
       inFlight = true;
-      const power = Math.min(1.35, pull / (innerHeight * 0.38));
-      const board = wrap.getBoundingClientRect();
-      const cx = board.left + board.width / 2;
-      const cy = board.top + board.height / 2;
-      const R = board.width / 2; // = 200 SVG units
-      // aim: finger's horizontal position steers, power decides height
-      const wobble = (0.18 + Math.abs(power - 1) * 0.9) * R * 0.5;
+      const a = aimPoint(d);
+      const board = a.board, cx = a.cx, cy = a.cy, R = a.R;
+      // skill model: you hit where you aimed, minus hand shake.
+      // lateral velocity at release drags the dart off line; a tiny
+      // irreducible wobble keeps it darts rather than a ruler.
+      const tr = d.trail;
+      let vx = 0, vy = 0;
+      if (tr.length >= 2) {
+        const first = tr[0], last = tr[tr.length - 1];
+        const dt = Math.max(8, last.t - first.t);
+        vx = (last.x - first.x) / dt;
+        vy = (last.y - first.y) / dt;
+      }
+      const driftX = Math.max(-1.6, Math.min(1.6, vx)) * 80;
+      const shake = Math.min(0.6, Math.abs(vx) * 0.25);
+      const wobble = (0.035 + shake) * R;
       const jx = (Math.random() + Math.random() - 1) * wobble;
       const jy = (Math.random() + Math.random() - 1) * wobble;
-      const tx = cx + (d.x - innerWidth / 2) * 0.9 + jx;
-      const ty = cy - (power - 1) * R * 2.4 + jy;
+      const tx = a.x + driftX + jx;
+      const ty = a.y + jy;
       // fly the dart there
       const dartBox = dart.getBoundingClientRect();
       const fromX = dartBox.left + dartBox.width / 2;
