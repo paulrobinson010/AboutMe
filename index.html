@@ -913,6 +913,22 @@
     text-transform: uppercase;
     color: #9fb6a6;
   }
+  .oche .chalk-old { margin-top: 6px; min-height: 1em; }
+  .oche .chalk-old i {
+    display: block;
+    font-style: normal;
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    color: #bfcabf;
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    text-decoration-color: #e0473f99;
+    line-height: 1.25;
+  }
+  .oche .chalk-old i:nth-child(1) { font-size: 1rem; opacity: 0.75; transform: rotate(-1deg); }
+  .oche .chalk-old i:nth-child(2) { font-size: 0.9rem; opacity: 0.5; transform: rotate(0.8deg); }
+  .oche .chalk-old i:nth-child(3) { font-size: 0.82rem; opacity: 0.32; transform: rotate(-0.6deg); }
+  .oche .chalk-old i:nth-child(4) { font-size: 0.75rem; opacity: 0.18; transform: rotate(0.5deg); }
   .oche .chalk-visit { display: flex; gap: 8px; }
   .oche .chalk-visit i {
     font-style: normal;
@@ -1281,7 +1297,7 @@
   </div>
   <p class="callout" id="oche-callout">501 up. Finish on a double.</p>
   <div class="chalk">
-    <div class="chalk-rem"><span id="oche-rem">501</span><em>required</em></div>
+    <div class="chalk-rem"><span id="oche-rem">501</span><em>required</em><div class="chalk-old" id="oche-old"></div></div>
     <div class="chalk-right">
       <div class="chalk-visit" id="oche-visit"><i>–</i><i>–</i><i>–</i></div>
       <p class="chalk-hist" id="oche-hist">&nbsp;</p>
@@ -1362,12 +1378,13 @@
     // standard board numbering, clockwise from the top sector
     const RING = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
     let drag = null, inFlight = false, clearTimer = null;
-    let remaining = 501, turnStart = 501, visit = [], legDarts = 0, legs = 0, hist = [];
+    let remaining = 501, turnStart = 501, visit = [], legDarts = 0, legs = 0, hist = [], remHist = [];
 
     const render = () => {
       remEl.textContent = remaining;
       [...visitEl.children].forEach((slot, i) => { slot.textContent = visit[i] ? visit[i].label : "\u2013"; });
       histEl.innerHTML = hist.length ? hist.slice(-8).join(" \u00b7 ") : "&nbsp;";
+      document.getElementById("oche-old").innerHTML = remHist.slice(-4).reverse().map((v) => "<i>" + v + "</i>").join("");
       legsEl.textContent = legs;
       dartsEl.textContent = legDarts;
     };
@@ -1382,7 +1399,7 @@
     const flushVisit = () => {
       if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; visit = []; clearPins(); render(); }
     };
-    const newLeg = () => { remaining = 501; turnStart = 501; visit = []; legDarts = 0; hist = []; clearPins(); render(); };
+    const newLeg = () => { remaining = 501; turnStart = 501; visit = []; legDarts = 0; hist = []; remHist = []; clearPins(); render(); };
 
     const open = (e) => { e.preventDefault(); e.stopPropagation(); oche.classList.add("open"); document.body.style.overflow = "hidden"; };
     const close = () => { oche.classList.remove("open"); document.body.style.overflow = ""; };
@@ -1466,12 +1483,14 @@
         if (newRem < 0 || newRem === 1 || (newRem === 0 && !isDouble)) {
           // bust: the visit never happened
           remaining = turnStart;
+          remHist.push(turnStart);
           hist.push("BUST");
           visit.push({ label: label });
           speak("BUST \u2014 back to " + remaining, "bad");
           scheduleVisitClear();
         } else if (newRem === 0) {
           remaining = 0;
+          remHist.push(turnStart);
           visit.push({ label: label });
           legs += 1;
           speak("GAME SHOT \u2014 501 in " + legDarts + " darts!", "hot");
@@ -1484,6 +1503,7 @@
           if (visit.length === 3) {
             const t = visit.reduce((sum, v) => sum + (v.score || 0), 0);
             hist.push(t);
+            remHist.push(turnStart);
             turnStart = remaining;
             if (t === 180) speak("ONE HUNDRED AND EIGHTYYY!", "hot");
             scheduleVisitClear();
