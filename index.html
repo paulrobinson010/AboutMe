@@ -28,6 +28,8 @@
     --c-darts: #28c46c;   /* DartsScorer board green */
     --c-xmarks: #f4c952;  /* X-Marks treasure gold (red X accent) */
     --c-gait:  #2bd9ff;   /* Gaitway electric cyan (gradient to magenta) */
+    --blob2: #2038c0;     /* aurora companions — overridden by the mood of the moment */
+    --blob3: #401a66;
     --g-cycle: linear-gradient(100deg, #25e3ee 0%, #9b6bff 50%, #ff4fd8 100%);
     --g-game:  linear-gradient(90deg, #33d9ff, #ff4dcc);
     --g-tread: linear-gradient(100deg, #fa801e, #f0b71a);
@@ -95,13 +97,13 @@
   }
   .aurora span:nth-child(2) {
     width: 45vmax; height: 45vmax; bottom: -18vmax; right: -12vmax;
-    background: #2038c0;
+    background: var(--blob2);
     animation: drift2 32s ease-in-out infinite alternate;
     opacity: 0.5;
   }
   .aurora span:nth-child(3) {
     width: 30vmax; height: 30vmax; top: 40%; left: 55%;
-    background: #401a66;
+    background: var(--blob3);
     animation: drift3 38s ease-in-out infinite alternate;
     opacity: 0.6;
   }
@@ -1131,11 +1133,29 @@
     el.addEventListener("mouseleave", () => cursor.classList.remove("is-hovering"));
   });
 
-  // page tints toward the hovered project's brand colour
+  // mood of the moment — a curated palette picked at random every load,
+  // so the site is never quite the same sky twice (force one with ?mood=name)
+  const MOODS = [
+    { name: "Ember",   accent: "#fa801e", blob2: "#2038c0", blob3: "#401a66" },
+    { name: "Neon",    accent: "#25e3ee", blob2: "#5b21b6", blob3: "#155e75" },
+    { name: "Magenta", accent: "#ff4dcc", blob2: "#0e4a5e", blob3: "#4c1d95" },
+    { name: "Gold",    accent: "#f4c952", blob2: "#7f1d1d", blob3: "#134e4a" },
+    { name: "Voltage", accent: "#b34dff", blob2: "#1e3a8a", blob3: "#9d174d" },
+    { name: "Pitch",   accent: "#3dff8e", blob2: "#164e63", blob3: "#3b0764" },
+  ];
   const root = document.documentElement;
+  const wanted = new URLSearchParams(location.search).get("mood");
+  const mood = MOODS.find((m) => m.name.toLowerCase() === (wanted || "").toLowerCase())
+    || MOODS[Math.floor(Math.random() * MOODS.length)];
+  root.style.setProperty("--accent", mood.accent);
+  root.style.setProperty("--blob2", mood.blob2);
+  root.style.setProperty("--blob3", mood.blob3);
+  console.log("Mood of the moment: " + mood.name + " — reload for another, or force one with ?mood=" + mood.name.toLowerCase());
+
+  // page tints toward the hovered project's brand colour, then falls back to the mood
   document.querySelectorAll("[data-accent]").forEach((el) => {
     el.addEventListener("mouseenter", () => root.style.setProperty("--accent", el.dataset.accent));
-    el.addEventListener("mouseleave", () => root.style.setProperty("--accent", "#fa801e"));
+    el.addEventListener("mouseleave", () => root.style.setProperty("--accent", mood.accent));
   });
 
   // scroll reveal
