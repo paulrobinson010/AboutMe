@@ -823,6 +823,103 @@
   footer .foot-row a { color: var(--muted); text-decoration: none; transition: color 0.3s; }
   footer .foot-row a:hover { color: var(--ink); }
 
+  /* ---------- the oche: hidden darts range (click the board) ---------- */
+  .t-darts .preview img.board, .t-darts .mark { cursor: pointer; }
+  .oche {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: radial-gradient(1100px 600px at 50% -10%, #11271a, #060e0a) #060e0a;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: contain;
+  }
+  .oche.open { display: flex; }
+  .oche-top {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: max(18px, env(safe-area-inset-top)) 20px 6px;
+  }
+  .oche-top h3 { font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.15rem; text-transform: uppercase; color: #efe4c4; }
+  .oche-top .tally { color: #9fb6a6; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .oche-top .tally b { color: #28c46c; font-size: 1rem; }
+  .oche-close {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    right: 16px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 1px solid #2a5238;
+    background: transparent;
+    color: #efe4c4;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+  .oche .board-wrap { position: relative; width: min(62vmin, 400px); margin-top: 1vh; flex-shrink: 0; }
+  .oche .board-wrap img { width: 100%; display: block; filter: drop-shadow(0 16px 44px rgba(0, 0, 0, 0.6)); }
+  .oche .pin {
+    position: absolute;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: #f4c952;
+    border: 2px solid #06121a;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 12px rgba(244, 201, 82, 0.6);
+    pointer-events: none;
+  }
+  .oche .callout {
+    min-height: 2.4em;
+    margin-top: 10px;
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.1rem, 3.4vw, 1.7rem);
+    text-transform: uppercase;
+    color: #28c46c;
+    text-align: center;
+  }
+  .oche .lane { flex: 1; width: 100%; position: relative; min-height: 130px; }
+  .oche .hint {
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    color: #9fb6a6;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .oche .dart {
+    position: absolute;
+    left: 50%; bottom: max(5vh, env(safe-area-inset-bottom));
+    width: 30px; height: 104px;
+    margin-left: -15px;
+    will-change: transform;
+    pointer-events: none;
+  }
+  .oche .power {
+    position: absolute;
+    right: 18px; bottom: max(5vh, env(safe-area-inset-bottom));
+    width: 6px; height: 34vh;
+    border-radius: 100px;
+    background: #16301f;
+    overflow: hidden;
+  }
+  .oche .power i {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 0%;
+    background: linear-gradient(#e0473f, #f4c952, #28c46c);
+    border-radius: 100px;
+  }
+
   /* ---------- scroll reveal ---------- */
   .reveal {
     opacity: 0;
@@ -1121,6 +1218,29 @@
   </div>
 </footer>
 
+<div class="oche" id="oche" role="dialog" aria-label="Hidden darts game">
+  <div class="oche-top">
+    <h3>The Oche</h3>
+    <p class="tally"><b id="oche-total">0</b> from <span id="oche-darts">0</span> darts</p>
+  </div>
+  <button class="oche-close" id="oche-close" aria-label="Close">✕</button>
+  <div class="board-wrap" id="oche-board-wrap">
+    <img src="assets/dartboard.svg" alt="Dartboard" draggable="false">
+  </div>
+  <p class="callout" id="oche-callout">Press, drag up, let fly</p>
+  <div class="lane" id="oche-lane">
+    <p class="hint">Hold anywhere · drag up · release</p>
+    <div class="power"><i id="oche-power"></i></div>
+    <svg class="dart" id="oche-dart" viewBox="0 0 30 104" aria-hidden="true">
+      <path d="M15 0 L19 16 L11 16 Z" fill="#e0473f"/>
+      <rect x="13" y="14" width="4" height="58" rx="2" fill="#efe4c4"/>
+      <path d="M13 70 L4 96 L13 88 Z" fill="#28c46c"/>
+      <path d="M17 70 L26 96 L17 88 Z" fill="#28c46c"/>
+      <rect x="13.4" y="86" width="3.2" height="18" rx="1.6" fill="#9fb6a6"/>
+    </svg>
+  </div>
+</div>
+
 <script>
   // custom cursor
   const cursor = document.querySelector(".cursor");
@@ -1166,6 +1286,106 @@
   document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 
   document.getElementById("year").textContent = new Date().getFullYear();
+
+  // ---------- the oche: click the dartboard to enter the hidden range ----------
+  (() => {
+    const oche = document.getElementById("oche");
+    const wrap = document.getElementById("oche-board-wrap");
+    const dart = document.getElementById("oche-dart");
+    const powerBar = document.getElementById("oche-power");
+    const callout = document.getElementById("oche-callout");
+    const totalEl = document.getElementById("oche-total");
+    const dartsEl = document.getElementById("oche-darts");
+    // standard board numbering, clockwise from the top sector
+    const RING = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+    let total = 0, darts = 0, drag = null, inFlight = false;
+
+    const open = (e) => { e.preventDefault(); e.stopPropagation(); oche.classList.add("open"); document.body.style.overflow = "hidden"; };
+    const close = () => { oche.classList.remove("open"); document.body.style.overflow = ""; };
+    document.querySelectorAll(".t-darts .preview img.board, .t-darts .mark").forEach((el) => el.addEventListener("click", open));
+    document.getElementById("oche-close").addEventListener("click", close);
+    window.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+
+    const setDart = (x, tilt) => { dart.style.transform = `translateX(${x}px) rotate(${tilt}deg)`; };
+
+    oche.addEventListener("pointerdown", (e) => {
+      if (inFlight || e.target.closest(".oche-close")) return;
+      drag = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY };
+      oche.setPointerCapture && oche.setPointerCapture(e.pointerId);
+    });
+    oche.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      drag.x = e.clientX; drag.y = e.clientY;
+      const pull = Math.max(0, drag.y0 - drag.y);
+      const power = Math.min(1.35, pull / (innerHeight * 0.38));
+      powerBar.style.height = Math.min(100, power * 82) + "%";
+      setDart(drag.x - drag.x0, (drag.x - drag.x0) * 0.06);
+    });
+    const endDrag = () => {
+      if (!drag) return null;
+      const d = drag; drag = null;
+      powerBar.style.height = "0%";
+      return d;
+    };
+    oche.addEventListener("pointercancel", () => { endDrag(); setDart(0, 0); });
+    oche.addEventListener("pointerup", (e) => {
+      const d = endDrag();
+      if (!d || inFlight) return;
+      const pull = d.y0 - d.y;
+      if (pull < 50) { setDart(0, 0); return; } // not a real throw
+      inFlight = true;
+      const power = Math.min(1.35, pull / (innerHeight * 0.38));
+      const board = wrap.getBoundingClientRect();
+      const cx = board.left + board.width / 2;
+      const cy = board.top + board.height / 2;
+      const R = board.width / 2; // = 200 SVG units
+      // aim: finger's horizontal position steers, power decides height
+      const wobble = (0.18 + Math.abs(power - 1) * 0.9) * R * 0.5;
+      const jx = (Math.random() + Math.random() - 1) * wobble;
+      const jy = (Math.random() + Math.random() - 1) * wobble;
+      const tx = cx + (d.x - innerWidth / 2) * 0.9 + jx;
+      const ty = cy - (power - 1) * R * 2.4 + jy;
+      // fly the dart there
+      const dartBox = dart.getBoundingClientRect();
+      const fromX = dartBox.left + dartBox.width / 2;
+      const fromY = dartBox.top + dartBox.height * 0.1;
+      dart.style.transition = "transform 0.42s cubic-bezier(0.25, 0.8, 0.4, 1)";
+      dart.style.transform = `translate(${tx - fromX}px, ${ty - fromY}px) scale(0.42) rotate(${jx * 0.15}deg)`;
+      setTimeout(() => {
+        // score it in SVG units
+        const ux = ((tx - cx) / R) * 200;
+        const uy = ((ty - cy) / R) * 200;
+        const dist = Math.hypot(ux, uy);
+        const deg = ((Math.atan2(ux, -uy) * 180) / Math.PI + 360) % 360;
+        const num = RING[Math.floor(((deg + 9) % 360) / 18)];
+        let score = 0, say = "";
+        if (dist <= 11) { score = 50; say = "BULLSEYE — 50!"; }
+        else if (dist <= 24) { score = 25; say = "Outer bull — 25"; }
+        else if (dist <= 88) { score = num; say = num + ""; }
+        else if (dist <= 100) { score = num * 3; say = "TREBLE " + num + " — " + score + "!"; }
+        else if (dist <= 146) { score = num; say = num + ""; }
+        else if (dist <= 158) { score = num * 2; say = "Double " + num + " — " + score; }
+        else if (dist <= 198) { say = "Wire! No score"; }
+        else { say = ["Off the board!", "The wall has it", "Mind the pint!"][Math.floor(Math.random() * 3)]; }
+        if (dist <= 198) {
+          const pin = document.createElement("i");
+          pin.className = "pin";
+          pin.style.left = ((tx - board.left) / board.width) * 100 + "%";
+          pin.style.top = ((ty - board.top) / board.height) * 100 + "%";
+          wrap.appendChild(pin);
+          if (wrap.querySelectorAll(".pin").length > 9) wrap.querySelector(".pin").remove();
+        }
+        total += score; darts += 1;
+        totalEl.textContent = total;
+        dartsEl.textContent = darts;
+        callout.textContent = say;
+        callout.style.color = score >= 40 ? "#f4c952" : score > 0 ? "#28c46c" : "#e0473f";
+        dart.style.transition = "none";
+        setDart(0, 0);
+        inFlight = false;
+      }, 440);
+    });
+  })();
 </script>
 
 </body>
