@@ -885,7 +885,59 @@
     color: #28c46c;
     text-align: center;
   }
-  .oche .lane { flex: 1; width: 100%; position: relative; min-height: 130px; }
+  .oche .callout { min-height: 1.6em; margin-top: 6px; }
+  .oche .chalk {
+    display: flex;
+    align-items: center;
+    gap: clamp(16px, 4vw, 36px);
+    margin-top: 8px;
+    padding: 12px clamp(16px, 4vw, 28px);
+    background: #14201b;
+    border: 1px solid #2a5238;
+    border-radius: 14px;
+    box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.45);
+  }
+  .oche .chalk-rem { text-align: center; }
+  .oche .chalk-rem span {
+    display: block;
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    line-height: 1;
+    color: #efe4c4;
+  }
+  .oche .chalk-rem em {
+    font-style: normal;
+    font-size: 0.62rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #9fb6a6;
+  }
+  .oche .chalk-visit { display: flex; gap: 8px; }
+  .oche .chalk-visit i {
+    font-style: normal;
+    min-width: 44px;
+    text-align: center;
+    padding: 5px 8px;
+    border-bottom: 2px dashed #2a5238;
+    font-family: "Syne", sans-serif;
+    font-weight: 700;
+    color: #efe4c4;
+    transform: rotate(-1.2deg);
+  }
+  .oche .chalk-visit i:nth-child(2) { transform: rotate(0.8deg); }
+  .oche .chalk-visit i:nth-child(3) { transform: rotate(-0.5deg); }
+  .oche .chalk-hist {
+    margin-top: 8px;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: #9fb6a6;
+    max-width: min(60vw, 320px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .oche .lane { flex: 1; width: 100%; position: relative; min-height: 110px; }
   .oche .hint {
     position: absolute;
     top: 8px; left: 50%;
@@ -1221,13 +1273,20 @@
 <div class="oche" id="oche" role="dialog" aria-label="Hidden darts game">
   <div class="oche-top">
     <h3>The Oche</h3>
-    <p class="tally"><b id="oche-total">0</b> from <span id="oche-darts">0</span> darts</p>
+    <p class="tally">Legs <b id="oche-legs">0</b> &nbsp;·&nbsp; darts <b id="oche-darts">0</b></p>
   </div>
   <button class="oche-close" id="oche-close" aria-label="Close">✕</button>
   <div class="board-wrap" id="oche-board-wrap">
     <img src="assets/dartboard.svg" alt="Dartboard" draggable="false">
   </div>
-  <p class="callout" id="oche-callout">Press, drag up, let fly</p>
+  <p class="callout" id="oche-callout">501 up. Finish on a double.</p>
+  <div class="chalk">
+    <div class="chalk-rem"><span id="oche-rem">501</span><em>required</em></div>
+    <div class="chalk-right">
+      <div class="chalk-visit" id="oche-visit"><i>–</i><i>–</i><i>–</i></div>
+      <p class="chalk-hist" id="oche-hist">&nbsp;</p>
+    </div>
+  </div>
   <div class="lane" id="oche-lane">
     <p class="hint">Hold anywhere · drag up · release</p>
     <div class="power"><i id="oche-power"></i></div>
@@ -1288,17 +1347,41 @@
   document.getElementById("year").textContent = new Date().getFullYear();
 
   // ---------- the oche: click the dartboard to enter the hidden range ----------
+  // 501 up, three-dart visits, finish on a double — busts revert the visit
   (() => {
     const oche = document.getElementById("oche");
     const wrap = document.getElementById("oche-board-wrap");
     const dart = document.getElementById("oche-dart");
     const powerBar = document.getElementById("oche-power");
     const callout = document.getElementById("oche-callout");
-    const totalEl = document.getElementById("oche-total");
+    const remEl = document.getElementById("oche-rem");
+    const visitEl = document.getElementById("oche-visit");
+    const histEl = document.getElementById("oche-hist");
+    const legsEl = document.getElementById("oche-legs");
     const dartsEl = document.getElementById("oche-darts");
     // standard board numbering, clockwise from the top sector
     const RING = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
-    let total = 0, darts = 0, drag = null, inFlight = false;
+    let drag = null, inFlight = false, clearTimer = null;
+    let remaining = 501, turnStart = 501, visit = [], legDarts = 0, legs = 0, hist = [];
+
+    const render = () => {
+      remEl.textContent = remaining;
+      [...visitEl.children].forEach((slot, i) => { slot.textContent = visit[i] ? visit[i].label : "\u2013"; });
+      histEl.innerHTML = hist.length ? hist.slice(-8).join(" \u00b7 ") : "&nbsp;";
+      legsEl.textContent = legs;
+      dartsEl.textContent = legDarts;
+    };
+    const speak = (text, tone) => {
+      callout.textContent = text;
+      callout.style.color = tone === "hot" ? "#f4c952" : tone === "bad" ? "#e0473f" : "#28c46c";
+    };
+    const scheduleVisitClear = () => {
+      clearTimer = setTimeout(() => { visit = []; clearTimer = null; render(); }, 1100);
+    };
+    const flushVisit = () => {
+      if (clearTimer) { clearTimeout(clearTimer); clearTimer = null; visit = []; render(); }
+    };
+    const newLeg = () => { remaining = 501; turnStart = 501; visit = []; legDarts = 0; hist = []; render(); };
 
     const open = (e) => { e.preventDefault(); e.stopPropagation(); oche.classList.add("open"); document.body.style.overflow = "hidden"; };
     const close = () => { oche.classList.remove("open"); document.body.style.overflow = ""; };
@@ -1310,6 +1393,7 @@
 
     oche.addEventListener("pointerdown", (e) => {
       if (inFlight || e.target.closest(".oche-close")) return;
+      flushVisit();
       drag = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY };
       oche.setPointerCapture && oche.setPointerCapture(e.pointerId);
     });
@@ -1358,13 +1442,13 @@
         const dist = Math.hypot(ux, uy);
         const deg = ((Math.atan2(ux, -uy) * 180) / Math.PI + 360) % 360;
         const num = RING[Math.floor(((deg + 9) % 360) / 18)];
-        let score = 0, say = "";
-        if (dist <= 11) { score = 50; say = "BULLSEYE — 50!"; }
-        else if (dist <= 24) { score = 25; say = "Outer bull — 25"; }
-        else if (dist <= 88) { score = num; say = num + ""; }
-        else if (dist <= 100) { score = num * 3; say = "TREBLE " + num + " — " + score + "!"; }
-        else if (dist <= 146) { score = num; say = num + ""; }
-        else if (dist <= 158) { score = num * 2; say = "Double " + num + " — " + score; }
+        let score = 0, say = "", label = "0", isDouble = false;
+        if (dist <= 11) { score = 50; isDouble = true; say = "BULLSEYE \u2014 50!"; label = "50"; }
+        else if (dist <= 24) { score = 25; say = "Outer bull \u2014 25"; label = "25"; }
+        else if (dist <= 88) { score = num; say = num + ""; label = "" + num; }
+        else if (dist <= 100) { score = num * 3; say = "TREBLE " + num + " \u2014 " + score + "!"; label = "T" + num; }
+        else if (dist <= 146) { score = num; say = num + ""; label = "" + num; }
+        else if (dist <= 158) { score = num * 2; isDouble = true; say = "Double " + num + " \u2014 " + score; label = "D" + num; }
         else if (dist <= 198) { say = "Wire! No score"; }
         else { say = ["Off the board!", "The wall has it", "Mind the pint!"][Math.floor(Math.random() * 3)]; }
         if (dist <= 198) {
@@ -1375,11 +1459,35 @@
           wrap.appendChild(pin);
           if (wrap.querySelectorAll(".pin").length > 9) wrap.querySelector(".pin").remove();
         }
-        total += score; darts += 1;
-        totalEl.textContent = total;
-        dartsEl.textContent = darts;
-        callout.textContent = say;
-        callout.style.color = score >= 40 ? "#f4c952" : score > 0 ? "#28c46c" : "#e0473f";
+        legDarts += 1;
+        const newRem = remaining - score;
+        if (newRem < 0 || newRem === 1 || (newRem === 0 && !isDouble)) {
+          // bust: the visit never happened
+          remaining = turnStart;
+          hist.push("BUST");
+          visit.push({ label: label });
+          speak("BUST \u2014 back to " + remaining, "bad");
+          scheduleVisitClear();
+        } else if (newRem === 0) {
+          remaining = 0;
+          visit.push({ label: label });
+          legs += 1;
+          speak("GAME SHOT \u2014 501 in " + legDarts + " darts!", "hot");
+          render();
+          setTimeout(newLeg, 1800);
+        } else {
+          remaining = newRem;
+          visit.push({ label: label, score: score });
+          speak(say, score >= 40 ? "hot" : score > 0 ? "good" : "bad");
+          if (visit.length === 3) {
+            const t = visit.reduce((sum, v) => sum + (v.score || 0), 0);
+            hist.push(t);
+            turnStart = remaining;
+            if (t === 180) speak("ONE HUNDRED AND EIGHTYYY!", "hot");
+            scheduleVisitClear();
+          }
+        }
+        render();
         dart.style.transition = "none";
         setDart(0, 0);
         inFlight = false;
