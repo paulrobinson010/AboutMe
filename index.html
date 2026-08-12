@@ -556,6 +556,13 @@
     border: none;
     border-radius: 50%;
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+    /* the preview column is pointer-events:none so fans don't block the
+       row link — the board opts back in, it IS the door to the Oche */
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .t-darts:hover .preview img.board:hover {
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6), 0 0 0 4px var(--c-darts);
   }
   .t-darts:hover .preview img.board { animation: spin 30s linear infinite; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
