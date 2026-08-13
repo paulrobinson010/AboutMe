@@ -1501,12 +1501,17 @@
       const jy = (Math.random() + Math.random() - 1) * wobble;
       const tx = a.x + driftX + jx;
       const ty = a.y + jy;
-      // fly the dart there
+      // fly the dart there — the rect below is measured with the drag's
+      // translateX still applied, but the flight transform replaces that
+      // translate, so subtract the drag offset to get the resting origin
+      // (otherwise sideways throws land the dart offset from the pin)
+      const dragX = d.x - d.x0;
       const dartBox = dart.getBoundingClientRect();
-      const fromX = dartBox.left + dartBox.width / 2;
+      const fromX = dartBox.left + dartBox.width / 2 - dragX;
       const fromY = dartBox.top + dartBox.height * 0.1;
+      const lean = Math.max(-20, Math.min(20, (tx - fromX - dragX) * 0.03));
       dart.style.transition = "transform 0.42s cubic-bezier(0.25, 0.8, 0.4, 1)";
-      dart.style.transform = `translate(${tx - fromX}px, ${ty - fromY}px) scale(0.42) rotate(${jx * 0.15}deg)`;
+      dart.style.transform = `translate(${tx - fromX}px, ${ty - fromY}px) scale(0.42) rotate(${lean}deg)`;
       setTimeout(() => {
         // score it in SVG units
         const ux = ((tx - cx) / R) * 200;
