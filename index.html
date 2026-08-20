@@ -326,7 +326,7 @@
   .work-list { border-top: 1px solid var(--line); }
   .work-item {
     display: grid;
-    grid-template-columns: auto 1fr minmax(0, 340px) auto;
+    grid-template-columns: auto 1fr minmax(0, calc(340px - var(--shift))) auto;
     align-items: center;
     gap: clamp(18px, 3vw, 44px);
     padding: clamp(26px, 4.5vw, 54px) clamp(8px, 1.5vw, 20px);
@@ -335,7 +335,13 @@
     color: var(--ink);
     position: relative;
     isolation: isolate;
-    transition: padding-left 0.5s var(--ease);
+    /* How far the row's content slides right on hover. It is a transform,
+       never padding — animating padding relayouts the whole row every frame,
+       which is what made row-to-row hovering feel jolty. The travel is
+       borrowed from the preview column and given back as body padding, so the
+       text measures exactly as it always did and nothing re-wraps mid-hover.
+       Zero on touch, where there is no hover to slide. */
+    --shift: 0px;
   }
   .work-item::before {
     content: "";
@@ -346,14 +352,24 @@
     opacity: 0;
     transition: opacity 0.5s var(--ease);
   }
-  .work-item:hover { padding-left: clamp(16px, 3vw, 44px); }
   .work-item:hover::before { opacity: 1; }
+  .work-item .body { padding-right: var(--shift); }
+  /* The slide itself, on pointer devices only. */
+  @media (hover: hover) {
+    .work-item { --shift: clamp(16px, 3vw, 44px); }
+    .work-item .idx, .work-item .body {
+      transition: transform 0.5s var(--ease), color 0.4s var(--ease);
+    }
+    .work-item:hover .idx, .work-item:hover .body { transform: translateX(var(--shift)); }
+  }
 
   .work-item .idx {
     font-size: clamp(0.75rem, 1vw, 0.9rem);
     letter-spacing: 0.16em;
     color: var(--muted);
-    transition: color 0.4s var(--ease);
+    /* transform rides along with the body's slide — this rule sits after the
+       hover block below, so it has to carry both or it wins and drops one */
+    transition: color 0.4s var(--ease), transform 0.5s var(--ease);
   }
   .work-item:hover .idx { color: var(--c); }
 
@@ -392,15 +408,21 @@
     text-transform: uppercase;
     line-height: 1;
     letter-spacing: -0.015em;
-    transition: transform 0.5s var(--ease);
-  }
-  .work-item:hover .body h3 { transform: translateX(6px); }
-  /* Brand-gradient titles on hover */
-  .work-item:hover .body h3 {
-    background: var(--g);
+    /* The brand gradient sits behind the glyphs the whole time, hidden by
+       opaque ink. Hover fades the ink away to reveal it, so the title melts
+       into colour instead of snapping. */
+    background-image: var(--g);
     -webkit-background-clip: text;
     background-clip: text;
+    color: var(--ink);
+    -webkit-text-fill-color: var(--ink);
+    transition: transform 0.5s var(--ease), color 0.45s var(--ease),
+                -webkit-text-fill-color 0.45s var(--ease);
+  }
+  .work-item:hover .body h3 {
+    transform: translateX(6px);
     color: transparent;
+    -webkit-text-fill-color: transparent;
   }
 
   .work-item .meta {
@@ -453,23 +475,33 @@
     border: 1px solid var(--line);
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
     opacity: 0;
+    /* stacking is fixed up front — flipping position/z-index on hover would
+       force a layout mid-animation */
+    position: relative;
     transform: translateY(26px) rotate(0deg) scale(0.85);
-    transition: opacity 0.5s var(--ease), transform 0.6s var(--ease);
+    transition: opacity 0.45s var(--ease), transform 0.5s var(--ease),
+                border-color 0.45s var(--ease), box-shadow 0.45s var(--ease);
   }
   .work-item .preview img + img { margin-left: -52px; }
   .work-item .preview img:nth-child(1) { transition-delay: 0s; }
-  .work-item .preview img:nth-child(2) { transition-delay: 0.05s; }
-  .work-item .preview img:nth-child(3) { transition-delay: 0.1s; }
-  .work-item .preview img:nth-child(4) { transition-delay: 0.15s; }
-  .work-item .preview img:nth-child(5) { transition-delay: 0.2s; }
-  .work-item .preview img:nth-child(6) { transition-delay: 0.25s; }
+  .work-item .preview img:nth-child(2) { transition-delay: 0.035s; z-index: 2; }
+  .work-item .preview img:nth-child(3) { transition-delay: 0.07s; z-index: 3; }
+  .work-item .preview img:nth-child(4) { transition-delay: 0.105s; z-index: 2; }
+  .work-item .preview img:nth-child(5) { transition-delay: 0.14s; }
+  .work-item .preview img:nth-child(6) { transition-delay: 0.175s; }
   .work-item:hover .preview img { opacity: 1; }
   .work-item:hover .preview img:nth-child(1) { transform: translateY(2px) rotate(-9deg) scale(1); }
-  .work-item:hover .preview img:nth-child(2) { transform: translateY(-5px) rotate(-4deg) scale(1.02); z-index: 2; position: relative; }
-  .work-item:hover .preview img:nth-child(3) { transform: translateY(-9px) rotate(0deg) scale(1.04); z-index: 3; position: relative; }
-  .work-item:hover .preview img:nth-child(4) { transform: translateY(-5px) rotate(4deg) scale(1.02); z-index: 2; position: relative; }
+  .work-item:hover .preview img:nth-child(2) { transform: translateY(-5px) rotate(-4deg) scale(1.02); }
+  .work-item:hover .preview img:nth-child(3) { transform: translateY(-9px) rotate(0deg) scale(1.04); }
+  .work-item:hover .preview img:nth-child(4) { transform: translateY(-5px) rotate(4deg) scale(1.02); }
   .work-item:hover .preview img:nth-child(5) { transform: translateY(2px) rotate(8deg) scale(1); }
   .work-item:hover .preview img:nth-child(6) { transform: translateY(6px) rotate(12deg) scale(0.98); }
+  /* While the cursor is anywhere in the list, hand the moving parts to the
+     GPU so scaled screenshots aren't re-rasterised frame by frame. Dropped
+     again on the way out so the layers don't linger. */
+  .work-list.hot .work-item .idx,
+  .work-list.hot .work-item .body,
+  .work-list.hot .work-item .preview img { will-change: transform, opacity; }
   .work-item .preview img.wide { height: 150px; }
   .work-item .preview img.sq { height: 130px; }
   .work-item .preview img.small { height: 120px; align-self: flex-end; }
@@ -507,13 +539,6 @@
     box-shadow: 0 0 26px color-mix(in srgb, var(--c-gait) 55%, transparent),
                 0 0 60px color-mix(in srgb, #ff2e9e 32%, transparent);
   }
-  .t-gait:hover h3 {
-    background: var(--g-gait);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-  }
   .gait-fork {
     width: 34px;
     height: 26px;
@@ -545,6 +570,11 @@
   @media (prefers-reduced-motion: reduce) {
     .gait-fork, .gait-fork path, .gait-fork .node { transition: none; }
   }
+  /* the phones are the second door into the arcade — the preview column is
+     pointer-events:none so the fan doesn't eat the row link, so opt back in */
+  .t-game .preview img { pointer-events: auto; cursor: pointer; }
+  .t-game .preview img:hover { border-color: var(--c-game); }
+
   .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
   .work-item.t-xmarks { --c: var(--c-xmarks); --g: var(--g-xmarks); }
   /* Darts Scorer: a real board for a mark, and a slow spin on hover */
@@ -564,8 +594,12 @@
   .t-darts:hover .preview img.board:hover {
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6), 0 0 0 4px var(--c-darts);
   }
-  .t-darts:hover .preview img.board { animation: spin 30s linear infinite; }
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  /* The spin drives the standalone `rotate` property, not `transform` — an
+     animated transform would replace the fan's transform outright and snap
+     the board into place the instant you hover. */
+  .t-darts .preview img.board { animation: spin 30s linear infinite; animation-play-state: paused; }
+  .t-darts:hover .preview img.board { animation-play-state: running; }
+  @keyframes spin { from { rotate: 0deg; } to { rotate: 360deg; } }
   /* X-Marks: the lockup IS the title — big, tilted, and wobbly on hover */
   .t-xmarks .wordmark {
     height: clamp(96px, 24vw, 190px);
@@ -1012,6 +1046,287 @@
     border-radius: 100px;
   }
 
+  /* ---------- the arcade: three of It's Just a Game, playable here ---------- */
+  .arcade {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: radial-gradient(1100px 620px at 50% -10%, #23103a, #08060f) #08060f;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: contain;
+    overflow-y: auto;
+    color: #efe9f5;
+  }
+  .arcade.open { display: flex; }
+  .arcade-head {
+    width: 100%;
+    max-width: 660px;
+    text-align: center;
+    padding: max(22px, env(safe-area-inset-top)) 56px 0;
+    margin-top: auto;
+  }
+  /* the intro steps aside once you pick a game — the board needs the room */
+  .arcade.playing .arcade-head { display: none; }
+  .arcade-head h3 {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.3rem, 4.6vw, 1.9rem);
+    text-transform: uppercase;
+    background: var(--g-game);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .arcade-head p { margin-top: 8px; font-size: 0.82rem; line-height: 1.5; color: #a79fbb; }
+  .arcade-head a { color: #33d9ff; }
+  .arcade-close {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    right: 16px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 1px solid #4a3a63;
+    background: transparent;
+    color: #efe9f5;
+    font-size: 1.1rem;
+    cursor: pointer;
+    z-index: 3;
+  }
+  .arcade-menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    width: min(100%, 660px);
+    padding: 26px 20px max(26px, env(safe-area-inset-bottom));
+    margin-bottom: auto;
+  }
+  .ag-card {
+    display: block;
+    text-align: left;
+    padding: 18px 16px 16px;
+    border-radius: 18px;
+    border: 1px solid #3b2f52;
+    background: linear-gradient(160deg, rgba(51, 217, 255, 0.08), rgba(255, 77, 204, 0.08));
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: transform 0.35s var(--ease), border-color 0.35s var(--ease), box-shadow 0.35s var(--ease);
+  }
+  .ag-card:hover, .ag-card:focus-visible {
+    transform: translateY(-4px);
+    border-color: #ff4dcc;
+    box-shadow: 0 16px 40px rgba(255, 77, 204, 0.22);
+    outline: none;
+  }
+  .ag-card svg { width: 46px; height: 46px; display: block; margin-bottom: 12px; }
+  .ag-card b {
+    display: block;
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+  }
+  .ag-card i { display: block; margin-top: 5px; font-style: normal; font-size: 0.8rem; color: #a79fbb; line-height: 1.45; }
+  .arcade-game {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: min(100%, 660px);
+    padding: 18px 20px max(24px, env(safe-area-inset-bottom));
+    margin: auto 0;
+  }
+  .arcade-game.on { display: flex; }
+  .ag-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding-right: 44px;
+  }
+  .ag-back {
+    border: 1px solid #3b2f52;
+    background: transparent;
+    color: #a79fbb;
+    font: inherit;
+    font-size: 0.76rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 7px 13px;
+    border-radius: 100px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+  .ag-back:hover { color: #efe9f5; border-color: #ff4dcc; }
+  .ag-bar b {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+  }
+  .ag-bar span { margin-left: auto; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: #a79fbb; }
+  .ag-how { margin-top: 12px; font-size: 0.85rem; color: #a79fbb; text-align: center; min-height: 1.4em; }
+  .ag-stage {
+    position: relative;
+    margin-top: 14px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: min(66vmin, 380px);
+  }
+  .ag-result {
+    margin-top: 12px;
+    min-height: 2.6em;
+    text-align: center;
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(1rem, 3.4vw, 1.35rem);
+    text-transform: uppercase;
+    line-height: 1.25;
+    color: #33d9ff;
+  }
+  .ag-result em { display: block; font-style: normal; font-weight: 500; font-family: "Space Grotesk", sans-serif; font-size: 0.8rem; text-transform: none; letter-spacing: 0; color: #a79fbb; margin-top: 4px; }
+  .ag-go {
+    margin-top: 6px;
+    border: none;
+    border-radius: 100px;
+    padding: 13px 30px;
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #10071a;
+    background: var(--g-game);
+    cursor: pointer;
+    transition: transform 0.25s var(--ease), filter 0.25s var(--ease);
+  }
+  .ag-go:hover { transform: translateY(-2px); filter: brightness(1.08); }
+  .ag-go[hidden] { display: none; }
+
+  /* Perfect Circle */
+  #pc-canvas {
+    width: min(72vmin, 380px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 1px dashed #3b2f52;
+    background: rgba(255, 255, 255, 0.02);
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  /* Colour Clash */
+  .cc-word {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.6rem, 13vw, 5rem);
+    text-transform: uppercase;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    min-height: 1.1em;
+  }
+  .cc-swatches { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: clamp(22px, 6vw, 40px); }
+  .cc-swatches button {
+    width: clamp(56px, 15vw, 74px);
+    height: clamp(56px, 15vw, 74px);
+    border-radius: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.14);
+    cursor: pointer;
+    transition: transform 0.18s var(--ease), border-color 0.18s var(--ease);
+  }
+  .cc-swatches button:hover { transform: translateY(-3px); border-color: #fff; }
+  .cc-bar { width: min(100%, 320px); height: 6px; border-radius: 100px; background: #2a2138; overflow: hidden; margin-bottom: clamp(18px, 5vw, 30px); }
+  .cc-bar i { display: block; height: 100%; width: 100%; background: var(--g-game); transform-origin: left; }
+  .cc-score { font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.6rem; margin-bottom: 6px; }
+  .ag-stage.wrong { animation: agShake 0.4s var(--ease); }
+  @keyframes agShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-9px); }
+    50% { transform: translateX(7px); }
+    75% { transform: translateX(-4px); }
+  }
+
+  /* Ten Seconds */
+  .ts-clock {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(3rem, 17vw, 6rem);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: #efe9f5;
+  }
+  /* the hidden clock: three drawn dots, not typed ones — Syne has no
+     middle-dot glyph and rendered them as tofu */
+  .ts-clock.hidden-count { display: flex; gap: 16px; align-items: center; justify-content: center; min-height: 1em; }
+  .ts-clock i {
+    width: clamp(12px, 3.4vw, 18px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #ff4dcc;
+    animation: tsPulse 1.4s var(--ease) infinite;
+  }
+  .ts-clock i:nth-child(2) { animation-delay: 0.18s; }
+  .ts-clock i:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes tsPulse {
+    0%, 100% { opacity: 0.25; transform: scale(0.82); }
+    45% { opacity: 1; transform: scale(1); }
+  }
+  .ts-tap {
+    margin-top: clamp(20px, 6vw, 34px);
+    width: clamp(130px, 38vw, 180px);
+    height: clamp(130px, 38vw, 180px);
+    border-radius: 50%;
+    border: 2px solid #ff4dcc;
+    background: radial-gradient(circle at 50% 35%, rgba(255, 77, 204, 0.28), rgba(255, 77, 204, 0.06));
+    color: #efe9f5;
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: transform 0.15s var(--ease);
+  }
+  .ts-tap:active { transform: scale(0.95); }
+  .ts-tap[disabled] { opacity: 0.35; cursor: default; }
+
+  /* the chip that opens a hidden game from a work row */
+  .work-item .play-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--bg);
+    background: var(--c);
+    border: 1px solid var(--c);
+    border-radius: 100px;
+    padding: 5px 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  }
+  .work-item .play-chip::before {
+    content: "";
+    width: 0; height: 0;
+    border-left: 7px solid currentColor;
+    border-top: 4.5px solid transparent;
+    border-bottom: 4.5px solid transparent;
+  }
+  .work-item .play-chip:hover, .work-item .play-chip:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--c) 45%, transparent);
+    outline: none;
+  }
+
   /* ---------- scroll reveal ---------- */
   .reveal {
     opacity: 0;
@@ -1076,7 +1391,7 @@
         <span class="idx">/01</span>
         <div class="body">
           <div class="title-row">
-            <img class="mark" src="assets/tread-logo.png" alt="" loading="lazy">
+            <img class="mark" src="assets/tread-logo.png" alt="" loading="lazy" decoding="async">
             <h3>TreadGame</h3>
           </div>
           <div class="meta">
@@ -1086,10 +1401,10 @@
           <p class="desc"><strong>Mini-games for your treadmill.</strong> Cast to a TV, pick from a roster of mini-games, and the action moves with your stride — the faster you run, the faster your runner goes. Optional watch controls; the clock takes care of itself.</p>
         </div>
         <div class="preview" aria-hidden="true">
-          <img class="sq" src="assets/tread-shot-1.webp" alt="" loading="lazy">
-          <img class="sq" src="assets/tread-shot-2.webp" alt="" loading="lazy">
-          <img class="sq" src="assets/tread-shot-3.webp" alt="" loading="lazy">
-          <img class="small" src="assets/tread-watch.webp" alt="" loading="lazy">
+          <img class="sq" src="assets/tread-shot-1.webp" alt="" loading="lazy" decoding="async">
+          <img class="sq" src="assets/tread-shot-2.webp" alt="" loading="lazy" decoding="async">
+          <img class="sq" src="assets/tread-shot-3.webp" alt="" loading="lazy" decoding="async">
+          <img class="small" src="assets/tread-watch.webp" alt="" loading="lazy" decoding="async">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
@@ -1098,7 +1413,7 @@
         <span class="idx">/02</span>
         <div class="body">
           <div class="title-row">
-            <img class="mark" src="assets/cycle-logo.png" alt="" loading="lazy" style="background: transparent; object-fit: contain;">
+            <img class="mark" src="assets/cycle-logo.png" alt="" loading="lazy" decoding="async" style="background: transparent; object-fit: contain;">
             <h3>CycleHUD</h3>
           </div>
           <div class="meta">
@@ -1108,11 +1423,11 @@
           <p class="desc"><strong>Eyes on the road. Radar on your wrist.</strong> Built because my bike radar's own app was terrible — a radar-first HUD for the phone you already have, not another cycle computer. Every car behind you on screen, haptics on your wrist, and the ghost of your best ride to race.</p>
         </div>
         <div class="preview" aria-hidden="true">
-          <img src="assets/cycle-shot-1.webp" alt="" loading="lazy">
-          <img src="assets/cycle-shot-2.webp" alt="" loading="lazy">
-          <img src="assets/cycle-shot-4.webp" alt="" loading="lazy">
-          <img src="assets/cycle-shot-5.webp" alt="" loading="lazy">
-          <img class="small" src="assets/cycle-shot-3.webp" alt="" loading="lazy">
+          <img src="assets/cycle-shot-1.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/cycle-shot-2.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/cycle-shot-4.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/cycle-shot-5.webp" alt="" loading="lazy" decoding="async">
+          <img class="small" src="assets/cycle-shot-3.webp" alt="" loading="lazy" decoding="async">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
@@ -1121,22 +1436,22 @@
         <span class="idx">/03</span>
         <div class="body">
           <div class="title-row">
-            <img class="mark" src="assets/ijag-logo.png" alt="" loading="lazy">
+            <img class="mark" src="assets/ijag-logo.png" alt="" loading="lazy" decoding="async">
             <h3>It's Just a Game</h3>
           </div>
           <div class="meta">
-            <span class="tag">Party game</span><span class="tag">iOS · E2E encrypted</span><span class="tag">itsjustagame.robbo-online.uk</span>
+            <span class="tag">Party game</span><span class="tag">iOS · E2E encrypted</span><span class="tag">itsjustagame.robbo-online.uk</span><span class="play-chip" id="open-arcade" role="button" tabindex="0">Play three here</span>
           </div>
           <p class="season">For all-year-round fun</p>
           <p class="desc"><strong>The party game for everyone — invented by my five-year-old.</strong> Quick-fire mini games for family and friends, ages 8 to 80 — spin the wheel to pick who chooses each round, play, rematch. Simple, silly, brilliant fun on the phones you already have.</p>
         </div>
         <div class="preview" aria-hidden="true">
-          <img src="assets/ijag-shot-1.webp" alt="" loading="lazy">
-          <img src="assets/ijag-shot-4.webp" alt="" loading="lazy">
-          <img src="assets/ijag-shot-2.webp" alt="" loading="lazy">
-          <img src="assets/ijag-shot-5.webp" alt="" loading="lazy">
-          <img src="assets/ijag-shot-3.webp" alt="" loading="lazy">
-          <img src="assets/ijag-shot-6.webp" alt="" loading="lazy">
+          <img src="assets/ijag-shot-1.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/ijag-shot-4.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/ijag-shot-2.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/ijag-shot-5.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/ijag-shot-3.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/ijag-shot-6.webp" alt="" loading="lazy" decoding="async">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
@@ -1145,7 +1460,7 @@
         <span class="idx">/04</span>
         <div class="body">
           <div class="title-row">
-            <img class="wordmark" src="assets/xmarks-wordmark.webp" alt="X-Marks — treasure hunts, big adventures" loading="lazy">
+            <img class="wordmark" src="assets/xmarks-wordmark.webp" alt="X-Marks — treasure hunts, big adventures" loading="lazy" decoding="async">
           </div>
           <div class="meta">
             <span class="tag">GPS treasure hunts</span><span class="tag">iOS</span><span class="tag">x-marks.robbo-online.uk</span>
@@ -1154,11 +1469,11 @@
           <p class="desc"><strong>Made to make a family walk more fun for the kids.</strong> Drop points on a map, add a prize, send the hunt over iMessage or WhatsApp — then they track each X down with a compass and a phone that buzzes when they're close. It's amazing how many of the points are in beer gardens.</p>
         </div>
         <div class="preview" aria-hidden="true">
-          <img src="assets/xmarks-shot-1.webp" alt="" loading="lazy">
-          <img src="assets/xmarks-shot-2.webp" alt="" loading="lazy">
-          <img src="assets/xmarks-shot-3.webp" alt="" loading="lazy">
-          <img src="assets/xmarks-shot-4.webp" alt="" loading="lazy">
-          <img src="assets/xmarks-shot-5.webp" alt="" loading="lazy">
+          <img src="assets/xmarks-shot-1.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/xmarks-shot-2.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/xmarks-shot-3.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/xmarks-shot-4.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/xmarks-shot-5.webp" alt="" loading="lazy" decoding="async">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
@@ -1167,7 +1482,7 @@
         <span class="idx">/05</span>
         <div class="body">
           <div class="title-row">
-            <img class="mark" src="assets/gait-logo.png" alt="" loading="lazy">
+            <img class="mark" src="assets/gait-logo.png" alt="" loading="lazy" decoding="async">
             <h3>Gaitway</h3>
             <svg class="gait-fork" viewBox="0 0 34 26" aria-hidden="true">
               <path class="stem" d="M2 13 H16"/>
@@ -1183,10 +1498,10 @@
           <p class="desc"><strong>Walk or run — it works out which.</strong> A watch-first tracker that reads your gait from step cadence, pauses when you stop, and learns your local map as you go. Fifty metres before any junction you’ve run before, your wrist prices each way on: the stretch ahead, your own fastest pace over it, and the quickest way home. Plan a route from your own network on the phone and the watch calls the turns.</p>
         </div>
         <div class="preview" aria-hidden="true">
-          <img src="assets/gait-shot-1.webp" alt="" loading="lazy">
-          <img src="assets/gait-shot-2.webp" alt="" loading="lazy">
-          <img src="assets/gait-shot-3.webp" alt="" loading="lazy">
-          <img class="small" src="assets/gait-watch.webp" alt="" loading="lazy">
+          <img src="assets/gait-shot-1.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/gait-shot-2.webp" alt="" loading="lazy" decoding="async">
+          <img src="assets/gait-shot-3.webp" alt="" loading="lazy" decoding="async">
+          <img class="small" src="assets/gait-watch.webp" alt="" loading="lazy" decoding="async">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
@@ -1195,18 +1510,18 @@
         <span class="idx">/06</span>
         <div class="body">
           <div class="title-row">
-            <img class="mark" src="assets/dartboard.svg" alt="" loading="lazy">
+            <img class="mark" src="assets/dartboard.svg" alt="" loading="lazy" decoding="async">
             <h3>Darts Scorer</h3>
           </div>
           <div class="meta">
-            <span class="tag">Camera scorer</span><span class="tag">Runs in the browser</span><span class="tag">darts-scorer.robbo-online.uk</span>
+            <span class="tag">Camera scorer</span><span class="tag">Runs in the browser</span><span class="tag">darts-scorer.robbo-online.uk</span><span class="play-chip" id="open-oche" role="button" tabindex="0">Throw a few here</span>
           </div>
           <p class="season">For when exercise is done</p>
           <p class="desc"><strong>Point a camera at the board and it keeps score.</strong> Automatic dart detection, spoken announcements, full 501 down to 101 double-out plus free throw — everything on-device in the browser. No server, no uploads, no install.</p>
         </div>
         <div class="preview" aria-hidden="true">
-          <img class="board" src="assets/dartboard-numbered.svg" alt="" loading="lazy">
-          <img class="wide" src="assets/darts-shot-1.webp" alt="" loading="lazy">
+          <img class="board" src="assets/dartboard-numbered.svg" alt="" loading="lazy" decoding="async">
+          <img class="wide" src="assets/darts-shot-1.webp" alt="" loading="lazy" decoding="async">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
@@ -1240,19 +1555,19 @@
         </div>
       </div>
       <div class="spot-shots">
-        <img class="main reveal" src="assets/tread-play-1.webp" alt="TreadGame gameplay — Bank the Red, with live speed, pace and heart rate across the top" loading="lazy">
-        <img class="reveal" src="assets/tread-play-2.webp" alt="TreadGame gameplay — Coin Collector on the open grid" loading="lazy">
-        <img class="reveal" src="assets/tread-play-3.webp" alt="TreadGame gameplay — Arena round with the scoreboard" loading="lazy">
+        <img class="main reveal" src="assets/tread-play-1.webp" alt="TreadGame gameplay — Bank the Red, with live speed, pace and heart rate across the top" loading="lazy" decoding="async">
+        <img class="reveal" src="assets/tread-play-2.webp" alt="TreadGame gameplay — Coin Collector on the open grid" loading="lazy" decoding="async">
+        <img class="reveal" src="assets/tread-play-3.webp" alt="TreadGame gameplay — Arena round with the scoreboard" loading="lazy" decoding="async">
       </div>
       <div class="tile-marquee" aria-hidden="true">
         <div class="track">
-          <img src="assets/tile-beacons.webp" alt="" loading="lazy"><img src="assets/tile-bingo.webp" alt="" loading="lazy"><img src="assets/tile-capture-the-flag.webp" alt="" loading="lazy"><img src="assets/tile-clocks.webp" alt="" loading="lazy"><img src="assets/tile-courier.webp" alt="" loading="lazy"><img src="assets/tile-drift.webp" alt="" loading="lazy"><img src="assets/tile-escape.webp" alt="" loading="lazy"><img src="assets/tile-floodlight.webp" alt="" loading="lazy"><img src="assets/tile-hide-and-seek.webp" alt="" loading="lazy"><img src="assets/tile-hive.webp" alt="" loading="lazy"><img src="assets/tile-beacons.webp" alt="" loading="lazy"><img src="assets/tile-bingo.webp" alt="" loading="lazy"><img src="assets/tile-capture-the-flag.webp" alt="" loading="lazy"><img src="assets/tile-clocks.webp" alt="" loading="lazy"><img src="assets/tile-courier.webp" alt="" loading="lazy"><img src="assets/tile-drift.webp" alt="" loading="lazy"><img src="assets/tile-escape.webp" alt="" loading="lazy"><img src="assets/tile-floodlight.webp" alt="" loading="lazy"><img src="assets/tile-hide-and-seek.webp" alt="" loading="lazy"><img src="assets/tile-hive.webp" alt="" loading="lazy">
+          <img src="assets/tile-beacons.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-bingo.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-capture-the-flag.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-clocks.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-courier.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-drift.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-escape.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-floodlight.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-hide-and-seek.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-hive.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-beacons.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-bingo.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-capture-the-flag.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-clocks.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-courier.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-drift.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-escape.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-floodlight.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-hide-and-seek.webp" alt="" loading="lazy" decoding="async"><img src="assets/tile-hive.webp" alt="" loading="lazy" decoding="async">
         </div>
         <p class="tile-cap">Beacons · Bingo · Capture the Flag · Clocks · Courier · Drift · Escape · Floodlight · Hide &amp; Seek · Hive — and 22 more</p>
       </div>
       <div class="spot-watch reveal">
-        <img src="assets/tread-watch-ultra.webp" alt="TreadGame controls on Apple Watch" loading="lazy">
-        <img src="assets/tread-watch-galaxy.webp" alt="TreadGame controls on Galaxy Watch" loading="lazy">
+        <img src="assets/tread-watch-ultra.webp" alt="TreadGame controls on Apple Watch" loading="lazy" decoding="async">
+        <img src="assets/tread-watch-galaxy.webp" alt="TreadGame controls on Galaxy Watch" loading="lazy" decoding="async">
         <p>Buttons on your wrist — <span>Apple Watch and Wear OS</span> both work as controllers, so you can steer without breaking stride.</p>
       </div>
     </div>
@@ -1310,6 +1625,44 @@
   </div>
 </footer>
 
+<div class="arcade" id="arcade" role="dialog" aria-label="Mini game arcade">
+  <button class="arcade-close" id="arcade-close" aria-label="Close">✕</button>
+  <div class="arcade-head">
+    <h3>The Arcade</h3>
+    <p>Three straight out of <b>It's Just a Game</b>, playable right here. There are 34 more in the app — and there you play them against everyone in the room. Nothing is saved: your scores disappear the moment you close this.</p>
+  </div>
+
+  <div class="arcade-menu" id="arcade-menu">
+    <button class="ag-card" data-game="circle">
+      <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="24" r="17" stroke="#33d9ff" stroke-width="3" stroke-dasharray="4 5" stroke-linecap="round"/><path d="M12 26c2-9 9-15 17-14 6 1 9 6 8 11-1 6-7 9-12 8" stroke="#ff4dcc" stroke-width="3.4" stroke-linecap="round"/></svg>
+      <b>Perfect Circle</b>
+      <i>One stroke, no cheating. How round can you actually draw?</i>
+    </button>
+    <button class="ag-card" data-game="clash">
+      <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="6" y="10" width="16" height="16" rx="4" fill="#ff4dcc"/><rect x="26" y="10" width="16" height="16" rx="4" fill="#33d9ff"/><rect x="6" y="30" width="16" height="9" rx="4" fill="#f4c952"/><rect x="26" y="30" width="16" height="9" rx="4" fill="#3dff8e"/></svg>
+      <b>Colour Clash</b>
+      <i>Tap the colour it's printed in, not the word. Your brain will fight you.</i>
+    </button>
+    <button class="ag-card" data-game="ten">
+      <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><circle cx="24" cy="26" r="15" stroke="#33d9ff" stroke-width="3"/><path d="M24 17v9l6 4" stroke="#ff4dcc" stroke-width="3.4" stroke-linecap="round"/><path d="M18 7h12" stroke="#33d9ff" stroke-width="3" stroke-linecap="round"/></svg>
+      <b>Ten Seconds</b>
+      <i>The clock hides. Keep counting in your head and stop it at ten.</i>
+    </button>
+  </div>
+
+  <div class="arcade-game" id="arcade-game">
+    <div class="ag-bar">
+      <button class="ag-back" id="ag-back">&larr; Games</button>
+      <b id="ag-title">&nbsp;</b>
+      <span id="ag-best">&nbsp;</span>
+    </div>
+    <p class="ag-how" id="ag-how">&nbsp;</p>
+    <div class="ag-stage" id="ag-stage"></div>
+    <p class="ag-result" id="ag-result">&nbsp;</p>
+    <button class="ag-go" id="ag-go">Start</button>
+  </div>
+</div>
+
 <div class="oche" id="oche" role="dialog" aria-label="Hidden darts game">
   <div class="oche-top">
     <h3>The Oche</h3>
@@ -1342,12 +1695,19 @@
 </div>
 
 <script>
-  // custom cursor
+  // custom cursor — one write per frame, not one per pointer event
   const cursor = document.querySelector(".cursor");
+  let curX = 0, curY = 0, curQueued = false;
   window.addEventListener("pointermove", (e) => {
+    curX = e.clientX; curY = e.clientY;
     cursor.classList.add("is-active");
-    cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
-  });
+    if (curQueued) return;
+    curQueued = true;
+    requestAnimationFrame(() => {
+      curQueued = false;
+      cursor.style.transform = `translate(${curX}px, ${curY}px) translate(-50%, -50%)`;
+    });
+  }, { passive: true });
   document.querySelectorAll("[data-hover]").forEach((el) => {
     el.addEventListener("mouseenter", () => cursor.classList.add("is-hovering"));
     el.addEventListener("mouseleave", () => cursor.classList.remove("is-hovering"));
@@ -1372,11 +1732,47 @@
   root.style.setProperty("--blob3", mood.blob3);
   console.log("Mood of the moment: " + mood.name + " — reload for another, or force one with ?mood=" + mood.name.toLowerCase());
 
-  // page tints toward the hovered project's brand colour, then falls back to the mood
+  // Page tints toward the hovered project's brand colour, then falls back to
+  // the mood. Rewriting --accent on :root restyles the entire document, so it
+  // waits for you to settle on a row rather than firing on every crossing —
+  // sweeping down the list used to trigger a full recalc per row, mid-fan.
+  let accentNow = mood.accent, accentWant = mood.accent, accentTimer = null;
+  const setAccent = (value) => {
+    accentWant = value;
+    if (accentTimer) clearTimeout(accentTimer);
+    accentTimer = setTimeout(() => {
+      accentTimer = null;
+      if (accentWant === accentNow) return;
+      accentNow = accentWant;
+      root.style.setProperty("--accent", accentWant);
+    }, 90);
+  };
   document.querySelectorAll("[data-accent]").forEach((el) => {
-    el.addEventListener("mouseenter", () => root.style.setProperty("--accent", el.dataset.accent));
-    el.addEventListener("mouseleave", () => root.style.setProperty("--accent", mood.accent));
+    el.addEventListener("mouseenter", () => setAccent(el.dataset.accent));
+    el.addEventListener("mouseleave", () => setAccent(mood.accent));
   });
+
+  // While the cursor is in the work list, hand the animating parts to the GPU
+  // so the fanned screenshots aren't re-rasterised at every scale step.
+  const workList = document.querySelector(".work-list");
+  if (workList) {
+    workList.addEventListener("pointerenter", () => workList.classList.add("hot"));
+    workList.addEventListener("pointerleave", () => workList.classList.remove("hot"));
+    // Decode each row's screenshots as it comes into view, so the first hover
+    // isn't paying for six image decodes at once — that stall was the hitch
+    // you felt the first time you crossed a section.
+    const warm = (img) => { if (img.decode) img.decode().catch(() => {}); };
+    const warmer = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        warmer.unobserve(en.target);
+        en.target.querySelectorAll(".preview img").forEach((img) => {
+          img.complete ? warm(img) : img.addEventListener("load", () => warm(img), { once: true });
+        });
+      });
+    }, { rootMargin: "400px 0px" });
+    workList.querySelectorAll(".work-item").forEach((el) => warmer.observe(el));
+  }
 
   // scroll reveal
   const io = new IntersectionObserver(
@@ -1428,7 +1824,11 @@
 
     const open = (e) => { e.preventDefault(); e.stopPropagation(); oche.classList.add("open"); document.body.style.overflow = "hidden"; };
     const close = () => { oche.classList.remove("open"); document.body.style.overflow = ""; };
-    document.querySelectorAll(".t-darts .preview img.board, .t-darts .mark").forEach((el) => el.addEventListener("click", open));
+    document.querySelectorAll(".t-darts .preview img.board, .t-darts .mark, #open-oche")
+      .forEach((el) => {
+        el.addEventListener("click", open);
+        el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") open(e); });
+      });
     document.getElementById("oche-close").addEventListener("click", close);
     window.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
 
@@ -1585,6 +1985,368 @@
         }
       }, 440);
     });
+  })();
+
+  // ---------- the arcade: three of It's Just a Game, playable in the browser ----------
+  // Faithful little ports of Perfect Circle, Colour Clash and Ten Seconds.
+  // Scores live in a variable and nowhere else — closing the arcade forgets
+  // them, because nothing on this site stores anything.
+  (() => {
+    const arcade = document.getElementById("arcade");
+    if (!arcade) return;
+    const menu = document.getElementById("arcade-menu");
+    const panel = document.getElementById("arcade-game");
+    const stage = document.getElementById("ag-stage");
+    const titleEl = document.getElementById("ag-title");
+    const howEl = document.getElementById("ag-how");
+    const bestEl = document.getElementById("ag-best");
+    const resultEl = document.getElementById("ag-result");
+    const goBtn = document.getElementById("ag-go");
+
+    let best = {};
+    let live = null;   // the running game's teardown + go handler
+
+    const say = (line, sub) => { resultEl.innerHTML = line + (sub ? "<em>" + sub + "</em>" : ""); };
+    const clearSay = () => { resultEl.innerHTML = "&nbsp;"; };
+    const rand = (n) => Math.floor(Math.random() * n);
+
+    /* ---- 1. Perfect Circle: one stroke, scored on how round it really was ---- */
+    const circleGame = {
+      title: "Perfect Circle",
+      how: "Press, drag all the way round, release. One stroke — no second go at it.",
+      go: "Wipe it",
+      mount() {
+        stage.innerHTML = '<canvas id="pc-canvas"></canvas>';
+        const cv = stage.querySelector("canvas");
+        const ctx = cv.getContext("2d");
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        let pts = [], drawing = false;
+
+        const fit = () => {
+          const r = cv.getBoundingClientRect();
+          cv.width = Math.round(r.width * dpr);
+          cv.height = Math.round(r.height * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        const at = (e) => {
+          const r = cv.getBoundingClientRect();
+          return { x: e.clientX - r.left, y: e.clientY - r.top };
+        };
+        const redraw = (ideal) => {
+          const r = cv.getBoundingClientRect();
+          ctx.clearRect(0, 0, r.width, r.height);
+          if (ideal) {
+            ctx.setLineDash([5, 8]);
+            ctx.strokeStyle = "rgba(239, 233, 245, 0.4)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(ideal.cx, ideal.cy, ideal.r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+          if (pts.length < 2) return;
+          const g = ctx.createLinearGradient(0, 0, r.width, r.height);
+          g.addColorStop(0, "#33d9ff");
+          g.addColorStop(1, "#ff4dcc");
+          ctx.strokeStyle = g;
+          ctx.lineWidth = 5;
+          ctx.lineJoin = ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+          ctx.stroke();
+        };
+        const verdict = (s) =>
+          s >= 95 ? "Suspiciously good. Did you draw round a mug?"
+          : s >= 88 ? "Properly round. Show-off."
+          : s >= 78 ? "A respectable wobble."
+          : s >= 65 ? "That'll do. Nobody's watching."
+          : s >= 45 ? "That is an egg."
+          : "Modern art, that.";
+
+        const judge = () => {
+          if (pts.length < 12) { say("Barely a squiggle", "Press and drag the whole way round."); return; }
+          const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
+          const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+          const rs = pts.map((p) => Math.hypot(p.x - cx, p.y - cy));
+          const rbar = rs.reduce((a, r) => a + r, 0) / rs.length;
+          if (rbar < 24) { say("Too small to judge", "Give it some room."); return; }
+          let sweep = 0;
+          for (let i = 1; i < pts.length; i++) {
+            const a0 = Math.atan2(pts[i - 1].y - cy, pts[i - 1].x - cx);
+            const a1 = Math.atan2(pts[i].y - cy, pts[i].x - cx);
+            let d = a1 - a0;
+            while (d > Math.PI) d -= Math.PI * 2;
+            while (d < -Math.PI) d += Math.PI * 2;
+            sweep += d;
+          }
+          if (Math.abs(sweep) < Math.PI * 1.6) { say("That's an arc", "All the way round, in one go."); return; }
+          const dev = rs.reduce((a, r) => a + Math.abs(r - rbar), 0) / rs.length / rbar;
+          const gap = Math.hypot(pts[0].x - pts[pts.length - 1].x, pts[0].y - pts[pts.length - 1].y) / rbar;
+          let s = 100 * (1 - dev * 3.2) - Math.min(20, gap * 22);
+          s = Math.max(0, Math.min(100, Math.round(s)));
+          redraw({ cx: cx, cy: cy, r: rbar });
+          best.circle = Math.max(best.circle || 0, s);
+          bestEl.textContent = "Best " + best.circle + "%";
+          say(s + "%", verdict(s));
+        };
+
+        cv.addEventListener("pointerdown", (e) => {
+          drawing = true;
+          pts = [at(e)];
+          clearSay();
+          redraw();
+          cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
+        });
+        cv.addEventListener("pointermove", (e) => { if (drawing) { pts.push(at(e)); redraw(); } });
+        const finish = () => { if (!drawing) return; drawing = false; redraw(); judge(); };
+        cv.addEventListener("pointerup", finish);
+        cv.addEventListener("pointercancel", finish);
+
+        fit();
+        bestEl.textContent = best.circle ? "Best " + best.circle + "%" : " ";
+        say("Draw one", "Anywhere in the ring.");
+        return {
+          go() { pts = []; redraw(); say("Draw one", "Anywhere in the ring."); },
+          stop() {},
+        };
+      },
+    };
+
+    /* ---- 2. Colour Clash: tap the ink, not the word ---- */
+    const INKS = [
+      { name: "Red", hex: "#ff4d4d" },
+      { name: "Blue", hex: "#4d7cff" },
+      { name: "Green", hex: "#3dff8e" },
+      { name: "Pink", hex: "#ff4dcc" },
+      { name: "Yellow", hex: "#f4c952" },
+      { name: "Cyan", hex: "#33d9ff" },
+    ];
+    const clashGame = {
+      title: "Colour Clash",
+      how: "Twenty seconds. Tap the colour the word is printed in — not the word itself.",
+      go: "Start",
+      mount() {
+        stage.innerHTML =
+          '<div class="cc-bar"><i></i></div>' +
+          '<div class="cc-score">0</div>' +
+          '<div class="cc-word">Ready?</div>' +
+          '<div class="cc-swatches"></div>';
+        const bar = stage.querySelector(".cc-bar i");
+        const scoreEl = stage.querySelector(".cc-score");
+        const wordEl = stage.querySelector(".cc-word");
+        const swatches = stage.querySelector(".cc-swatches");
+        const LEN = 20000;
+        let score = 0, ink = null, running = false, t0 = 0, raf = 0;
+
+        const round = () => {
+          const wordIdx = rand(INKS.length);
+          let inkIdx = rand(INKS.length);
+          while (inkIdx === wordIdx) inkIdx = rand(INKS.length);
+          ink = INKS[inkIdx];
+          wordEl.textContent = INKS[wordIdx].name;
+          wordEl.style.color = ink.hex;
+          // the word's own colour is always on offer — that is the trap
+          const picks = [ink, INKS[wordIdx]];
+          while (picks.length < 4) {
+            const c = INKS[rand(INKS.length)];
+            if (!picks.includes(c)) picks.push(c);
+          }
+          picks.sort(() => Math.random() - 0.5);
+          swatches.innerHTML = "";
+          picks.forEach((c) => {
+            const b = document.createElement("button");
+            b.style.background = c.hex;
+            b.setAttribute("aria-label", c.name);
+            b.addEventListener("click", () => pick(c));
+            swatches.appendChild(b);
+          });
+        };
+        const pick = (c) => {
+          if (!running) return;
+          if (c === ink) {
+            score += 1;
+            scoreEl.textContent = score;
+          } else {
+            score = Math.max(0, score - 1);
+            scoreEl.textContent = score;
+            stage.classList.remove("wrong");
+            void stage.offsetWidth;
+            stage.classList.add("wrong");
+          }
+          round();
+        };
+        const tick = () => {
+          const left = 1 - (performance.now() - t0) / LEN;
+          if (left <= 0) return end();
+          bar.style.transform = "scaleX(" + left + ")";
+          raf = requestAnimationFrame(tick);
+        };
+        const end = () => {
+          running = false;
+          cancelAnimationFrame(raf);
+          bar.style.transform = "scaleX(0)";
+          swatches.innerHTML = "";
+          wordEl.textContent = "Time";
+          wordEl.style.color = "#efe9f5";
+          best.clash = Math.max(best.clash || 0, score);
+          bestEl.textContent = "Best " + best.clash;
+          say(score + (score === 1 ? " right" : " right"),
+            score >= 22 ? "Your brain barely blinked." :
+            score >= 15 ? "Sharp. The word nearly had you." :
+            score >= 8 ? "The word definitely had you a few times." :
+            "The word won. It usually does.");
+          goBtn.textContent = "Again";
+        };
+        const keys = (e) => {
+          if (!running) return;
+          const n = "1234".indexOf(e.key);
+          if (n >= 0 && swatches.children[n]) { e.preventDefault(); swatches.children[n].click(); }
+        };
+        window.addEventListener("keydown", keys);
+
+        bestEl.textContent = best.clash != null ? "Best " + best.clash : " ";
+        say("Twenty seconds", "Keys 1–4 work too.");
+        return {
+          go() {
+            score = 0;
+            scoreEl.textContent = "0";
+            running = true;
+            t0 = performance.now();
+            clearSay();
+            goBtn.textContent = "Restart";
+            round();
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(tick);
+          },
+          stop() { running = false; cancelAnimationFrame(raf); window.removeEventListener("keydown", keys); },
+        };
+      },
+    };
+
+    /* ---- 3. Ten Seconds: the clock hides, you keep counting ---- */
+    const tenGame = {
+      title: "Ten Seconds",
+      how: "The clock runs, then vanishes at three. Stop it at exactly ten.",
+      go: "Start",
+      mount() {
+        stage.innerHTML =
+          '<div class="ts-clock">0.0</div>' +
+          '<button class="ts-tap" disabled>Stop at 10</button>';
+        const clock = stage.querySelector(".ts-clock");
+        const tap = stage.querySelector(".ts-tap");
+        let running = false, t0 = 0, raf = 0;
+
+        const tick = () => {
+          const el = (performance.now() - t0) / 1000;
+          if (el < 3) {
+            clock.textContent = el.toFixed(1);
+          } else if (!clock.classList.contains("hidden-count")) {
+            clock.classList.add("hidden-count");
+            clock.innerHTML = "<i></i><i></i><i></i>";
+          }
+          if (el > 25) return stop();
+          raf = requestAnimationFrame(tick);
+        };
+        const stop = () => {
+          if (!running) return;
+          running = false;
+          cancelAnimationFrame(raf);
+          tap.disabled = true;
+          const el = (performance.now() - t0) / 1000;
+          clock.classList.remove("hidden-count");
+          clock.textContent = el.toFixed(2);
+          const off = Math.abs(el - 10);
+          if (el < 3) {
+            say("Too early", "The clock hadn't even hidden yet.");
+          } else {
+            if (best.ten == null || off < best.ten) best.ten = off;
+            bestEl.textContent = "Best ±" + best.ten.toFixed(2) + "s";
+            const dir = el > 10 ? "late" : "early";
+            say((off < 0.005 ? "Dead on ten" : off.toFixed(2) + "s " + dir),
+              off < 0.1 ? "Nerves of steel." :
+              off < 0.3 ? "That is a proper internal clock." :
+              off < 0.8 ? "Close enough to argue about." :
+              off < 2 ? "Your ten seconds is not our ten seconds." :
+              "Were you counting at all?");
+          }
+          goBtn.textContent = "Again";
+          goBtn.hidden = false;
+        };
+        tap.addEventListener("click", stop);
+        const keys = (e) => {
+          if (running && (e.key === " " || e.key === "Enter")) { e.preventDefault(); stop(); }
+        };
+        window.addEventListener("keydown", keys);
+
+        bestEl.textContent = best.ten != null ? "Best ±" + best.ten.toFixed(2) + "s" : " ";
+        say("Count it out", "Space works too.");
+        return {
+          go() {
+            running = true;
+            t0 = performance.now();
+            tap.disabled = false;
+            clock.classList.remove("hidden-count");
+            clock.textContent = "0.0";
+            clearSay();
+            goBtn.hidden = true;
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(tick);
+          },
+          stop() { running = false; cancelAnimationFrame(raf); window.removeEventListener("keydown", keys); },
+        };
+      },
+    };
+
+    const GAMES = { circle: circleGame, clash: clashGame, ten: tenGame };
+
+    const showMenu = () => {
+      if (live && live.stop) live.stop();
+      live = null;
+      panel.classList.remove("on");
+      arcade.classList.remove("playing");
+      menu.style.display = "";
+      stage.innerHTML = "";
+      goBtn.hidden = false;
+    };
+    const play = (id) => {
+      const game = GAMES[id];
+      if (!game) return;
+      if (live && live.stop) live.stop();
+      menu.style.display = "none";
+      panel.classList.add("on");
+      arcade.classList.add("playing");
+      titleEl.textContent = game.title;
+      howEl.textContent = game.how;
+      goBtn.hidden = false;
+      goBtn.textContent = game.go;
+      live = game.mount();
+    };
+
+    menu.querySelectorAll(".ag-card").forEach((card) => {
+      card.addEventListener("click", () => play(card.dataset.game));
+    });
+    document.getElementById("ag-back").addEventListener("click", showMenu);
+    goBtn.addEventListener("click", () => { if (live && live.go) live.go(); });
+
+    const open = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      arcade.classList.add("open");
+      document.body.style.overflow = "hidden";
+    };
+    const close = () => {
+      showMenu();
+      best = {};          // nothing kept, nothing stored
+      bestEl.textContent = " ";
+      arcade.classList.remove("open");
+      document.body.style.overflow = "";
+    };
+    document.querySelectorAll("#open-arcade, .t-game .preview img, .t-game .mark").forEach((el) => {
+      el.addEventListener("click", open);
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") open(e); });
+    });
+    document.getElementById("arcade-close").addEventListener("click", close);
+    window.addEventListener("keydown", (e) => { if (e.key === "Escape" && arcade.classList.contains("open")) close(); });
   })();
 </script>
 
