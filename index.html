@@ -376,6 +376,75 @@
   }
   .work-item:hover .idx { color: var(--c); }
 
+  /* Activity marks — what each thing is actually for, at a glance. Quiet at
+     rest; they only come alive on the row you are pointing at. */
+  .work-item .idx {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    /* one width for every row, or the labels size their own columns and the
+       numbers stop lining up down the left edge */
+    width: clamp(46px, 4.4vw, 62px);
+  }
+  .work-item .act {
+    width: clamp(28px, 2.7vw, 38px);
+    height: auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.34;
+    transform-box: view-box;
+    transition: opacity 0.45s var(--ease);
+  }
+  .work-item .act g { transform-box: view-box; }
+  .work-item .act .solid { fill: currentColor; stroke: none; }
+  .work-item:hover .act { opacity: 1; }
+  .work-item .idx b {
+    font-size: 0.54rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    transition: opacity 0.45s var(--ease);
+  }
+  .work-item:hover .idx b { opacity: 0.95; }
+
+  /* the movement is the reward for hovering, so it never runs on its own */
+  @media (hover: hover) {
+    .work-item:hover .a-run { animation: act-bob 0.62s ease-in-out infinite; }
+    .work-item:hover .a-walk { animation: act-bob 1.05s ease-in-out infinite; }
+    .work-item:hover .a-play { animation: act-roll 1.5s var(--ease) infinite; }
+    .work-item:hover .a-dig { animation: act-dig 1.3s ease-in-out infinite; }
+    .work-item:hover .a-ride .s-a,
+    .work-item:hover .a-ride .s-b { animation: act-spin 0.9s linear infinite; }
+    .work-item:hover .a-throw .dart { animation: act-throw 1.6s var(--ease) infinite; }
+  }
+  .a-dig { transform-origin: 12px 4px; }
+  .a-play { transform-origin: 12px 12px; }
+  .a-ride .s-a { transform-origin: 5.6px 16.4px; }
+  .a-ride .s-b { transform-origin: 18.4px 16.4px; }
+  @keyframes act-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.7px); } }
+  @keyframes act-roll {
+    0% { transform: rotate(0deg); }
+    18% { transform: rotate(-16deg); }
+    38% { transform: rotate(11deg); }
+    54%, 100% { transform: rotate(0deg); }
+  }
+  @keyframes act-dig {
+    0%, 100% { transform: rotate(0deg); }
+    45% { transform: rotate(-16deg); }
+    62% { transform: rotate(4deg); }
+  }
+  @keyframes act-spin { to { transform: rotate(360deg); } }
+  @keyframes act-throw {
+    0%, 8% { transform: translate(0, 0); }
+    34% { transform: translate(4.2px, -4.2px); }
+    47%, 100% { transform: translate(0, 0); }
+  }
+
   .work-item .body { min-width: 0; }
   .work-item .title-row {
     display: flex;
@@ -1617,7 +1686,7 @@
     <div class="work-list">
 
       <a class="work-item t-tread reveal" href="https://treadgame.com" target="_blank" rel="noopener" data-hover data-accent="#fa801e">
-        <span class="idx">/01</span>
+        <span class="idx"><i>/01</i><svg class="act a-run" viewBox="0 0 24 24" aria-hidden="true"><circle cx="16.2" cy="4.3" r="2.1"/><path d="M15.3 7.4c-1.6 1.3-2.9 3-3.3 4.9"/><path d="M15.1 8.6l3.9 2.1 1.6-1.7"/><path d="M13.9 9.6L10.1 9.4 8.4 11.2"/><path d="M12 12.3l2.7 3.3-1.3 4.6"/><path d="M12 12.3l-2.9 3-3.3.5"/></svg><b>Run</b></span>
         <div class="body">
           <div class="title-row">
             <img class="mark" src="assets/tread-logo.png" width="320" height="320" alt="" loading="lazy" decoding="async">
@@ -1639,7 +1708,7 @@
       </a>
 
       <a class="work-item t-cycle reveal" href="https://cyclehud.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#25e3ee">
-        <span class="idx">/02</span>
+        <span class="idx"><i>/02</i><svg class="act a-ride" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.6" cy="16.4" r="3.6"/><circle cx="18.4" cy="16.4" r="3.6"/><g class="s-a"><path d="M5.6 13.6v5.6"/><path d="M2.8 16.4h5.6"/></g><g class="s-b"><path d="M18.4 13.6v5.6"/><path d="M15.6 16.4h5.6"/></g><path d="M5.6 16.4l4.2-6.2h5.4l3.2 6.2"/><path d="M9.8 10.2l2.9 6.2"/><path d="M8.5 8.8h2.4"/><path d="M15.2 10.2l.9-2h2.1"/></svg><b>Ride</b></span>
         <div class="body">
           <div class="title-row">
             <img class="mark" src="assets/cycle-logo.png" width="320" height="321" alt="" loading="lazy" decoding="async" style="background: transparent; object-fit: contain;">
@@ -1662,7 +1731,7 @@
       </a>
 
       <a class="work-item t-game reveal" href="https://itsjustagame.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#ff4dcc">
-        <span class="idx">/03</span>
+        <span class="idx"><i>/03</i><svg class="act a-play" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.6" y="3.6" width="16.8" height="16.8" rx="3.6"/><circle class="solid" cx="8.4" cy="8.4" r="1.3"/><circle class="solid" cx="15.6" cy="8.4" r="1.3"/><circle class="solid" cx="12" cy="12" r="1.3"/><circle class="solid" cx="8.4" cy="15.6" r="1.3"/><circle class="solid" cx="15.6" cy="15.6" r="1.3"/></svg><b>Play</b></span>
         <div class="body">
           <div class="title-row">
             <img class="mark" src="assets/ijag-logo.png" width="320" height="320" alt="" loading="lazy" decoding="async">
@@ -1686,7 +1755,7 @@
       </a>
 
       <a class="work-item t-xmarks reveal" href="https://x-marks.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#f4c952">
-        <span class="idx">/04</span>
+        <span class="idx"><i>/04</i><svg class="act a-dig" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.4 5.4V3.9a1.6 1.6 0 0 1 3.2 0v1.5"/><path d="M12 5.4v7.3"/><path d="M8.3 12.7h7.4v3.1L12 20.9l-3.7-5.1z"/></svg><b>Dig</b></span>
         <div class="body">
           <div class="title-row">
             <img class="wordmark" src="assets/xmarks-wordmark.webp" width="640" height="564" alt="X-Marks — treasure hunts, big adventures" loading="lazy" decoding="async">
@@ -1708,7 +1777,7 @@
       </a>
 
       <a class="work-item t-gait reveal" href="https://gaitway.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#2bd9ff">
-        <span class="idx">/05</span>
+        <span class="idx"><i>/05</i><svg class="act a-walk" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12.6" cy="4.1" r="2.1"/><path d="M12.5 6.4l-.4 6.6"/><path d="M12.5 8.1l3.2 2.5.7 2.6"/><path d="M12.5 8.4L9.7 11"/><path d="M12.1 13l3 3.7.2 4"/><path d="M12.1 13l-2.9 4.1-2.1 2.9"/></svg><b>Walk</b></span>
         <div class="body">
           <div class="title-row">
             <img class="mark" src="assets/gait-logo.png" width="192" height="192" alt="" loading="lazy" decoding="async">
@@ -1736,7 +1805,7 @@
       </a>
 
       <a class="work-item t-darts reveal" href="https://darts-scorer.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#28c46c">
-        <span class="idx">/06</span>
+        <span class="idx"><i>/06</i><svg class="act a-throw" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.6" cy="13.4" r="6.4"/><circle cx="10.6" cy="13.4" r="2.9"/><circle class="solid" cx="10.6" cy="13.4" r="1"/><g class="dart"><path d="M12.5 11.5l6.3-6.3"/><path d="M18.8 5.2l-.5-2.8 3.4.5-.5 3.4-2.9-.5"/></g></svg><b>Throw</b></span>
         <div class="body">
           <div class="title-row">
             <img class="mark" src="assets/dartboard.svg" width="400" height="400" alt="" loading="lazy" decoding="async">
