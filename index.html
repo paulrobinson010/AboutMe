@@ -412,31 +412,89 @@
   }
   .work-item:hover .idx b { opacity: 0.95; }
 
+  /* Limbs pivot at the shoulder and hip, so the standing pose IS the first
+     frame — the keyframes start and end on the same angles the CSS sets. */
+  .a-run .arm-a, .a-walk .arm-a { transform-origin: 14.4px 8.2px; }
+  .a-run .arm-b, .a-walk .arm-b { transform-origin: 14.4px 8.2px; }
+  .a-walk .arm-a, .a-walk .arm-b { transform-origin: 12.5px 8.2px; }
+  .a-run .leg-a, .a-run .leg-b { transform-origin: 11.9px 12.7px; }
+  .a-walk .leg-a, .a-walk .leg-b { transform-origin: 12.1px 13px; }
+  .a-dig .spade { transform-origin: 12px 4px; }
+  .a-dig .dirt rect { opacity: 0; }
+  .a-dig .ground { opacity: 0.55; }
+
   /* the movement is the reward for hovering, so it never runs on its own */
   @media (hover: hover) {
-    .work-item:hover .a-run { animation: act-bob 0.62s ease-in-out infinite; }
-    .work-item:hover .a-walk { animation: act-bob 1.05s ease-in-out infinite; }
+    .work-item:hover .a-run { animation: act-bob 0.5s ease-in-out infinite; }
+    .work-item:hover .a-run .leg-a { animation: swing-a 0.5s ease-in-out infinite; }
+    .work-item:hover .a-run .leg-b { animation: swing-b 0.5s ease-in-out infinite; }
+    .work-item:hover .a-run .arm-a { animation: pump-a 0.5s ease-in-out infinite; }
+    .work-item:hover .a-run .arm-b { animation: pump-b 0.5s ease-in-out infinite; }
+
+    .work-item:hover .a-walk { animation: act-bob 1.1s ease-in-out infinite; }
+    .work-item:hover .a-walk .leg-a { animation: stride-a 1.1s ease-in-out infinite; }
+    .work-item:hover .a-walk .leg-b { animation: stride-b 1.1s ease-in-out infinite; }
+    .work-item:hover .a-walk .arm-a { animation: stride-b 1.1s ease-in-out infinite; }
+    .work-item:hover .a-walk .arm-b { animation: stride-a 1.1s ease-in-out infinite; }
+
     .work-item:hover .a-play { animation: act-roll 1.5s var(--ease) infinite; }
-    .work-item:hover .a-dig { animation: act-dig 1.3s ease-in-out infinite; }
     .work-item:hover .a-ride .s-a,
-    .work-item:hover .a-ride .s-b { animation: act-spin 0.9s linear infinite; }
+    .work-item:hover .a-ride .s-b { animation: act-spin 1.1s linear infinite; }
     .work-item:hover .a-throw .dart { animation: act-throw 1.6s var(--ease) infinite; }
+
+    .work-item:hover .a-dig .spade { animation: act-dig 1.45s ease-in-out infinite; }
+    .work-item:hover .a-dig .d1 { animation: dirt-a 1.45s ease-out infinite; }
+    .work-item:hover .a-dig .d2 { animation: dirt-b 1.45s ease-out infinite; }
+    .work-item:hover .a-dig .d3 { animation: dirt-c 1.45s ease-out infinite; }
+    .work-item:hover .a-dig .d4 { animation: dirt-d 1.45s ease-out infinite; }
+  }
+
+  @keyframes swing-a { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-42deg); } }
+  @keyframes swing-b { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(46deg); } }
+  @keyframes pump-a { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(34deg); } }
+  @keyframes pump-b { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-32deg); } }
+  @keyframes stride-a { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-19deg); } }
+  @keyframes stride-b { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(21deg); } }
+
+  /* in on the front half of the loop, levered out on the back half */
+  @keyframes act-dig {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    30% { transform: translateY(3.1px) rotate(-5deg); }
+    46% { transform: translateY(3.3px) rotate(3deg); }
+    62% { transform: translateY(-1.4px) rotate(15deg); }
+    80% { transform: translateY(0) rotate(0deg); }
+  }
+  /* the spoil comes off the blade as it lifts, and lands back down */
+  @keyframes dirt-a {
+    0%, 46% { opacity: 0; transform: translate(5.4px, 5.2px) scale(0.3); }
+    58% { opacity: 1; transform: translate(1.4px, -1.4px) scale(1); }
+    86%, 100% { opacity: 0; transform: translate(0, 2.4px) scale(0.7); }
+  }
+  @keyframes dirt-b {
+    0%, 48% { opacity: 0; transform: translate(-6px, 4.4px) scale(0.3); }
+    62% { opacity: 1; transform: translate(-1.6px, -1.2px) scale(1); }
+    88%, 100% { opacity: 0; transform: translate(-0.6px, 2.6px) scale(0.7); }
+  }
+  @keyframes dirt-c {
+    0%, 50% { opacity: 0; transform: translate(4.2px, 8px) scale(0.3); }
+    66% { opacity: 0.9; transform: translate(0.8px, 0) scale(1); }
+    90%, 100% { opacity: 0; transform: translate(0, 3.4px) scale(0.6); }
+  }
+  @keyframes dirt-d {
+    0%, 52% { opacity: 0; transform: translate(-4.6px, 7.2px) scale(0.3); }
+    68% { opacity: 0.9; transform: translate(-1px, 0.4px) scale(1); }
+    92%, 100% { opacity: 0; transform: translate(-0.4px, 3.2px) scale(0.6); }
   }
   .a-dig { transform-origin: 12px 4px; }
   .a-play { transform-origin: 12px 12px; }
   .a-ride .s-a { transform-origin: 5.6px 16.4px; }
   .a-ride .s-b { transform-origin: 18.4px 16.4px; }
-  @keyframes act-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.7px); } }
+  @keyframes act-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.2px); } }
   @keyframes act-roll {
     0% { transform: rotate(0deg); }
     18% { transform: rotate(-16deg); }
     38% { transform: rotate(11deg); }
     54%, 100% { transform: rotate(0deg); }
-  }
-  @keyframes act-dig {
-    0%, 100% { transform: rotate(0deg); }
-    45% { transform: rotate(-16deg); }
-    62% { transform: rotate(4deg); }
   }
   @keyframes act-spin { to { transform: rotate(360deg); } }
   @keyframes act-throw {
@@ -1686,7 +1744,7 @@
     <div class="work-list">
 
       <a class="work-item t-tread reveal" href="https://treadgame.com" target="_blank" rel="noopener" data-hover data-accent="#fa801e">
-        <span class="idx"><i>/01</i><svg class="act a-run" viewBox="0 0 24 24" aria-hidden="true"><circle cx="16.2" cy="4.3" r="2.1"/><path d="M15.3 7.4c-1.6 1.3-2.9 3-3.3 4.9"/><path d="M15.1 8.6l3.9 2.1 1.6-1.7"/><path d="M13.9 9.6L10.1 9.4 8.4 11.2"/><path d="M12 12.3l2.7 3.3-1.3 4.6"/><path d="M12 12.3l-2.9 3-3.3.5"/></svg><b>Run</b></span>
+        <span class="idx"><i>/01</i><svg class="act a-run" viewBox="0 0 24 24" aria-hidden="true"><circle cx="15.6" cy="4.2" r="2.1"/><path d="M15 6.4l-3.1 6.3"/><g class="arm-a"><path d="M14.4 8.2l3.5 1.9 1.7-1.7"/></g><g class="arm-b"><path d="M14.4 8.2l-3.4-.2-1.8 1.9"/></g><g class="leg-a"><path d="M11.9 12.7l2.6 3.4-1.2 4.5"/></g><g class="leg-b"><path d="M11.9 12.7l-2.8 3-3.2.6"/></g></svg><b>Run</b></span>
         <div class="body">
           <div class="title-row">
             <img class="mark" src="assets/tread-logo.png" width="320" height="320" alt="" loading="lazy" decoding="async">
@@ -1708,7 +1766,7 @@
       </a>
 
       <a class="work-item t-cycle reveal" href="https://cyclehud.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#25e3ee">
-        <span class="idx"><i>/02</i><svg class="act a-ride" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.6" cy="16.4" r="3.6"/><circle cx="18.4" cy="16.4" r="3.6"/><g class="s-a"><path d="M5.6 13.6v5.6"/><path d="M2.8 16.4h5.6"/></g><g class="s-b"><path d="M18.4 13.6v5.6"/><path d="M15.6 16.4h5.6"/></g><path d="M5.6 16.4l4.2-6.2h5.4l3.2 6.2"/><path d="M9.8 10.2l2.9 6.2"/><path d="M8.5 8.8h2.4"/><path d="M15.2 10.2l.9-2h2.1"/></svg><b>Ride</b></span>
+        <span class="idx"><i>/02</i><svg class="act a-ride" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.6" cy="16.4" r="3.6"/><circle cx="18.4" cy="16.4" r="3.6"/><g class="s-a"><path d="M5.6 16.4V12.8"/><path d="M5.6 16.4l3.1 1.8"/><path d="M5.6 16.4l-3.1 1.8"/></g><g class="s-b"><path d="M18.4 16.4V12.8"/><path d="M18.4 16.4l3.1 1.8"/><path d="M18.4 16.4l-3.1 1.8"/></g><path d="M5.6 16.4l4.2-6.2h5.4l3.2 6.2"/><path d="M9.8 10.2l2.9 6.2"/><path d="M8.5 8.8h2.4"/><path d="M15.2 10.2l.9-2h2.1"/></svg><b>Ride</b></span>
         <div class="body">
           <div class="title-row">
             <img class="mark" src="assets/cycle-logo.png" width="320" height="321" alt="" loading="lazy" decoding="async" style="background: transparent; object-fit: contain;">
@@ -1755,7 +1813,7 @@
       </a>
 
       <a class="work-item t-xmarks reveal" href="https://x-marks.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#f4c952">
-        <span class="idx"><i>/04</i><svg class="act a-dig" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.4 5.4V3.9a1.6 1.6 0 0 1 3.2 0v1.5"/><path d="M12 5.4v7.3"/><path d="M8.3 12.7h7.4v3.1L12 20.9l-3.7-5.1z"/></svg><b>Dig</b></span>
+        <span class="idx"><i>/04</i><svg class="act a-dig" viewBox="0 0 24 24" aria-hidden="true"><path class="ground" d="M4.4 21.3h15.2"/><g class="spade"><path d="M10.4 5.4V3.9a1.6 1.6 0 0 1 3.2 0v1.5"/><path d="M12 5.4v7.3"/><path d="M8.3 12.7h7.4v3.1L12 20.9l-3.7-5.1z"/></g><g class="dirt"><rect class="d1" x="3.6" y="11.2" width="2.1" height="2.1" rx="0.4"/><rect class="d2" x="18.2" y="12.2" width="1.9" height="1.9" rx="0.4"/><rect class="d3" x="6" y="7.8" width="1.6" height="1.6" rx="0.4"/><rect class="d4" x="16.6" y="8.8" width="1.5" height="1.5" rx="0.4"/></g></svg><b>Dig</b></span>
         <div class="body">
           <div class="title-row">
             <img class="wordmark" src="assets/xmarks-wordmark.webp" width="640" height="564" alt="X-Marks — treasure hunts, big adventures" loading="lazy" decoding="async">
@@ -1777,7 +1835,7 @@
       </a>
 
       <a class="work-item t-gait reveal" href="https://gaitway.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#2bd9ff">
-        <span class="idx"><i>/05</i><svg class="act a-walk" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12.6" cy="4.1" r="2.1"/><path d="M12.5 6.4l-.4 6.6"/><path d="M12.5 8.1l3.2 2.5.7 2.6"/><path d="M12.5 8.4L9.7 11"/><path d="M12.1 13l3 3.7.2 4"/><path d="M12.1 13l-2.9 4.1-2.1 2.9"/></svg><b>Walk</b></span>
+        <span class="idx"><i>/05</i><svg class="act a-walk" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12.6" cy="4.1" r="2.1"/><path d="M12.5 6.3l-.4 6.7"/><g class="arm-a"><path d="M12.5 8.1l3.1 2.6.7 2.5"/></g><g class="arm-b"><path d="M12.5 8.3L9.8 11l-.5 2.4"/></g><g class="leg-a"><path d="M12.1 13l3 3.7.2 4"/></g><g class="leg-b"><path d="M12.1 13l-2.9 4.1-2 2.9"/></g></svg><b>Walk</b></span>
         <div class="body">
           <div class="title-row">
             <img class="mark" src="assets/gait-logo.png" width="192" height="192" alt="" loading="lazy" decoding="async">
