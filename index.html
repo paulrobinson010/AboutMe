@@ -1319,6 +1319,14 @@
     font-family: inherit;
     transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
   }
+  .hunt-chip::before {
+    content: "\2316" !important;   /* position indicator, like the app's compass */
+    width: auto !important;
+    height: auto !important;
+    border: 0 !important;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
   .work-item .play-chip::before {
     content: "";
     width: 0; height: 0;
@@ -1435,8 +1443,8 @@
   /* X-Marks: one X hidden in the page, warming up as you get close */
   .hidden-x {
     position: absolute;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     z-index: 4;
     display: grid;
     place-items: center;
@@ -1445,7 +1453,7 @@
     font-size: 1.9rem;
     font-style: normal;
     color: var(--c-xmarks);
-    opacity: 0.045;
+    opacity: 0.18;
     transform: scale(0.78) rotate(-10deg);
     /* only catchable once it has warmed up, so a cold X never eats a click */
     pointer-events: none;
@@ -1454,9 +1462,21 @@
     transition: opacity 0.28s linear, transform 0.35s var(--ease);
   }
   .hidden-x.warm { pointer-events: auto; }
+  .hidden-x svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: var(--c-xmarks);
+    stroke-width: 3.6;
+    stroke-linecap: round;
+    /* a dark halo so the gold reads on the cream band as well as the dark */
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.75));
+    animation: x-twinkle 3.6s ease-in-out infinite;
+  }
+  @keyframes x-twinkle { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
   @media (hover: none) {
     /* no cursor to warm it with — leave it faint but findable, and tappable */
-    .hidden-x { opacity: 0.17; pointer-events: auto; }
+    .hidden-x { opacity: 0.28; pointer-events: auto; }
   }
   .spark {
     position: absolute;
@@ -1666,7 +1686,7 @@
             <img class="wordmark" src="assets/xmarks-wordmark.webp" width="640" height="564" alt="X-Marks — treasure hunts, big adventures" loading="lazy" decoding="async">
           </div>
           <div class="meta">
-            <span class="tag">GPS treasure hunts</span><span class="tag">iOS</span><span class="tag">x-marks.robbo-online.uk</span>
+            <span class="tag">GPS treasure hunts</span><span class="tag">iOS</span><span class="tag">x-marks.robbo-online.uk</span><span class="play-chip hunt-chip" id="x-ping" role="button" tabindex="0">Hunt the hidden X &mdash; ping it</span>
           </div>
           <p class="season">For family walks</p>
           <p class="desc"><strong>Made to make a family walk more fun for the kids.</strong> Drop points on a map, add a prize, send the hunt over iMessage or WhatsApp — then they track each X down with a compass and a phone that buzzes when they're close. It's amazing how many of the points are in beer gardens.</p>
@@ -1800,7 +1820,7 @@
     </div>
     <div class="about-grid">
       <div class="reveal">
-        <p class="lede">I'm Paul — a maker who can't leave a hobby alone. If I run, ride, play or throw it, <em>sooner or later I build an app for it.</em></p>
+        <p class="lede">I'm Paul — a software developer turned <em>AI-turbocharged maker</em>, and I can't leave a hobby alone. If I run, ride, play or throw it, <em>sooner or later I build an app for it.</em></p>
         <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." TreadGame was built because everything I could run with was really made for bikes and was no fun — so why not combine arcade and running? What's the worst that can happen! It was also the perfect excuse: building business apps by day made me want to experiment with Unity and game engines — a familiar language, a vastly different genre. CycleHUD exists because my bike radar came with a terrible app and I'd rather use the phone in my pocket than buy a cycle computer. Darts Scorer exists because I'm a mathematician turned software developer — and as everyone knows, mathematicians can't actually add up, so a camera does the pub maths for me, out loud. It's Just a Game was invented by my five-year-old — because the best games are the ones everyone in the room can play. And X-Marks exists to make a family walk something the kids actually ask for — though it's amazing how many of the points turn out to be in beer gardens. Gaitway is the newest, and it started with a question rather than a gadget: I run a lot of fields and little paths, and the routes all overlap without ever quite repeating. What if every run I'd ever done were joined up into one network — would it hand me routes I'd never thought to run, or new ways to push myself? So I built it to find out. Oh, and I do serious stuff too. Really serious stuff. But I get paid for that.</p>
       </div>
       <dl class="facts reveal">
@@ -1832,7 +1852,7 @@
 <div class="crt" aria-hidden="true"><i></i></div>
 <div class="crt-flash" aria-hidden="true"><b>Player 1 &mdash; go</b></div>
 <div class="bellow" aria-hidden="true"><b>One hundred<br>and eightyyy!</b></div>
-<i class="hidden-x" aria-hidden="true">&#10005;</i>
+<i class="hidden-x" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 4.5 L19.5 19.5 M19.5 4.5 L4.5 19.5"/></svg></i>
 <div class="radar" aria-hidden="true">
   <svg viewBox="0 0 100 100">
     <circle class="ring" cx="50" cy="50" r="46"/>
@@ -2676,11 +2696,13 @@
         warmQueued = false;
         // cached document coords minus scroll — no layout read per frame
         const d = Math.hypot(ptrX - (xDocX - scrollX), ptrY - (xDocY - scrollY));
-        const near = Math.max(0, 1 - d / 260);
-        xEl.style.opacity = (0.045 + near * near * 0.9).toFixed(3);
+        // a broad, gentle falloff: sweeping the mouse anywhere near it should
+        // visibly brighten it, not only a direct hit
+        const near = Math.max(0, 1 - d / 620);
+        xEl.style.opacity = (0.18 + Math.pow(near, 1.3) * 0.78).toFixed(3);
         xEl.style.transform = "scale(" + (0.78 + near * 0.42).toFixed(3) +
                               ") rotate(" + (-10 + near * 10).toFixed(1) + "deg)";
-        xEl.classList.toggle("warm", near > 0.72);
+        xEl.classList.toggle("warm", near > 0.86);
       });
     }, { passive: true });
 
@@ -2703,13 +2725,33 @@
       }
     };
 
+    // The app buzzes when the kids are close, so the hint chip does the same:
+    // a ping says warm or cold and which way, never where.
+    const ping = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const vy = xDocY - scrollY, vx = xDocX - scrollX;
+      const onScreen = vy > 0 && vy < innerHeight && vx > 0 && vx < innerWidth;
+      if (onScreen) {
+        const d = Math.hypot(ptrX - vx, ptrY - vy);
+        say(d < 420 ? "Red hot — it's right by your cursor."
+                    : "It's on this screen. Sweep about and it'll light up.", 3800);
+      } else {
+        const far = Math.abs(vy) > innerHeight * 3;
+        say((vy < 0 ? "You've gone past it — it's back up the page"
+                    : "It's further down the page") + (far ? ", a long way." : "."), 3800);
+      }
+    };
+    const pingChip = document.getElementById("x-ping");
+    pingChip.addEventListener("click", ping);
+    pingChip.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") ping(e); });
+
     xEl.addEventListener("click", () => {
       burst(xDocX, xDocY);
       say(FOUND[foundCount % FOUND.length]);
       foundCount += 1;
       xEl.classList.remove("warm");
       xEl.style.opacity = "0";
-      setTimeout(() => { placeX(); xEl.style.opacity = ""; }, 900);   // it moves on
+      setTimeout(() => { placeX(); xEl.style.opacity = ""; }, 900);   // it moves on, back to rest
     });
 
     /* 4 — CycleHUD: flick back up fast and something's on your wheel */
