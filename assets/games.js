@@ -86,10 +86,15 @@
         '<div class="belt-mid"><b id="b-score">0</b><i>banked</i><u id="b-time">60</u></div>' +
         '<button class="belt-pad" data-pad="r" type="button" aria-label="Right step">R</button>' +
       '</div>' +
-      '<p class="tgm-help">Alternate the pads &mdash; or <kbd>Z</kbd><kbd>X</kbd> &mdash; to build pace. ' +
-      'Steer with <kbd>&larr;</kbd><kbd>&rarr;</kbd> or tap a side of the belt.</p>';
+      '<p class="tgm-help">Alternate the <b>L</b> and <b>R</b> pads &mdash; or <kbd>Z</kbd><kbd>X</kbd> &mdash; to build pace, ' +
+      'like feet on the belt. Steer with the arrows on either side, or <kbd>&larr;</kbd><kbd>&rarr;</kbd>.</p>';
 
     const wrap = stage.querySelector(".belt-wrap");
+    // Steering was a hidden gesture (tap a side of the belt). Give it two
+    // targets you can actually see and reach with the same thumbs.
+    wrap.insertAdjacentHTML("beforeend",
+      '<button class="belt-steer" data-steer="-1" type="button" aria-label="Move left">\u2039</button>' +
+      '<button class="belt-steer" data-steer="1" type="button" aria-label="Move right">\u203a</button>');
     const view = canvasIn(wrap);
     const ctx = view.ctx;
     const el = (id) => stage.querySelector("#" + id);
@@ -117,7 +122,7 @@
       if (!started) begin();
       if (pad === lastPad) return;        // both feet, or it isn't running
       lastPad = pad;
-      pace = clamp(pace + 0.075, 0, 1);
+      pace = clamp(pace + 0.085, 0, 1);
     };
     const steer = (d) => { if (!over) lane = clamp(lane + d, 0, 2); };
 
@@ -133,6 +138,9 @@
     stage.querySelectorAll(".belt-pad").forEach((p) => {
       const hit = (e) => { e.preventDefault(); step(p.dataset.pad); };
       p.addEventListener("pointerdown", hit);
+    });
+    wrap.querySelectorAll(".belt-steer").forEach((b) => {
+      b.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); steer(+b.dataset.steer); });
     });
     view.c.addEventListener("pointerdown", (e) => {
       const r = view.c.getBoundingClientRect();
@@ -167,7 +175,11 @@
       last = now;
 
       if (started && !over) {
-        pace = clamp(pace - dt * 0.62, 0, 1);          // stop stepping, stop moving
+        // Decay has to ease off as you slow, or there is no equilibrium: a flat
+        // rate means any tempo below break-even leaves you stuck at zero no
+        // matter how long you keep at it. Proportional + a small floor gives
+        // every tempo its own speed, and still brings you to a stop.
+        pace = clamp(pace - dt * (0.04 + pace * 0.32), 0, 1);
         const kmh = pace * 15.5;
         const mps = kmh / 3.6;
         dist += mps * dt;
@@ -185,23 +197,26 @@
         if (now - callAt > 7000) newCall(now);
 
         // tokens arrive faster the faster you are going
-        if (Math.random() < dt * (1.6 + pace * 4)) {
+        if (pace > 0.06 && Math.random() < dt * (0.7 + pace * 5)) {
           tokens.push({ z: 1, lane: Math.floor(Math.random() * 3),
                         c: Math.floor(Math.random() * COLOURS.length) });
         }
-        for (const t of tokens) t.z -= dt * (0.16 + pace * 0.72);
+        for (const t of tokens) t.z -= dt * pace * 0.95;   // stand still, nothing comes
         for (let i = tokens.length - 1; i >= 0; i--) {
           const t = tokens[i];
           if (t.z <= 0.04) {
             if (t.lane === lane) {
               if (t.c === target) { score += 10; flash = 1; flashCol = COLOURS[t.c].hex; }
-              else { score = Math.max(0, score - 4); pace = clamp(pace - 0.22, 0, 1); flash = 1; flashCol = "#e0473f"; }
+              // a wrong colour should sting, not end the run: 0.22 was a quarter
+              // of your pace, and at speed you meet enough tokens that running
+              // fast actively made you slower than jogging
+              else { score = Math.max(0, score - 4); pace = clamp(pace - 0.09, 0, 1); flash = 1; flashCol = "#e0473f"; }
             }
             tokens.splice(i, 1);
           }
         }
         for (let i = 0; i < rungs.length; i++) {
-          rungs[i] -= dt * (0.18 + pace * 0.8);
+          rungs[i] -= dt * pace * 0.95;
           if (rungs[i] <= 0) rungs[i] += 1;
         }
         runCycle += dt * (2 + pace * 12);
@@ -280,24 +295,54 @@
       }
     }
 
+    /* We are behind him, so a run cycle here is not legs swinging side to
+       side — that reads as a star jump. From this angle running is one leg
+       planted while the other kicks its heel up behind, alternating. */
     function drawRunner(x, y, w) {
-      const sc = Math.max(0.7, Math.min(w / 420, 1.5));
-      const swing = Math.sin(runCycle) * (0.35 + pace * 0.75);
-      const bob = Math.abs(Math.cos(runCycle)) * 4 * (0.3 + pace);
+      const sc = Math.max(1.25, Math.min(w / 190, 2.6));
+      const drive = 0.32 + pace * 0.68;                 // a stance at rest, a stride at speed
+      const bob = Math.abs(Math.cos(runCycle)) * 4.5 * sc * (0.25 + pace);
       const yy = y - bob;
-      ctx.strokeStyle = "#f2f0ea";
-      ctx.lineWidth = 4 * sc;
+      const lean = 3 * sc * (0.25 + pace);
+
+      const leg = (side, ph) => {
+        const lift = Math.max(0, Math.sin(ph)) * drive;
+        const hipX = x + side * 4.6 * sc, hipY = yy - 2 * sc;
+        const kneeX = hipX + side * 1.4 * sc, kneeY = hipY + 13 * sc - lift * 6.5 * sc;
+        const footX = kneeX - side * 1.2 * sc - lift * 2 * sc * side;
+        const footY = kneeY + 13 * sc - lift * 15 * sc;
+        ctx.moveTo(hipX, hipY); ctx.lineTo(kneeX, kneeY); ctx.lineTo(footX, footY);
+      };
+      const arm = (side, ph) => {
+        const sw = Math.sin(ph) * drive;
+        const shX = x + side * 7 * sc + lean, shY = yy - 23 * sc;
+        const elX = shX + side * 3.4 * sc, elY = shY + 10 * sc;
+        ctx.moveTo(shX, shY); ctx.lineTo(elX, elY);
+        ctx.lineTo(elX + side * 1.5 * sc - sw * 3.5 * sc, elY + 8 * sc - Math.abs(sw) * 3 * sc);
+      };
+      const body = () => {
+        ctx.beginPath();
+        ctx.moveTo(x - 7 * sc + lean, yy - 23 * sc); ctx.lineTo(x + 7 * sc + lean, yy - 23 * sc);  // shoulders
+        ctx.moveTo(x - 4.6 * sc, yy - 2 * sc); ctx.lineTo(x + 4.6 * sc, yy - 2 * sc);              // hips
+        ctx.moveTo(x + lean, yy - 23 * sc); ctx.lineTo(x, yy - 2 * sc);                            // spine
+        leg(1, runCycle); leg(-1, runCycle + Math.PI);
+        arm(1, runCycle + Math.PI); arm(-1, runCycle);
+        ctx.stroke();
+      };
+
       ctx.lineCap = "round";
-      ctx.beginPath();                                   // legs
-      ctx.moveTo(x, yy); ctx.lineTo(x + swing * 16 * sc, yy + 22 * sc);
-      ctx.moveTo(x, yy); ctx.lineTo(x - swing * 16 * sc, yy + 22 * sc);
-      ctx.moveTo(x, yy - 26 * sc); ctx.lineTo(x, yy);    // body
-      ctx.moveTo(x, yy - 20 * sc); ctx.lineTo(x - swing * 14 * sc, yy - 6 * sc);
-      ctx.moveTo(x, yy - 20 * sc); ctx.lineTo(x + swing * 14 * sc, yy - 6 * sc);
-      ctx.stroke();
-      ctx.beginPath();                                   // head
-      ctx.arc(x, yy - 33 * sc, 7 * sc, 0, Math.PI * 2);
-      ctx.fillStyle = "#f2f0ea"; ctx.fill();
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "rgba(0,0,0,0.38)";   // an outline, or he vanishes into the belt
+      ctx.lineWidth = 8.5 * sc;
+      body();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 4.4 * sc;
+      body();
+
+      ctx.beginPath();
+      ctx.arc(x + lean * 1.2, yy - 31 * sc, 7.4 * sc, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(0,0,0,0.38)"; ctx.lineWidth = 3.4 * sc; ctx.stroke();
+      ctx.fillStyle = "#ffffff"; ctx.fill();
     }
 
     function finish() {
