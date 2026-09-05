@@ -1710,6 +1710,7 @@
     overflow-y: auto;
   }
   .tgm.open { display: flex; }
+  @supports (height: 100dvh) { .tgm { height: 100dvh; } }
   .tgm-head {
     width: min(100%, 640px);
     text-align: center;
@@ -1742,7 +1743,8 @@
     padding: 16px 16px max(18px, env(safe-area-inset-bottom));
     margin-bottom: auto;
   }
-  .tgm-canvas { display: block; width: 100%; height: 100%; }
+  .tgm-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .belt-pad, .belt-steer, .cb-btn, .tgm-over button, .tgm-close { touch-action: none; }
   .tgm-help {
     margin-top: 12px;
     text-align: center;
@@ -1909,9 +1911,19 @@
   .nw-note { text-align: center; margin-top: 12px; font-size: 0.82rem; color: #9aa3b4; min-height: 1.3em; }
 
   @media (max-width: 480px) {
-    .belt-wrap { max-height: 44vh; }
-    .cb-wrap { max-height: 38vh; }
-    .nw-wrap { max-height: 48vh; }
+    .belt-wrap { max-height: 38vh; }
+    .cb-wrap { max-height: 36vh; }
+    .nw-wrap { max-height: 46vh; }
+    .tgm-head { padding-top: max(14px, env(safe-area-inset-top)); }
+    .tgm-head p { font-size: 0.76rem; }
+    .tgm-help { font-size: 0.66rem; }
+  }
+  @supports (height: 100dvh) {
+    @media (max-width: 480px) {
+      .belt-wrap { max-height: 38dvh; }
+      .cb-wrap { max-height: 36dvh; }
+      .nw-wrap { max-height: 46dvh; }
+    }
   }
 
   /* ---------- scroll reveal ---------- */
