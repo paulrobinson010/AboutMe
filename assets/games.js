@@ -380,7 +380,9 @@
 
   /* ══ 2. CAR BACK ══════════════════════════════════════════════════════
      What CycleHUD is actually for: knowing what's behind you without looking.
-     Call each car as it closes — too eager and you've cried wolf. */
+     The sweep is the whole game — a car only counts while the beam is on it,
+     which is the moment a radar actually tells you anything. Miss the window
+     and you wait for the beam to come round again. */
   mount("carback", "#open-carback, .t-cycle .mark", (stage) => {
     stage.innerHTML =
       '<div class="cb-top">' +
@@ -390,8 +392,8 @@
       '<div class="cb-wrap"></div>' +
       '<div class="cb-call" id="cb-call">Watch your six</div>' +
       '<button class="cb-btn" id="cb-btn" type="button">Call it</button>' +
-      '<p class="tgm-help">A car is worth calling once it reaches the inner ring. ' +
-      '<kbd>Space</kbd> works too. Call an empty road and you have cried wolf.</p>';
+      '<p class="tgm-help">Call a car while the sweep is <b>lighting it up</b> and it turns green. ' +
+      '<kbd>Space</kbd> works too. Call an empty beam and you have cried wolf.</p>';
 
     const wrap = stage.querySelector(".cb-wrap");
     const view = canvasIn(wrap, "cb-canvas");
@@ -400,23 +402,36 @@
     const timeEl = stage.querySelector("#cb-time");
     const callEl = stage.querySelector("#cb-call");
 
+    const SWEEP = 1.5;          // radians a second
+    const LIT = 0.52;           // how far behind the beam a car stays callable
+    const AHEAD = 0.10;         // and a touch of grace in front of it
     let cars = [], score = 0, sweep = 0, over = false;
     let t0 = performance.now(), last = t0, raf = 0, flash = 0, flashOk = true;
-    const IN = 0.42, GONE = 0.1;      // callable band, and the point it's past you
 
     const say = (text, ok) => {
       callEl.textContent = text;
       callEl.style.color = ok ? "#25e3ee" : "#e0473f";
       flash = 1; flashOk = ok;
     };
+    // how far the beam has swept past a car, 0 = right on it
+    const behind = (a) => {
+      let d = (sweep - a) % (Math.PI * 2);
+      if (d < 0) d += Math.PI * 2;
+      return d > Math.PI * 2 - AHEAD ? d - Math.PI * 2 : d;
+    };
+    const isLit = (c) => { const d = behind(c.a); return d >= -AHEAD && d <= LIT; };
 
     const call = () => {
       if (over) return;
-      // the nearest car inside the band is the one you mean
-      let best = null;
-      for (const c of cars) if (!c.done && c.r <= IN && c.r > GONE) if (!best || c.r < best.r) best = c;
-      if (best) { best.done = true; score += 10; say("Car back — called", true); }
-      else { score = Math.max(0, score - 5); say("Nothing there", false); }
+      const hit = cars.filter(c => !c.done && isLit(c)).sort((a, b) => behind(a.a) - behind(b.a))[0];
+      if (hit) {
+        hit.done = true;
+        score += 10;
+        say("Car back — called", true);
+      } else {
+        score = Math.max(0, score - 5);
+        say("Nothing in the beam", false);
+      }
       scoreEl.textContent = score;
     };
     stage.querySelector("#cb-btn").addEventListener("click", call);
@@ -427,19 +442,19 @@
       raf = requestAnimationFrame(frame);
       const dt = Math.min((now - last) / 1000, 0.05) || 0;
       last = now;
-      sweep = (sweep + dt * 1.9) % (Math.PI * 2);
+      sweep = (sweep + dt * SWEEP) % (Math.PI * 2);
 
       if (!over) {
         const left = Math.max(0, 45 - (now - t0) / 1000);
         timeEl.textContent = Math.ceil(left);
         if (left <= 0) finish();
-        if (Math.random() < dt * 0.85 && cars.length < 4) {
-          cars.push({ r: 1, a: rand(0, Math.PI * 2), v: rand(0.075, 0.16), done: false });
+        if (Math.random() < dt * 0.8 && cars.length < 4) {
+          cars.push({ r: 1, a: rand(0, Math.PI * 2), v: rand(0.05, 0.1), done: false });
         }
         for (let i = cars.length - 1; i >= 0; i--) {
           const c = cars[i];
           c.r -= c.v * dt;
-          if (c.r <= GONE) {
+          if (c.r <= 0.08) {
             if (!c.done) { score = Math.max(0, score - 5); say("One went by uncalled", false); scoreEl.textContent = score; }
             cars.splice(i, 1);
           }
@@ -455,32 +470,35 @@
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#04121a"; ctx.fillRect(0, 0, w, h);
 
-      ctx.strokeStyle = "rgba(37,227,238,0.28)"; ctx.lineWidth = 1;
-      for (const f of [1, 0.72, IN, 0.2]) {
+      ctx.strokeStyle = "rgba(37,227,238,0.24)"; ctx.lineWidth = 1;
+      for (const f of [1, 0.72, 0.44, 0.2]) {
         ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, Math.PI * 2); ctx.stroke();
       }
-      ctx.strokeStyle = "rgba(37,227,238,0.5)"; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(cx, cy, R * IN, 0, Math.PI * 2); ctx.stroke();
 
-      const g = ctx.createConicGradient ? null : null;   // keep it simple and portable
-      ctx.save();                                        // sweep
+      ctx.save();                                        // the beam
       ctx.translate(cx, cy); ctx.rotate(sweep);
       const wedge = ctx.createLinearGradient(0, 0, R, 0);
-      wedge.addColorStop(0, "rgba(37,227,238,0.30)");
+      wedge.addColorStop(0, "rgba(37,227,238,0.34)");
       wedge.addColorStop(1, "rgba(37,227,238,0)");
       ctx.fillStyle = wedge;
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, R, -0.38, 0); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, R, -LIT, 0); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "rgba(37,227,238,0.75)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(R, 0); ctx.stroke();
       ctx.restore();
 
       for (const c of cars) {
         const x = cx + Math.cos(c.a) * R * c.r, y = cy + Math.sin(c.a) * R * c.r;
-        const near = c.r <= IN;
-        ctx.beginPath(); ctx.arc(x, y, near ? 8 : 6, 0, Math.PI * 2);
-        ctx.fillStyle = c.done ? "#28c46c" : near ? "#e6392e" : "#b23a32";
+        const lit = !c.done && isLit(c);
+        ctx.beginPath(); ctx.arc(x, y, c.done ? 7 : lit ? 9 : 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = c.done ? "#28c46c" : lit ? "#ff5347" : "#7d2a25";
         ctx.fill();
-        if (near && !c.done) {
-          ctx.beginPath(); ctx.arc(x, y, 8 + (1 - c.r / IN) * 10, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(230,57,46,0.5)"; ctx.lineWidth = 2; ctx.stroke();
+        if (lit) {                                       // this is the moment to call it
+          ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(255,83,71,0.65)"; ctx.lineWidth = 2.5; ctx.stroke();
+        }
+        if (c.done) {
+          ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(40,196,108,0.5)"; ctx.lineWidth = 2; ctx.stroke();
         }
       }
       ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2);
