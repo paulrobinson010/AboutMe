@@ -307,6 +307,7 @@
       // foreshortens his back rather than sliding him to one side. The old
       // term pushed head, shoulders and spine right and never came back.
       const torso = (23 - pace * 2.6) * sc;
+      const HEAD = 7 * sc, NECK = 6 * sc;       // clear daylight under the skull
 
       const leg = (side, ph) => {
         const lift = Math.max(0, Math.sin(ph)) * drive;
@@ -318,14 +319,17 @@
       };
       const arm = (side, ph) => {
         const sw = Math.sin(ph) * drive;
-        const shX = x + side * 7 * sc, shY = yy - torso;
+        const shX = x + side * 6.6 * sc, shY = yy - torso + 2.4 * sc;
         const elX = shX + side * 3.4 * sc, elY = shY + 10 * sc;
         ctx.moveTo(shX, shY); ctx.lineTo(elX, elY);
         ctx.lineTo(elX + side * (1.5 - sw * 3.5) * sc, elY + 8 * sc - Math.abs(sw) * 3 * sc);
       };
       const body = () => {
         ctx.beginPath();
-        ctx.moveTo(x - 7 * sc, yy - torso); ctx.lineTo(x + 7 * sc, yy - torso);      // shoulders
+        ctx.moveTo(x, yy - torso); ctx.lineTo(x, yy - torso - NECK);                 // neck
+        ctx.moveTo(x - 6.6 * sc, yy - torso + 2.4 * sc);                             // shoulders,
+        ctx.lineTo(x, yy - torso);                                                   // sloping
+        ctx.lineTo(x + 6.6 * sc, yy - torso + 2.4 * sc);                             // off the neck
         ctx.moveTo(x - 4.6 * sc, yy - 2 * sc); ctx.lineTo(x + 4.6 * sc, yy - 2 * sc);  // hips
         ctx.moveTo(x, yy - torso); ctx.lineTo(x, yy - 2 * sc);                          // spine
         leg(1, runCycle); leg(-1, runCycle + Math.PI);
@@ -343,7 +347,7 @@
       body();
 
       ctx.beginPath();
-      ctx.arc(x, yy - torso - 8 * sc, 7.4 * sc, 0, Math.PI * 2);
+      ctx.arc(x, yy - torso - NECK - HEAD, HEAD, 0, Math.PI * 2);
       ctx.strokeStyle = "rgba(0,0,0,0.38)"; ctx.lineWidth = 3.4 * sc; ctx.stroke();
       ctx.fillStyle = "#ffffff"; ctx.fill();
     }
