@@ -1052,6 +1052,8 @@
     touch-action: none;
   }
   .cube-stage:active { cursor: grabbing; }
+  /* Size is set from JavaScript, which also derives the maths from it, so the
+     two can never disagree. These are only a sensible starting point. */
   .cube-3d {
     width: 168px; height: 168px; position: relative;
     transform-style: preserve-3d;
@@ -1065,6 +1067,7 @@
   .sticker {
     position: absolute; width: 52px; height: 52px; left: 58px; top: 58px;
     border-radius: 9px; border: 2px solid #07090f;
+    /* width, height, offset and radius are all replaced inline on build */
     background: #14161c; backface-visibility: hidden;
     pointer-events: none;
   }
@@ -1099,10 +1102,6 @@
     margin-top: 10px; min-height: 1.4em; max-width: 420px;
   }
   .cube-note.win { color: var(--c-noob); font-weight: 800; }
-  @media (max-width: 420px) {
-    .cube-3d { width: 138px; height: 138px; }
-    .sticker { width: 42px; height: 42px; left: 48px; top: 48px; }
-  }
 
   /* ---------- the oche: hidden darts range (click the board) ---------- */
   .t-darts .preview img.board, .t-darts .mark { cursor: pointer; }
@@ -3350,7 +3349,7 @@
 </script>
 
 <script src="assets/games.js?v=2" defer></script>
-<script src="assets/cubebox.js?v=3" defer></script>
+<script src="assets/cubebox.js?v=4" defer></script>
 
 </body>
 </html>

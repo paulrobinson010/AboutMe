@@ -63,11 +63,30 @@
       ` translate3d(${c.home[0] * unit}px, ${c.home[1] * unit}px, ${c.home[2] * unit}px)`;
   };
 
+  /// Decide how big the cube should be, and lay the element out to match.
+  ///
+  /// The size is set here rather than read back from CSS. Measuring it meant
+  /// `unit` could disagree with what was actually on screen — and since the
+  /// ray-cast sizes its box from `unit`, a disagreement put every touch in the
+  /// wrong place.
+  const sizeCube = () => {
+    const rect = stage.getBoundingClientRect();
+    const available = Math.min(rect.width, rect.height) || 200;
+    const side = Math.max(120, Math.min(210, Math.floor(available * 0.68)));
+    unit = Math.max(30, Math.round(side / 3));
+    const total = unit * 3;
+    cubeEl.style.width = total + "px";
+    cubeEl.style.height = total + "px";
+    return total;
+  };
+
   const build = () => {
+    const total = sizeCube();
     cubeEl.innerHTML = "";
     cubies = [];
-    unit = Math.round(cubeEl.clientWidth / 3) || 56;
     const push = unit / 2;
+    const stickerSide = Math.round(unit * 0.88);
+    const stickerInset = Math.round((total - stickerSide) / 2);
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
@@ -80,6 +99,11 @@
             const face = document.createElement("div");
             face.className = "sticker";
             face.style.background = COLOUR[s.key];
+            face.style.width = stickerSide + "px";
+            face.style.height = stickerSide + "px";
+            face.style.left = stickerInset + "px";
+            face.style.top = stickerInset + "px";
+            face.style.borderRadius = Math.round(stickerSide * 0.17) + "px";
             face.style.transform = `${s.face} translateZ(${push}px)`;
             el.appendChild(face);
           });
@@ -364,6 +388,18 @@
     if (e) { e.preventDefault(); e.stopPropagation(); }
     box.classList.add("open");
     document.body.style.overflow = "hidden";
+
+    // Start clean. None of this was being reset, so a turn still animating when
+    // the overlay closed left `busy` stuck true — and a stuck `busy` makes every
+    // later swipe and every button do nothing at all. That is why it worked
+    // once and never again.
+    busy = false;
+    gesture = null;
+    history = [];
+    turns = 0;
+    turnsEl.textContent = "0";
+    view = { x: -22, y: -34 };
+
     build();
     setNote("Swipe a row to turn it. Drag off the cube to look around.");
   };
@@ -390,7 +426,13 @@
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && box.classList.contains("open")) close();
   });
+  // Only rebuild if the cube would actually be a different size. On a phone the
+  // address bar sliding in and out fires resize constantly, and rebuilding
+  // resets the cube mid-play.
   window.addEventListener("resize", () => {
-    if (box.classList.contains("open")) build();
+    if (!box.classList.contains("open") || busy) return;
+    const was = unit;
+    sizeCube();
+    if (unit !== was) build();
   });
 })();
