@@ -719,6 +719,12 @@
   .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
   .work-item.t-xmarks { --c: var(--c-xmarks); --g: var(--g-xmarks); }
   .work-item.t-noob { --c: var(--c-noob); --g: var(--g-noob); }
+  /* A finger is not a mouse pointer: give the cube chip a proper target on
+     touch, without changing how it sits on a desktop. */
+  @media (hover: none) {
+    .t-noob .play-chip { font-size: 0.78rem; padding: 11px 18px; }
+    .t-noob .mark { width: 52px; height: 52px; }
+  }
   /* NoobCube: the mark is a glowing cube, so let it turn rather than tilt */
   .t-noob .mark { background: transparent; border-color: transparent; }
   .t-noob:hover .mark { transform: rotate(-12deg) scale(1.12); }
@@ -3334,7 +3340,8 @@
   })();
 </script>
 
-<script src="assets/games.js" defer></script>
+<script src="assets/games.js?v=2" defer></script>
+<script src="assets/cubebox.js?v=1" defer></script>
 
 </body>
 </html>
