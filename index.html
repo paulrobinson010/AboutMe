@@ -1057,15 +1057,16 @@
     transform-style: preserve-3d;
     transition: transform 0.12s linear;
   }
-  /* A cubie is a full-size transparent box, so it would swallow every tap
-     before the sticker under the finger ever saw it. */
+  /* Nothing inside the cube takes pointer events: which sticker was touched is
+     worked out by projecting the touch back into the cube, so every gesture can
+     land on the stage and be captured there. */
   .cubie { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
   .cubie.turning { transition: transform 0.22s cubic-bezier(0.3, 0.9, 0.35, 1); }
   .sticker {
     position: absolute; width: 52px; height: 52px; left: 58px; top: 58px;
     border-radius: 9px; border: 2px solid #07090f;
     background: #14161c; backface-visibility: hidden;
-    pointer-events: auto; touch-action: none;
+    pointer-events: none;
   }
 
   .cube-keys {
@@ -3349,7 +3350,7 @@
 </script>
 
 <script src="assets/games.js?v=2" defer></script>
-<script src="assets/cubebox.js?v=2" defer></script>
+<script src="assets/cubebox.js?v=3" defer></script>
 
 </body>
 </html>

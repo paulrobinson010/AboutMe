@@ -212,6 +212,7 @@
   // Land on a sticker and you turn that layer; land anywhere else and you
   // swing the whole cube round to look at it.
 
+  const DEPTH = 900;                      // must match .cube-stage's perspective
   const radians = (d) => (d * Math.PI) / 180;
   const rotXf = (d) => [[1, 0, 0], [0, Math.cos(radians(d)), -Math.sin(radians(d))],
                         [0, Math.sin(radians(d)), Math.cos(radians(d))]];
@@ -222,19 +223,61 @@
                            a[0] * b[1] - a[1] * b[0]];
   const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
-  /// Work out which layer a swipe across a sticker means.
+  const transpose = (m) => [0, 1, 2].map((i) => [0, 1, 2].map((j) => m[j][i]));
+
+  /// Which sticker is under a touch, worked out rather than asked for.
+  ///
+  /// elementFromPoint cannot be trusted through a preserve-3d hierarchy — on a
+  /// phone it mostly came back with nothing, so every swipe fell through to
+  /// "spin the view" and the cube appeared to ignore you. This projects the
+  /// touch back into the cube instead: the set of points that land on that spot
+  /// of screen is a straight line, so it is just a ray against a box.
+  const stickerUnder = (clientX, clientY) => {
+    const rect = stage.getBoundingClientRect();
+    const sx = clientX - (rect.left + rect.width / 2);
+    const sy = clientY - (rect.top + rect.height / 2);
+    const half = 1.5 * unit;
+
+    // A point at depth t projects to this spot when its x and y are
+    // scaled by (DEPTH - t) / DEPTH, which is linear in t.
+    const back = transpose(mul(rotXf(view.x), rotYf(view.y)));
+    const start = apply(back, [sx, sy, 0]);
+    const along = apply(back, [-sx / DEPTH, -sy / DEPTH, 1]);
+
+    let near = -Infinity, far = Infinity;
+    for (let i = 0; i < 3; i++) {
+      if (Math.abs(along[i]) < 1e-9) {
+        if (Math.abs(start[i]) > half) return null;
+        continue;
+      }
+      let lo = (-half - start[i]) / along[i];
+      let hi = (half - start[i]) / along[i];
+      if (lo > hi) { const swap = lo; lo = hi; hi = swap; }
+      near = Math.max(near, lo);
+      far = Math.min(far, hi);
+    }
+    if (near > far) return null;
+
+    // Larger t is nearer the eye, so the far end of the span is the face you
+    // can actually see.
+    const hit = [0, 1, 2].map((i) => start[i] + far * along[i]);
+    const faceAxis = [0, 1, 2].reduce((a, b) => (Math.abs(hit[b]) > Math.abs(hit[a]) ? b : a), 0);
+
+    const normal = [0, 0, 0];
+    normal[faceAxis] = hit[faceAxis] > 0 ? 1 : -1;
+    const position = hit.map((v) => Math.max(-1, Math.min(1, Math.round(v / unit))));
+    position[faceAxis] = normal[faceAxis];
+    return { normal, position };
+  };
+
+  /// Work out which layer a swipe across a face means.
   ///
   /// Not "which turn moves this sticker most like my finger" — with the cube
   /// tilted, every turn looks diagonal on screen and that picks the wrong one.
   /// Instead: decide which way the finger is travelling *across the face*, then
   /// turn the layer at right angles to it, which is what a hand expects.
-  const swipeToTurn = (sticker, dx, dy) => {
-    const c = sticker.__cubie;
-    if (!c) return null;
-    const normal = apply(c.m, sticker.__normal);
-    const position = apply(c.m, c.home);
+  const swipeToTurn = (normal, position, dx, dy) => {
     const view3 = mul(rotXf(view.x), rotYf(view.y));
-
     const faceAxis = [0, 1, 2].reduce((a, b) =>
       Math.abs(normal[b]) > Math.abs(normal[a]) ? b : a, 0);
     const inPlane = [0, 1, 2].filter((i) => i !== faceAxis);
@@ -244,9 +287,9 @@
 
     let along = null;
     for (const i of inPlane) {
-      const unit = [0, 0, 0];
-      unit[i] = 1;
-      const onScreen = apply(view3, unit);
+      const unitAxis = [0, 0, 0];
+      unitAxis[i] = 1;
+      const onScreen = apply(view3, unitAxis);
       const size = Math.hypot(onScreen[0], onScreen[1]) || 1e-9;
       const alignment = (finger[0] * onScreen[0] + finger[1] * onScreen[1]) / size;
       if (!along || Math.abs(alignment) > Math.abs(along.alignment)) {
@@ -263,7 +306,7 @@
 
     return {
       axis,
-      layer: Math.round(position[axis]),
+      layer: position[axis],
       deg: dot(cross(spinUnit, position), travel) > 0 ? 90 : -90,
     };
   };
@@ -272,22 +315,24 @@
   const THRESHOLD = 16;
 
   stage.addEventListener("pointerdown", (e) => {
-    const hit = document.elementFromPoint(e.clientX, e.clientY);
-    const sticker = hit && hit.classList && hit.classList.contains("sticker") ? hit : null;
-    gesture = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, sticker, done: false };
+    gesture = {
+      x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY,
+      face: stickerUnder(e.clientX, e.clientY),
+      done: false,
+    };
     if (stage.setPointerCapture) stage.setPointerCapture(e.pointerId);
   });
 
   stage.addEventListener("pointermove", (e) => {
     if (!gesture) return;
 
-    if (gesture.sticker) {
+    if (gesture.face) {
       if (gesture.done || busy) return;
       const dx = e.clientX - gesture.x0;
       const dy = e.clientY - gesture.y0;
       if (Math.hypot(dx, dy) < THRESHOLD) return;
       gesture.done = true;
-      const move = swipeToTurn(gesture.sticker, dx, dy);
+      const move = swipeToTurn(gesture.face.normal, gesture.face.position, dx, dy);
       if (move) {
         busy = true;
         spin(move.axis, move.layer, move.deg, true).then(() => {
