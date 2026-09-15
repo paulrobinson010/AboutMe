@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Paul Robinson — I build things that keep score</title>
-<meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, Gaitway, It's Just a Game, Darts Scorer and X-Marks — apps for running, riding, walking, playing and scoring.">
+<meta name="description" content="Paul Robinson builds TreadGame, CycleHUD, Gaitway, It's Just a Game, Darts Scorer, X-Marks and NoobCube — apps for running, riding, walking, playing, scoring and solving.">
 <meta name="theme-color" content="#0a0a0f">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -40,6 +40,7 @@
     --c-darts: #28c46c;   /* DartsScorer board green */
     --c-xmarks: #f4c952;  /* X-Marks treasure gold (red X accent) */
     --c-gait:  #2bd9ff;   /* Gaitway electric cyan (gradient to magenta) */
+    --c-noob:  #3ce6f0;   /* NoobCube glow cyan (gradient to the wordmark's magenta) */
     --blob2: #2038c0;     /* aurora companions — overridden by the mood of the moment */
     --blob3: #401a66;
     --g-cycle: linear-gradient(100deg, #25e3ee 0%, #9b6bff 50%, #ff4fd8 100%);
@@ -48,6 +49,7 @@
     --g-darts: linear-gradient(100deg, #28c46c 0%, #28c46c 55%, #efe4c4 100%);
     --g-xmarks: linear-gradient(100deg, #e6392e 0%, #f4c952 60%, #3cc6e3 100%);
     --g-gait:  linear-gradient(100deg, #2bd9ff 0%, #b34dff 55%, #ff2e9e 100%);
+    --g-noob:  linear-gradient(100deg, #3ce6f0 0%, #9b6bff 55%, #f45cf0 100%);
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -716,6 +718,10 @@
 
   .work-item.t-darts { --c: var(--c-darts); --g: var(--g-darts); }
   .work-item.t-xmarks { --c: var(--c-xmarks); --g: var(--g-xmarks); }
+  .work-item.t-noob { --c: var(--c-noob); --g: var(--g-noob); }
+  /* NoobCube: the mark is a glowing cube, so let it turn rather than tilt */
+  .t-noob .mark { background: transparent; border-color: transparent; }
+  .t-noob:hover .mark { transform: rotate(-12deg) scale(1.12); }
   /* Darts Scorer: a real board for a mark, and a slow spin on hover */
   .t-darts .mark { border-radius: 50%; background: transparent; border-color: transparent; }
   .t-darts:hover .mark { transform: rotate(24deg) scale(1.1); box-shadow: 0 8px 30px color-mix(in srgb, var(--c-darts) 40%, transparent); }
@@ -1004,6 +1010,84 @@
   }
   footer .foot-row a { color: var(--muted); text-decoration: none; transition: color 0.3s; }
   footer .foot-row a:hover { color: var(--ink); }
+
+
+  /* ---------- the cubebox: a cube you can actually turn ---------- */
+  .cubebox {
+    position: fixed; inset: 0; z-index: 90; display: none;
+    flex-direction: column; align-items: center;
+    background: radial-gradient(900px 520px at 50% 0%, #10214a, #04070f 70%);
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    overscroll-behavior: contain; touch-action: none;
+  }
+  .cubebox.open { display: flex; }
+  .cubebox-top {
+    width: 100%; max-width: 560px; display: flex; align-items: center;
+    justify-content: space-between; gap: 12px;
+  }
+  .cubebox-top h3 {
+    font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.15rem;
+    text-transform: uppercase; color: #eaf2ff;
+  }
+  .cubebox-top .tally { color: #9fb0c3; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .cubebox-top .tally b { color: var(--c-noob); font-size: 1rem; }
+  .cubebox-close {
+    position: absolute; top: 14px; right: 14px; width: 42px; height: 42px;
+    border-radius: 50%; border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.06); color: #eaf2ff; font-size: 1rem;
+    cursor: pointer; z-index: 2;
+  }
+
+  .cube-stage {
+    flex: 1; width: 100%; display: grid; place-items: center;
+    perspective: 900px; min-height: 0; cursor: grab;
+  }
+  .cube-stage:active { cursor: grabbing; }
+  .cube-3d {
+    width: 168px; height: 168px; position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.12s linear;
+  }
+  .cubie { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .cubie.turning { transition: transform 0.22s cubic-bezier(0.3, 0.9, 0.35, 1); }
+  .sticker {
+    position: absolute; width: 52px; height: 52px; left: 58px; top: 58px;
+    border-radius: 9px; border: 2px solid #07090f;
+    background: #14161c; backface-visibility: hidden;
+  }
+
+  .cube-keys {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+    width: 100%; max-width: 420px; margin-top: 4px;
+  }
+  .cube-keys button {
+    font-family: inherit; font-weight: 800; font-size: 1rem;
+    padding: 12px 0; border-radius: 12px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06);
+    color: #eaf2ff;
+  }
+  .cube-keys button:active { transform: translateY(2px); }
+  .cube-acts {
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+    width: 100%; max-width: 420px; margin-top: 10px;
+  }
+  .cube-acts button {
+    font-family: inherit; font-weight: 700; font-size: 0.9rem;
+    padding: 11px 20px; border-radius: 100px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06);
+    color: #eaf2ff;
+  }
+  .cube-acts button.primary { background: var(--c-noob); border-color: var(--c-noob); color: #04070f; }
+  .cube-acts button[aria-pressed="true"] { background: rgba(60,230,240,0.22); border-color: var(--c-noob); }
+  .cube-note {
+    color: #9fb0c3; font-size: 0.85rem; text-align: center;
+    margin-top: 10px; min-height: 1.4em; max-width: 420px;
+  }
+  .cube-note.win { color: var(--c-noob); font-weight: 800; }
+  @media (max-width: 420px) {
+    .cube-3d { width: 138px; height: 138px; }
+    .sticker { width: 42px; height: 42px; left: 48px; top: 48px; }
+  }
 
   /* ---------- the oche: hidden darts range (click the board) ---------- */
   .t-darts .preview img.board, .t-darts .mark { cursor: pointer; }
@@ -2126,6 +2210,26 @@
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
 
+      <a class="work-item t-noob reveal" href="https://noobcube.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#3ce6f0">
+        <span class="idx"><i>/07</i><svg class="act a-twist" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.4" y="3.4" width="17.2" height="17.2" rx="2.6"/><path d="M9.1 3.6v16.8"/><path d="M14.9 3.6v16.8"/><path d="M3.6 9.1h16.8"/><path d="M3.6 14.9h16.8"/><g class="turn"><path d="M17.4 6.6a4.2 4.2 0 1 1-4.2-4.2"/><path d="M13.2 0.9l0 3 3 0"/></g></svg><b>Twist</b></span>
+        <div class="body">
+          <div class="title-row">
+            <img class="mark" src="assets/noob-logo.png" width="320" height="320" alt="" loading="lazy" decoding="async">
+            <h3>NoobCube</h3>
+          </div>
+          <div class="meta">
+            <span class="tag">Learning to cube</span><span class="tag">iOS</span><span class="tag">noobcube.robbo-online.uk</span><span class="play-chip" id="open-cubebox" role="button" tabindex="0">Twist one here</span>
+          </div>
+          <p class="season">The latest one</p>
+          <p class="desc"><strong>Because the five-year-old is obsessed.</strong> He got a cube, wanted it solved, and wanted it solved <em>again</em> ten minutes later. So: show the cube to the camera, and it walks him through the daisy method one move at a time — with an arrow showing which way to turn and a voice reading every step out loud, because he can't read yet.</p>
+        </div>
+        <div class="preview" aria-hidden="true">
+          <img class="sq" src="assets/noob-tile.webp" width="700" height="700" alt="" loading="lazy" decoding="async">
+        </div>
+        <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
+      </a>
+
+
     </div>
   </section>
 
@@ -2198,7 +2302,7 @@
     <div class="about-grid">
       <div class="reveal">
         <p class="lede">I'm Paul — a software developer turned <em>AI-turbocharged maker</em>, and I can't leave a hobby alone. If I run, ride, play or throw it, <em>sooner or later I build an app for it.</em></p>
-        <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." TreadGame was built because everything I could run with was really made for bikes and was no fun — so why not combine arcade and running? What's the worst that can happen! It was also the perfect excuse: building business apps by day made me want to experiment with Unity and game engines — a familiar language, a vastly different genre. CycleHUD exists because my bike radar came with a terrible app and I'd rather use the phone in my pocket than buy a cycle computer. Darts Scorer exists because I'm a mathematician turned software developer — and as everyone knows, mathematicians can't actually add up, so a camera does the pub maths for me, out loud. It's Just a Game was invented by my five-year-old — because the best games are the ones everyone in the room can play. And X-Marks exists to make a family walk something the kids actually ask for — though it's amazing how many of the points turn out to be in beer gardens. Gaitway is the newest, and it started with a question rather than a gadget: I run a lot of fields and little paths, and the routes all overlap without ever quite repeating. What if every run I'd ever done were joined up into one network — would it hand me routes I'd never thought to run, or new ways to push myself? So I built it to find out. Oh, and I do serious stuff too. Really serious stuff. But I get paid for that.</p>
+        <p class="copy">Every project here started the same way: doing something I enjoy and thinking "this would be better with a scoreboard." TreadGame was built because everything I could run with was really made for bikes and was no fun — so why not combine arcade and running? What's the worst that can happen! It was also the perfect excuse: building business apps by day made me want to experiment with Unity and game engines — a familiar language, a vastly different genre. CycleHUD exists because my bike radar came with a terrible app and I'd rather use the phone in my pocket than buy a cycle computer. Darts Scorer exists because I'm a mathematician turned software developer — and as everyone knows, mathematicians can't actually add up, so a camera does the pub maths for me, out loud. It's Just a Game was invented by my five-year-old — because the best games are the ones everyone in the room can play. And X-Marks exists to make a family walk something the kids actually ask for — though it's amazing how many of the points turn out to be in beer gardens. Gaitway is the newest, and it started with a question rather than a gadget: I run a lot of fields and little paths, and the routes all overlap without ever quite repeating. What if every run I'd ever done were joined up into one network — would it hand me routes I'd never thought to run, or new ways to push myself? So I built it to find out. NoobCube is the newest of the lot, and it is entirely the five-year-old's fault: he got a Rubik's cube, got obsessed, and wanted it solved again the moment it was done — so now the phone teaches him instead of me, out loud, because he can't read yet. Oh, and I do serious stuff too. Really serious stuff. But I get paid for that.</p>
       </div>
       <dl class="facts reveal">
         <div><dt>Name</dt><dd>Paul Robinson</dd></div>
@@ -2299,6 +2403,34 @@
     <p class="ag-result" id="ag-result">&nbsp;</p>
     <button class="ag-go" id="ag-go">Start</button>
   </div>
+</div>
+
+
+<div class="cubebox" id="cubebox" role="dialog" aria-label="A cube you can turn">
+  <div class="cubebox-top">
+    <h3>The Cubebox</h3>
+    <p class="tally">Turns <b id="cube-turns">0</b></p>
+  </div>
+  <button class="cubebox-close" id="cubebox-close" aria-label="Close">&#10005;</button>
+
+  <div class="cube-stage" id="cube-stage">
+    <div class="cube-3d" id="cube-3d"></div>
+  </div>
+
+  <div class="cube-keys" id="cube-keys">
+    <button data-move="U">U</button>
+    <button data-move="D">D</button>
+    <button data-move="L">L</button>
+    <button data-move="R">R</button>
+    <button data-move="F">F</button>
+    <button data-move="B">B</button>
+  </div>
+  <div class="cube-acts">
+    <button id="cube-dir" aria-pressed="false">Turning &#8635; this way</button>
+    <button id="cube-scramble">Scramble</button>
+    <button id="cube-solve" class="primary">Solve it</button>
+  </div>
+  <p class="cube-note" id="cube-note">Drag to look around. Tap a letter to turn that side.</p>
 </div>
 
 <div class="oche" id="oche" role="dialog" aria-label="Hidden darts game">
@@ -3201,7 +3333,243 @@
   })();
 </script>
 
-<script src="assets/games.js" defer></script>
+<script src="assets/games.js" defer>
+  /* ---------- 7 — the Cubebox: a cube you can actually turn ---------- */
+  (() => {
+    const box = document.getElementById("cubebox");
+    if (!box) return;
+    const stage = document.getElementById("cube-stage");
+    const cubeEl = document.getElementById("cube-3d");
+    const note = document.getElementById("cube-note");
+    const turnsEl = document.getElementById("cube-turns");
+    const dirBtn = document.getElementById("cube-dir");
+
+    // CSS space: x right, y DOWN, z towards you. So the top layer is y = -1.
+    const COLOUR = { U: "#f5f5f0", D: "#ffd61a", F: "#1cb359", B: "#0d6bd9", R: "#e02a2e", L: "#fa7d17" };
+    const STICKERS = [
+      { key: "U", n: [0, -1, 0], face: "rotateX(90deg)" },
+      { key: "D", n: [0, 1, 0], face: "rotateX(-90deg)" },
+      { key: "R", n: [1, 0, 0], face: "rotateY(90deg)" },
+      { key: "L", n: [-1, 0, 0], face: "rotateY(-90deg)" },
+      { key: "F", n: [0, 0, 1], face: "" },
+      { key: "B", n: [0, 0, -1], face: "rotateY(180deg)" },
+    ];
+    // Which axis each face spins about, and which layer it is.
+    // A clockwise turn is always 90 * layer degrees, which falls out of the
+    // handedness of CSS's coordinate space and saves six special cases.
+    const MOVES = {
+      U: { axis: 1, layer: -1 }, D: { axis: 1, layer: 1 },
+      R: { axis: 0, layer: 1 },  L: { axis: 0, layer: -1 },
+      F: { axis: 2, layer: 1 },  B: { axis: 2, layer: -1 },
+    };
+
+    const I = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    const mul = (a, b) => a.map((row, i) =>
+      [0, 1, 2].map((j) => row[0] * b[0][j] + row[1] * b[1][j] + row[2] * b[2][j]));
+    const apply = (m, v) => [0, 1, 2].map((i) => m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2]);
+
+    // Rotation about an axis by +-90, in CSS's convention.
+    const rot = (axis, deg) => {
+      const c = 0, s = deg > 0 ? 1 : -1;
+      if (axis === 0) return [[1, 0, 0], [0, c, -s], [0, s, c]];
+      if (axis === 1) return [[c, 0, s], [0, 1, 0], [-s, 0, c]];
+      return [[c, -s, 0], [s, c, 0], [0, 0, 1]];
+    };
+
+    let cubies = [], unit = 56, busy = false, history = [], turns = 0, clockwise = true;
+    let view = { x: -22, y: -34 };
+
+    const matrix3d = (m) => `matrix3d(${m[0][0]},${m[1][0]},${m[2][0]},0,` +
+      `${m[0][1]},${m[1][1]},${m[2][1]},0,` +
+      `${m[0][2]},${m[1][2]},${m[2][2]},0,0,0,0,1)`;
+
+    // The rotation has to come first so the cubie orbits the middle of the
+    // cube rather than spinning where it stands.
+    const place = (c) => {
+      c.el.style.transform = matrix3d(c.m) +
+        ` translate3d(${c.home[0] * unit}px, ${c.home[1] * unit}px, ${c.home[2] * unit}px)`;
+    };
+
+    const build = () => {
+      cubeEl.innerHTML = "";
+      cubies = [];
+      unit = Math.round(cubeEl.clientWidth / 3) || 56;
+      const push = unit / 2;
+      for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+          for (let z = -1; z <= 1; z++) {
+            if (!x && !y && !z) continue;
+            const el = document.createElement("div");
+            el.className = "cubie";
+            const home = [x, y, z];
+            STICKERS.forEach((s) => {
+              if (s.n[0] * x + s.n[1] * y + s.n[2] * z !== 1) return;
+              const face = document.createElement("div");
+              face.className = "sticker";
+              face.style.background = COLOUR[s.key];
+              face.style.transform = `${s.face} translateZ(${push}px)`;
+              el.appendChild(face);
+            });
+            cubeEl.appendChild(el);
+            const c = { el, home, m: I.map((r) => r.slice()) };
+            cubies.push(c);
+            place(c);
+          }
+        }
+      }
+      applyView();
+    };
+
+    const applyView = () => {
+      cubeEl.style.transform = `rotateX(${view.x}deg) rotateY(${view.y}deg)`;
+    };
+
+    const isSolved = () => {
+      const seen = {};
+      for (const c of cubies) {
+        for (const s of STICKERS) {
+          if (s.n[0] * c.home[0] + s.n[1] * c.home[1] + s.n[2] * c.home[2] !== 1) continue;
+          const dir = apply(c.m, s.n).join(",");
+          if (seen[dir] && seen[dir] !== s.key) return false;
+          seen[dir] = s.key;
+        }
+      }
+      return true;
+    };
+
+    const turn = (name, forward, animate) => new Promise((done) => {
+      const move = MOVES[name];
+      if (!move) return done();
+      const deg = (forward ? 1 : -1) * 90 * move.layer;
+      const R = rot(move.axis, deg);
+      const moving = cubies.filter((c) => apply(c.m, c.home)[move.axis] === move.layer);
+
+      moving.forEach((c) => {
+        if (animate) c.el.classList.add("turning");
+        c.m = mul(R, c.m);
+        place(c);
+      });
+
+      if (!animate) return done();
+      setTimeout(() => {
+        moving.forEach((c) => c.el.classList.remove("turning"));
+        done();
+      }, 230);
+    });
+
+    const setNote = (text, win) => {
+      note.textContent = text;
+      note.classList.toggle("win", !!win);
+    };
+
+    const doMove = async (name, forward, record) => {
+      if (busy) return;
+      busy = true;
+      await turn(name, forward, true);
+      if (record) {
+        history.push({ name, forward });
+        turns += 1;
+        turnsEl.textContent = turns;
+      }
+      busy = false;
+      if (isSolved() && turns > 0) {
+        setNote("Solved! " + turns + (turns === 1 ? " turn." : " turns."), true);
+      } else if (record) {
+        setNote("Drag to look around. Tap a letter to turn that side.");
+      }
+    };
+
+    document.getElementById("cube-keys").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-move]");
+      if (btn) doMove(btn.dataset.move, clockwise, true);
+    });
+
+    dirBtn.addEventListener("click", () => {
+      clockwise = !clockwise;
+      dirBtn.setAttribute("aria-pressed", String(!clockwise));
+      dirBtn.textContent = clockwise ? "Turning ↻ this way" : "Turning ↺ that way";
+    });
+
+    document.getElementById("cube-scramble").addEventListener("click", async () => {
+      if (busy) return;
+      busy = true;
+      setNote("Mixing it up…");
+      const names = Object.keys(MOVES);
+      let last = "";
+      for (let i = 0; i < 20; i++) {
+        let name = names[Math.floor(Math.random() * names.length)];
+        while (name === last) name = names[Math.floor(Math.random() * names.length)];
+        last = name;
+        const forward = Math.random() < 0.5;
+        await turn(name, forward, i > 14);
+        history.push({ name, forward });
+      }
+      turns = 0;
+      turnsEl.textContent = "0";
+      busy = false;
+      setNote("Your turn. Tap a letter to turn that side.");
+    });
+
+    document.getElementById("cube-solve").addEventListener("click", async () => {
+      if (busy || !history.length) return;
+      busy = true;
+      setNote("Winding it back…");
+      while (history.length) {
+        const step = history.pop();
+        await turn(step.name, !step.forward, true);
+      }
+      turns = 0;
+      turnsEl.textContent = "0";
+      busy = false;
+      setNote("Solved. Scramble it again?", true);
+    });
+
+    // Drag to look around.
+    let drag = null;
+    stage.addEventListener("pointerdown", (e) => {
+      drag = { x: e.clientX, y: e.clientY };
+      stage.setPointerCapture && stage.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      view.y += (e.clientX - drag.x) * 0.55;
+      view.x -= (e.clientY - drag.y) * 0.55;
+      view.x = Math.max(-85, Math.min(85, view.x));
+      drag = { x: e.clientX, y: e.clientY };
+      applyView();
+    });
+    const endDrag = () => { drag = null; };
+    stage.addEventListener("pointerup", endDrag);
+    stage.addEventListener("pointercancel", endDrag);
+
+    const open = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      box.classList.add("open");
+      document.body.style.overflow = "hidden";
+      build();
+      setNote("Drag to look around. Tap a letter to turn that side.");
+    };
+    const close = () => {
+      box.classList.remove("open");
+      document.body.style.overflow = "";
+    };
+
+    document.querySelectorAll("#open-cubebox, .t-noob .mark").forEach((el) => {
+      el.addEventListener("click", open);
+      el.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") open(ev);
+      });
+    });
+    document.getElementById("cubebox-close").addEventListener("click", close);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && box.classList.contains("open")) close();
+    });
+    window.addEventListener("resize", () => {
+      if (box.classList.contains("open")) build();
+    });
+  })();
+
+</script>
 
 </body>
 </html>
