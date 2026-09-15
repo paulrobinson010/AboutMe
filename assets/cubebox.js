@@ -16,6 +16,8 @@
   const note = document.getElementById("cube-note");
   const turnsEl = document.getElementById("cube-turns");
   const dirBtn = document.getElementById("cube-dir");
+  const undoBtn = document.getElementById("cube-undo");
+  const solveBtn = document.getElementById("cube-solve");
 
   // CSS space: x right, y DOWN, z towards you. So the top layer is y = -1.
   const COLOUR = { U: "#f5f5f0", D: "#ffd61a", F: "#1cb359", B: "#0d6bd9", R: "#e02a2e", L: "#fa7d17" };
@@ -50,6 +52,9 @@
   };
 
   let cubies = [], unit = 56, busy = false, history = [], turns = 0, clockwise = true;
+  // Where the player's own moves start. Undo stops here, so it takes back what
+  // you did rather than quietly unpicking the scramble.
+  let scrambledTo = 0;
   let view = { x: -22, y: -34 };
 
   const matrix3d = (m) => `matrix3d(${m[0][0]},${m[1][0]},${m[2][0]},0,` +
@@ -164,6 +169,11 @@
     return spin(move.axis, move.layer, (forward ? 1 : -1) * 90 * move.layer, animate);
   };
 
+  const refreshControls = () => {
+    if (undoBtn) undoBtn.disabled = busy || history.length <= scrambledTo;
+    if (solveBtn) solveBtn.disabled = busy || history.length === 0;
+  };
+
   const setNote = (text, win) => {
     note.textContent = text;
     note.classList.toggle("win", !!win);
@@ -179,6 +189,7 @@
       turnsEl.textContent = turns;
     }
     busy = false;
+    refreshControls();
     if (isSolved() && turns > 0) {
       setNote("Solved! " + turns + (turns === 1 ? " turn." : " turns."), true);
     } else if (record) {
@@ -197,9 +208,28 @@
     dirBtn.textContent = clockwise ? "Turning ↻ this way" : "Turning ↺ that way";
   });
 
+  /// Take back the last turn you made.
+  const undo = async () => {
+    if (busy || history.length <= scrambledTo) return;
+    busy = true;
+    refreshControls();
+    const step = history.pop();
+    await spin(step.axis, step.layer, -step.deg, true);
+    turns = Math.max(0, turns - 1);
+    turnsEl.textContent = turns;
+    busy = false;
+    refreshControls();
+    setNote(history.length > scrambledTo
+            ? "Taken back. Swipe a row to turn it."
+            : "Back where you started.");
+  };
+
+  if (undoBtn) undoBtn.addEventListener("click", undo);
+
   document.getElementById("cube-scramble").addEventListener("click", async () => {
     if (busy) return;
     busy = true;
+    refreshControls();
     setNote("Mixing it up…");
     const names = Object.keys(MOVES);
     let last = "";
@@ -213,13 +243,16 @@
     }
     turns = 0;
     turnsEl.textContent = "0";
+    scrambledTo = history.length;
     busy = false;
+    refreshControls();
     setNote("Your turn. Swipe a row to turn it.");
   });
 
   document.getElementById("cube-solve").addEventListener("click", async () => {
     if (busy || !history.length) return;
     busy = true;
+    refreshControls();
     setNote("Winding it back…");
     while (history.length) {
       const step = history.pop();
@@ -227,7 +260,9 @@
     }
     turns = 0;
     turnsEl.textContent = "0";
+    scrambledTo = 0;
     busy = false;
+    refreshControls();
     setNote("Solved. Scramble it again?", true);
   });
 
@@ -364,6 +399,7 @@
           turns += 1;
           turnsEl.textContent = turns;
           busy = false;
+          refreshControls();
           if (isSolved()) {
             setNote("Solved! " + turns + (turns === 1 ? " turn." : " turns."), true);
           }
@@ -396,11 +432,13 @@
     busy = false;
     gesture = null;
     history = [];
+    scrambledTo = 0;
     turns = 0;
     turnsEl.textContent = "0";
     view = { x: -22, y: -34 };
 
     build();
+    refreshControls();
     setNote("Swipe a row to turn it. Drag off the cube to look around.");
   };
   const close = () => {

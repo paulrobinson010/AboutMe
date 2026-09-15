@@ -1096,6 +1096,7 @@
     color: #eaf2ff;
   }
   .cube-acts button.primary { background: var(--c-noob); border-color: var(--c-noob); color: #04070f; }
+  .cube-acts button[disabled] { opacity: 0.35; cursor: default; }
   .cube-acts button[aria-pressed="true"] { background: rgba(60,230,240,0.22); border-color: var(--c-noob); }
   .cube-note {
     color: #9fb0c3; font-size: 0.85rem; text-align: center;
@@ -2441,6 +2442,7 @@
   </div>
   <div class="cube-acts">
     <button id="cube-dir" aria-pressed="false">Turning &#8635; this way</button>
+    <button id="cube-undo" disabled>&#8630; Undo</button>
     <button id="cube-scramble">Scramble</button>
     <button id="cube-solve" class="primary">Solve it</button>
   </div>
@@ -3349,7 +3351,7 @@
 </script>
 
 <script src="assets/games.js?v=2" defer></script>
-<script src="assets/cubebox.js?v=4" defer></script>
+<script src="assets/cubebox.js?v=5" defer></script>
 
 </body>
 </html>
