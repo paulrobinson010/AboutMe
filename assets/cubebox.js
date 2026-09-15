@@ -110,12 +110,10 @@
     return true;
   };
 
-  const turn = (name, forward, animate) => new Promise((done) => {
-    const move = MOVES[name];
-    if (!move) return done();
-    const deg = (forward ? 1 : -1) * 90 * move.layer;
-    const R = rot(move.axis, deg);
-    const moving = cubies.filter((c) => apply(c.m, c.home)[move.axis] === move.layer);
+  /// Turn one layer: every cubie whose position along `axis` sits in `layer`.
+  const spin = (axis, layer, deg, animate) => new Promise((done) => {
+    const R = rot(axis, deg);
+    const moving = cubies.filter((c) => Math.round(apply(c.m, c.home)[axis]) === layer);
 
     moving.forEach((c) => {
       if (animate) c.el.classList.add("turning");
@@ -130,6 +128,18 @@
     }, 230);
   });
 
+  /// The spin a named move stands for, so buttons and swipes record alike.
+  const moveSpin = (name, forward) => {
+    const m = MOVES[name];
+    return { axis: m.axis, layer: m.layer, deg: (forward ? 1 : -1) * 90 * m.layer };
+  };
+
+  const turn = (name, forward, animate) => {
+    const move = MOVES[name];
+    if (!move) return Promise.resolve();
+    return spin(move.axis, move.layer, (forward ? 1 : -1) * 90 * move.layer, animate);
+  };
+
   const setNote = (text, win) => {
     note.textContent = text;
     note.classList.toggle("win", !!win);
@@ -140,7 +150,7 @@
     busy = true;
     await turn(name, forward, true);
     if (record) {
-      history.push({ name, forward });
+      history.push(moveSpin(name, forward));
       turns += 1;
       turnsEl.textContent = turns;
     }
@@ -148,7 +158,7 @@
     if (isSolved() && turns > 0) {
       setNote("Solved! " + turns + (turns === 1 ? " turn." : " turns."), true);
     } else if (record) {
-      setNote("Drag to look around. Tap a letter to turn that side.");
+      setNote("Swipe a row to turn it. Drag off the cube to look around.");
     }
   };
 
@@ -175,12 +185,12 @@
       last = name;
       const forward = Math.random() < 0.5;
       await turn(name, forward, i > 14);
-      history.push({ name, forward });
+      history.push(moveSpin(name, forward));
     }
     turns = 0;
     turnsEl.textContent = "0";
     busy = false;
-    setNote("Your turn. Tap a letter to turn that side.");
+    setNote("Your turn. Swipe a row to turn it.");
   });
 
   document.getElementById("cube-solve").addEventListener("click", async () => {
@@ -189,7 +199,7 @@
     setNote("Winding it back…");
     while (history.length) {
       const step = history.pop();
-      await turn(step.name, !step.forward, true);
+      await spin(step.axis, step.layer, -step.deg, true);
     }
     turns = 0;
     turnsEl.textContent = "0";
@@ -197,30 +207,120 @@
     setNote("Solved. Scramble it again?", true);
   });
 
-  // Drag to look around.
-  let drag = null;
+  // ── dragging ──────────────────────────────────────────────────────────
+  //
+  // Land on a sticker and you turn that layer; land anywhere else and you
+  // swing the whole cube round to look at it.
+
+  const radians = (d) => (d * Math.PI) / 180;
+  const rotXf = (d) => [[1, 0, 0], [0, Math.cos(radians(d)), -Math.sin(radians(d))],
+                        [0, Math.sin(radians(d)), Math.cos(radians(d))]];
+  const rotYf = (d) => [[Math.cos(radians(d)), 0, Math.sin(radians(d))], [0, 1, 0],
+                        [-Math.sin(radians(d)), 0, Math.cos(radians(d))]];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1],
+                           a[2] * b[0] - a[0] * b[2],
+                           a[0] * b[1] - a[1] * b[0]];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+  /// Work out which layer a swipe across a sticker means.
+  ///
+  /// Not "which turn moves this sticker most like my finger" — with the cube
+  /// tilted, every turn looks diagonal on screen and that picks the wrong one.
+  /// Instead: decide which way the finger is travelling *across the face*, then
+  /// turn the layer at right angles to it, which is what a hand expects.
+  const swipeToTurn = (sticker, dx, dy) => {
+    const c = sticker.__cubie;
+    if (!c) return null;
+    const normal = apply(c.m, sticker.__normal);
+    const position = apply(c.m, c.home);
+    const view3 = mul(rotXf(view.x), rotYf(view.y));
+
+    const faceAxis = [0, 1, 2].reduce((a, b) =>
+      Math.abs(normal[b]) > Math.abs(normal[a]) ? b : a, 0);
+    const inPlane = [0, 1, 2].filter((i) => i !== faceAxis);
+
+    const length = Math.hypot(dx, dy) || 1;
+    const finger = [dx / length, dy / length];
+
+    let along = null;
+    for (const i of inPlane) {
+      const unit = [0, 0, 0];
+      unit[i] = 1;
+      const onScreen = apply(view3, unit);
+      const size = Math.hypot(onScreen[0], onScreen[1]) || 1e-9;
+      const alignment = (finger[0] * onScreen[0] + finger[1] * onScreen[1]) / size;
+      if (!along || Math.abs(alignment) > Math.abs(along.alignment)) {
+        along = { alignment, axis: i };
+      }
+    }
+    if (!along) return null;
+
+    const travel = [0, 0, 0];
+    travel[along.axis] = along.alignment > 0 ? 1 : -1;
+    const axis = inPlane.find((i) => i !== along.axis);
+    const spinUnit = [0, 0, 0];
+    spinUnit[axis] = 1;
+
+    return {
+      axis,
+      layer: Math.round(position[axis]),
+      deg: dot(cross(spinUnit, position), travel) > 0 ? 90 : -90,
+    };
+  };
+
+  let gesture = null;
+  const THRESHOLD = 16;
+
   stage.addEventListener("pointerdown", (e) => {
-    drag = { x: e.clientX, y: e.clientY };
-    stage.setPointerCapture && stage.setPointerCapture(e.pointerId);
+    const hit = document.elementFromPoint(e.clientX, e.clientY);
+    const sticker = hit && hit.classList && hit.classList.contains("sticker") ? hit : null;
+    gesture = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, sticker, done: false };
+    if (stage.setPointerCapture) stage.setPointerCapture(e.pointerId);
   });
+
   stage.addEventListener("pointermove", (e) => {
-    if (!drag) return;
-    view.y += (e.clientX - drag.x) * 0.55;
-    view.x -= (e.clientY - drag.y) * 0.55;
+    if (!gesture) return;
+
+    if (gesture.sticker) {
+      if (gesture.done || busy) return;
+      const dx = e.clientX - gesture.x0;
+      const dy = e.clientY - gesture.y0;
+      if (Math.hypot(dx, dy) < THRESHOLD) return;
+      gesture.done = true;
+      const move = swipeToTurn(gesture.sticker, dx, dy);
+      if (move) {
+        busy = true;
+        spin(move.axis, move.layer, move.deg, true).then(() => {
+          history.push(move);
+          turns += 1;
+          turnsEl.textContent = turns;
+          busy = false;
+          if (isSolved()) {
+            setNote("Solved! " + turns + (turns === 1 ? " turn." : " turns."), true);
+          }
+        });
+      }
+      return;
+    }
+
+    view.y += (e.clientX - gesture.x) * 0.55;
+    view.x -= (e.clientY - gesture.y) * 0.55;
     view.x = Math.max(-85, Math.min(85, view.x));
-    drag = { x: e.clientX, y: e.clientY };
+    gesture.x = e.clientX;
+    gesture.y = e.clientY;
     applyView();
   });
-  const endDrag = () => { drag = null; };
-  stage.addEventListener("pointerup", endDrag);
-  stage.addEventListener("pointercancel", endDrag);
+
+  const endGesture = () => { gesture = null; };
+  stage.addEventListener("pointerup", endGesture);
+  stage.addEventListener("pointercancel", endGesture);
 
   const open = (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     box.classList.add("open");
     document.body.style.overflow = "hidden";
     build();
-    setNote("Drag to look around. Tap a letter to turn that side.");
+    setNote("Swipe a row to turn it. Drag off the cube to look around.");
   };
   const close = () => {
     box.classList.remove("open");

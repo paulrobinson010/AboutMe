@@ -1047,6 +1047,9 @@
   .cube-stage {
     flex: 1; width: 100%; display: grid; place-items: center;
     perspective: 900px; min-height: 0; cursor: grab;
+    /* touch-action does not inherit, so the overlay having it does nothing
+       for what sits inside — the cube would fight the page for the drag. */
+    touch-action: none;
   }
   .cube-stage:active { cursor: grabbing; }
   .cube-3d {
@@ -1054,12 +1057,15 @@
     transform-style: preserve-3d;
     transition: transform 0.12s linear;
   }
-  .cubie { position: absolute; inset: 0; transform-style: preserve-3d; }
+  /* A cubie is a full-size transparent box, so it would swallow every tap
+     before the sticker under the finger ever saw it. */
+  .cubie { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
   .cubie.turning { transition: transform 0.22s cubic-bezier(0.3, 0.9, 0.35, 1); }
   .sticker {
     position: absolute; width: 52px; height: 52px; left: 58px; top: 58px;
     border-radius: 9px; border: 2px solid #07090f;
     background: #14161c; backface-visibility: hidden;
+    pointer-events: auto; touch-action: none;
   }
 
   .cube-keys {
@@ -1069,6 +1075,7 @@
   .cube-keys button {
     font-family: inherit; font-weight: 800; font-size: 1rem;
     padding: 12px 0; border-radius: 12px; cursor: pointer;
+    touch-action: manipulation;
     border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06);
     color: #eaf2ff;
   }
@@ -1080,6 +1087,7 @@
   .cube-acts button {
     font-family: inherit; font-weight: 700; font-size: 0.9rem;
     padding: 11px 20px; border-radius: 100px; cursor: pointer;
+    touch-action: manipulation;
     border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06);
     color: #eaf2ff;
   }
@@ -2436,7 +2444,7 @@
     <button id="cube-scramble">Scramble</button>
     <button id="cube-solve" class="primary">Solve it</button>
   </div>
-  <p class="cube-note" id="cube-note">Drag to look around. Tap a letter to turn that side.</p>
+  <p class="cube-note" id="cube-note">Swipe a row to turn it. Drag off the cube to look around.</p>
 </div>
 
 <div class="oche" id="oche" role="dialog" aria-label="Hidden darts game">
@@ -3341,7 +3349,7 @@
 </script>
 
 <script src="assets/games.js?v=2" defer></script>
-<script src="assets/cubebox.js?v=1" defer></script>
+<script src="assets/cubebox.js?v=2" defer></script>
 
 </body>
 </html>
