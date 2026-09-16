@@ -725,6 +725,20 @@
     .t-noob .play-chip { font-size: 0.78rem; padding: 11px 18px; }
     .t-noob .mark { width: 52px; height: 52px; }
   }
+  /* Real cubes, scrambling and unwinding behind the row. Sat at the same depth
+     as the hover wash and after it in the markup, so it lies over the wash and
+     under every word. It is a grid item that must not take part in the grid,
+     hence absolute; and it must never eat the row's link, hence no pointer
+     events. */
+  .noob-cubes {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+  }
+
   /* NoobCube: the mark is a glowing cube, so let it turn rather than tilt */
   .t-noob .mark { background: transparent; border-color: transparent; }
   .t-noob:hover .mark { transform: rotate(-12deg) scale(1.12); }
@@ -2226,6 +2240,7 @@
       </a>
 
       <a class="work-item t-noob reveal" href="https://noobcube.robbo-online.uk" target="_blank" rel="noopener" data-hover data-accent="#3ce6f0">
+        <canvas id="noob-cubes" class="noob-cubes" aria-hidden="true"></canvas>
         <span class="idx"><i>/07</i><svg class="act a-twist" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.4" y="3.4" width="17.2" height="17.2" rx="2.6"/><path d="M9.1 3.6v16.8"/><path d="M14.9 3.6v16.8"/><path d="M3.6 9.1h16.8"/><path d="M3.6 14.9h16.8"/><g class="turn"><path d="M17.4 6.6a4.2 4.2 0 1 1-4.2-4.2"/><path d="M13.2 0.9l0 3 3 0"/></g></svg><b>Twist</b></span>
         <div class="body">
           <div class="title-row">
@@ -2239,7 +2254,11 @@
           <p class="desc"><strong>Because the five-year-old is obsessed.</strong> He got a cube, wanted it solved, and wanted it solved <em>again</em> ten minutes later. So: show the cube to the camera, and it walks him through the daisy method one move at a time — with an arrow showing which way to turn and a voice reading every step out loud, because he can't read yet.</p>
         </div>
         <div class="preview" aria-hidden="true">
-          <img class="sq" src="assets/noob-tile.webp" width="700" height="700" alt="" loading="lazy" decoding="async">
+          <img src="assets/noob-shot-1.webp" width="460" height="997" alt="" loading="lazy" decoding="async">
+          <img src="assets/noob-shot-2.webp" width="460" height="997" alt="" loading="lazy" decoding="async">
+          <img src="assets/noob-shot-3.webp" width="460" height="997" alt="" loading="lazy" decoding="async">
+          <img src="assets/noob-shot-4.webp" width="460" height="997" alt="" loading="lazy" decoding="async">
+          <img src="assets/noob-shot-5.webp" width="460" height="997" alt="" loading="lazy" decoding="async">
         </div>
         <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg></span>
       </a>
@@ -3352,6 +3371,7 @@
 
 <script src="assets/games.js?v=2" defer></script>
 <script src="assets/cubebox.js?v=5" defer></script>
+<script src="assets/noob-cubes.js?v=1" defer></script>
 
 </body>
 </html>
