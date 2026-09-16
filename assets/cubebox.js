@@ -20,7 +20,12 @@
   const solveBtn = document.getElementById("cube-solve");
 
   // CSS space: x right, y DOWN, z towards you. So the top layer is y = -1.
-  const COLOUR = { U: "#f5f5f0", D: "#ffd61a", F: "#1cb359", B: "#0d6bd9", R: "#e02a2e", L: "#fa7d17" };
+  /* BEGIN generated from Design/tokens.json */
+  const COLOUR = { U: "#f3f3f3", D: "#ffd804", F: "#09d647", B: "#0570fd", R: "#fd1b15", L: "#fe8804" };
+  const STICKER = 0.84;   // how much of a face the sticker covers
+  const STICKER_RADIUS = "22%";
+  const POSE = { x: -24, y: -36 };   // how it sits before you touch it
+  /* END generated */
   const STICKERS = [
     { key: "U", n: [0, -1, 0], face: "rotateX(90deg)" },
     { key: "D", n: [0, 1, 0], face: "rotateX(-90deg)" },
@@ -55,7 +60,7 @@
   // Where the player's own moves start. Undo stops here, so it takes back what
   // you did rather than quietly unpicking the scramble.
   let scrambledTo = 0;
-  let view = { x: -22, y: -34 };
+  let view = { x: POSE.x, y: POSE.y };
 
   const matrix3d = (m) => `matrix3d(${m[0][0]},${m[1][0]},${m[2][0]},0,` +
     `${m[0][1]},${m[1][1]},${m[2][1]},0,` +
@@ -90,7 +95,7 @@
     cubeEl.innerHTML = "";
     cubies = [];
     const push = unit / 2;
-    const stickerSide = Math.round(unit * 0.88);
+    const stickerSide = Math.round(unit * STICKER);
     const stickerInset = Math.round((total - stickerSide) / 2);
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
@@ -108,7 +113,7 @@
             face.style.height = stickerSide + "px";
             face.style.left = stickerInset + "px";
             face.style.top = stickerInset + "px";
-            face.style.borderRadius = Math.round(stickerSide * 0.17) + "px";
+            face.style.borderRadius = STICKER_RADIUS;
             face.style.transform = `${s.face} translateZ(${push}px)`;
             el.appendChild(face);
           });
@@ -435,7 +440,7 @@
     scrambledTo = 0;
     turns = 0;
     turnsEl.textContent = "0";
-    view = { x: -22, y: -34 };
+    view = { x: POSE.x, y: POSE.y };
 
     build();
     refreshControls();
