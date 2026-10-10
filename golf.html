@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script>
+  // iPhone Safari zooms in on any text box it thinks is small, and doesn't
+  // zoom back out — tapping a player's name blew the page up. maximum-scale
+  // stops that auto-zoom; iOS still lets you pinch-zoom regardless. Only on
+  // iOS: Android doesn't auto-zoom, and there it would block pinch-zoom.
+  if (/iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1))
+    document.querySelector('meta[name="viewport"]').content += ", maximum-scale=1";
+</script>
 <meta name="theme-color" content="#07080f">
 <title>Putt. — mini golf scorecard</title>
 <meta name="description" content="A glow-in-the-dark mini golf scorecard. Any number of players, any number of holes. Nothing stored — the card lives in the link.">
@@ -109,7 +117,9 @@
   }
   .field:focus-within { border-color: var(--turf); box-shadow: 0 0 0 3px rgba(57, 255, 136, 0.15); }
   .field svg { flex: none; width: 26px; height: 26px; }
-  .field input { flex: 1; min-width: 0; background: none; border: 0; outline: none; font-size: 1.05rem; padding: 6px 0; }
+  /* 18px: comfortably over the 16px below which phones zoom in on focus,
+     even with the browser's text a notch smaller */
+  .field input { flex: 1; min-width: 0; background: none; border: 0; outline: none; font-size: max(18px, 1.1rem); padding: 6px 0; }
   .field input::placeholder { color: rgba(242, 240, 234, 0.35); }
   .holes { justify-content: space-between; }
   .holes .num { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 2rem; min-width: 2.2ch; text-align: center; color: var(--turf); text-shadow: 0 0 12px rgba(57, 255, 136, 0.6); }
@@ -352,7 +362,7 @@
   td.total { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 1.05rem; }
   .again { display: flex; gap: 10px; margin-top: 18px; }
   .again button { flex: 1; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .loop { display: block; width: 120px; margin: 0 auto; overflow: visible; }
+  .done-mill .windmill { width: 150px; margin: 6px auto 0; }
   .save-card {
     display: flex; align-items: center; justify-content: center; gap: 10px;
     width: 100%; margin-top: 18px; padding: 16px;
@@ -473,15 +483,7 @@
 
   <!-- ===== the 19th hole ===== -->
   <section class="screen" id="done">
-    <svg class="loop" viewBox="0 0 120 110" aria-hidden="true">
-      <!-- the loop-the-loop: the ball rides the track itself, in along the
-           bottom, up and over the loop, and out the far side -->
-      <path id="loop-track" d="M0 100 H38 C60 100 86 92 86 62 A26 26 0 1 0 34 62 C34 92 60 100 82 100 H120" fill="none" stroke="#39ff88" stroke-width="4" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #39ff88)"/>
-      <circle class="loop-ball" r="5.5" fill="#fff" style="filter:drop-shadow(0 0 6px #fff)">
-        <animateMotion dur="2.6s" repeatCount="indefinite" calcMode="paced"><mpath href="#loop-track"/></animateMotion>
-        <animate attributeName="opacity" dur="2.6s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.06;0.92;1"/>
-      </circle>
-    </svg>
+    <div class="done-mill"><div data-windmill></div></div>
     <h1 id="done-course" style="font-size:clamp(1.8rem,9vw,2.6rem);margin-top:10px"></h1>
     <div class="podium" id="podium"></div>
     <div class="awards" id="awards"></div>
@@ -1090,11 +1092,6 @@
     } catch (_) { toast("Couldn't save — try a screenshot"); }
     btn.disabled = false;
   });
-
-  if (reduced) {
-    const lb = $(".loop-ball");
-    if (lb) { lb.querySelectorAll("animate, animateMotion").forEach((a) => a.remove()); lb.setAttribute("cx", 60); lb.setAttribute("cy", 36); }
-  }
 
   // ---- go --------------------------------------------------------------
   if (load()) {
