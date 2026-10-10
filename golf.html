@@ -344,6 +344,14 @@
   .again button { flex: 1; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .loop { display: block; width: 120px; margin: 0 auto; overflow: visible; }
   .loop .orbit { transform-box: view-box; transform-origin: 60px 52px; animation: spin 1.6s linear infinite; }
+  /* mid-round card: tap a hole number to go back to it */
+  .card-scroll.mid { margin-top: 14px; }
+  #mid-card th button { width: 100%; padding: 2px 0; color: inherit; border-radius: 8px; }
+  #mid-card th.cur, #mid-card td.cur { background: rgba(255, 79, 216, 0.14); }
+  #mid-card th.cur button { color: var(--pink); text-shadow: 0 0 8px var(--pink); font-weight: 700; }
+  /* a reset needs a second tap: the first one arms it */
+  .resets button { transition: border-color 0.2s, color 0.2s, background 0.2s; }
+  .resets button.arm { border-color: #ff5a5a; color: #ff8a80; background: rgba(255, 90, 90, 0.10); }
   .deal { text-align: center; margin-top: 26px; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
 
   @media (prefers-reduced-motion: reduce) {
@@ -434,7 +442,7 @@
       <button class="icon-btn" id="to-setup" aria-label="Back to setup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
       <span class="course" id="course-label"></span>
       <button class="icon-btn" id="sound" aria-label="Sound on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
-      <button class="icon-btn" id="show-board" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg></button>
+      <button class="icon-btn" id="show-board" aria-label="Scorecard and standings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg></button>
     </div>
     <div class="hole-head">
       <button class="nav" id="prev" aria-label="Previous hole">&lsaquo;</button>
@@ -473,9 +481,14 @@
   <div class="tray" id="tray"></div>
   <button class="clear" id="tray-clear" aria-label="Clear this score">&times;</button>
 </div>
-<div class="sheet" id="board-sheet" role="dialog" aria-label="Leaderboard">
+<div class="sheet" id="board-sheet" role="dialog" aria-label="Scorecard">
   <div class="grab"></div>
   <div class="board" id="board"></div>
+  <div class="card-scroll mid"><table id="mid-card"></table></div>
+  <div class="again resets">
+    <button id="restart" aria-label="Restart the round, same players"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg><span>Restart</span></button>
+    <button id="newgame" aria-label="New game"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>New</span></button>
+  </div>
 </div>
 
 <div class="between" id="between" aria-hidden="true"><div data-windmill></div><div class="next" id="between-n"></div></div>
@@ -725,8 +738,44 @@
   $("#scrim").addEventListener("click", closeSheets);
   addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheets(); });
 
+  // The scorecard grid: players down, holes across, Σ at the end. Mid-round
+  // the current hole is lit and every hole number is a button back to it.
+  const buildCard = (t, live) => {
+    t.innerHTML = "";
+    const head = document.createElement("tr");
+    head.appendChild(document.createElement("th"));
+    for (let j = 0; j < S.h; j++) {
+      const th = document.createElement("th");
+      if (live) {
+        const b = document.createElement("button");
+        b.textContent = j + 1;
+        b.setAttribute("aria-label", "Go to hole " + (j + 1));
+        b.addEventListener("click", () => { closeSheets(); if (j !== S.i) goHole(j, false); });
+        th.appendChild(b);
+        if (j === S.i) th.className = "cur";
+      } else th.textContent = j + 1;
+      head.appendChild(th);
+    }
+    const sig = document.createElement("th"); sig.textContent = "Σ"; head.appendChild(sig);
+    t.appendChild(head);
+    S.p.forEach((pl, pi) => {
+      const tr = document.createElement("tr");
+      const nm = document.createElement("td"); nm.textContent = nameOf(pl, pi); nm.style.color = colour(pl); tr.appendChild(nm);
+      S.s[pi].forEach((v, j) => {
+        const td = document.createElement("td"); td.textContent = v || "–";
+        td.className = (v === 1 ? "ace" : "") + (live && j === S.i ? " cur" : "");
+        tr.appendChild(td);
+      });
+      const tt = document.createElement("td"); tt.className = "total"; tt.textContent = played(pi) ? total(pi) : "–"; tr.appendChild(tt);
+      t.appendChild(tr);
+    });
+  };
+
+  // Ranked by strokes per hole played, so someone a hole behind isn't
+  // "leading" just for having played less; once everyone has played every
+  // hole this is the same order as the totals.
   const standings = () => S.p.map((pl, pi) => ({ pl, pi, t: total(pi), thru: played(pi) }))
-    .sort((a, b) => (b.thru > 0) - (a.thru > 0) || a.t - b.t || b.thru - a.thru);
+    .sort((a, b) => (b.thru > 0) - (a.thru > 0) || (a.thru && b.thru ? a.t / a.thru - b.t / b.thru : 0) || a.t - b.t || b.thru - a.thru);
   $("#show-board").addEventListener("click", () => {
     const box = $("#board"); box.innerHTML = "";
     standings().forEach((s, i) => {
@@ -739,8 +788,34 @@
       $(".sc", l).textContent = s.thru ? s.t : "–";
       box.appendChild(l);
     });
+    buildCard($("#mid-card"), true);
+    disarm();
     openSheet("#board-sheet");
+    // bring the current hole's column into view on a long card
+    const cur = $("#mid-card th.cur"), wrap = $(".card-scroll.mid");
+    if (cur) wrap.scrollLeft = Math.max(0, cur.offsetLeft - wrap.clientWidth / 2 + cur.offsetWidth / 2);
   });
+
+  // ---- resets, each needing a second tap within 3s
+  const restartRound = () => { S.s = []; ensureScores(); S.i = 0; S.d = 0; holed.clear(); save(); };
+  const newGame = () => { S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 }; holed.clear(); history.replaceState(null, "", location.pathname); };
+  let armT = 0;
+  const disarm = () => {
+    clearTimeout(armT);
+    document.querySelectorAll(".resets button").forEach((b) => { b.classList.remove("arm"); $("span", b).textContent = b.id === "restart" ? "Restart" : "New"; });
+  };
+  const twoTap = (btn, act) => btn.addEventListener("click", () => {
+    if (!btn.classList.contains("arm")) {
+      disarm();
+      btn.classList.add("arm"); $("span", btn).textContent = "Sure?";
+      buzz(15);
+      armT = setTimeout(disarm, 3000);
+      return;
+    }
+    disarm(); closeSheets(); act();
+  });
+  twoTap($("#restart"), () => { restartRound(); goHole(0, false); toast("Fresh card"); });
+  twoTap($("#newgame"), () => { newGame(); paintSetup(); show("setup"); });
 
   const paintCta = () => {
     if (!$("#play").classList.contains("on")) return;
@@ -763,7 +838,7 @@
   $("#between").addEventListener("click", () => $("#between").classList.remove("on"));
   $("#prev").addEventListener("click", () => goHole(S.i - 1, false));
   $("#next-arrow").addEventListener("click", () => S.i < S.h - 1 ? goHole(S.i + 1, false) : finish());
-  $("#to-setup").addEventListener("click", () => { paintSetup(); show("setup"); });
+  $("#to-setup").addEventListener("click", () => { S.t = 0; save(); paintSetup(); show("setup"); });
   $("#sound").addEventListener("click", (e) => {
     sound = !sound;
     e.currentTarget.querySelector(".wave").style.display = sound ? "" : "none";
@@ -773,7 +848,7 @@
   $("#cta").addEventListener("click", () => {
     audio();   // phones only allow sound after a tap; this is the first one
     if ($("#setup").classList.contains("on")) {
-      ensureScores(); S.d = 0; save(); show("play"); paintHole();
+      ensureScores(); S.d = 0; S.t = 1; save(); show("play"); paintHole();
     } else if ($("#play").classList.contains("on")) {
       if (S.i < S.h - 1) goHole(S.i + 1, true); else finish();
     }
@@ -806,24 +881,12 @@
     if (worst && worst.v >= 5) add("🌀", "Windmilled", nameOf(worst.pl, worst.pi) + " · " + worst.v + " on " + (worst.j + 1));
     const steady = S.p.map((pl, pi) => ({ pl, pi, m: Math.max(0, ...S.s[pi]) })).filter((x) => x.m > 0).sort((a, b) => a.m - b.m)[0];
     if (steady && S.p.length > 1) add("🧊", "Cool head", nameOf(steady.pl, steady.pi) + " · never over " + steady.m);
-    // the card itself
-    const t = $("#card");
-    let h = "<tr><th></th>";
-    for (let j = 0; j < S.h; j++) h += "<th>" + (j + 1) + "</th>";
-    h += "<th>Σ</th></tr>";
-    t.innerHTML = h;
-    S.p.forEach((pl, pi) => {
-      const tr = document.createElement("tr");
-      const nm = document.createElement("td"); nm.textContent = nameOf(pl, pi); nm.style.color = colour(pl); tr.appendChild(nm);
-      S.s[pi].forEach((v) => { const td = document.createElement("td"); td.textContent = v || "–"; if (v === 1) td.className = "ace"; tr.appendChild(td); });
-      const tt = document.createElement("td"); tt.className = "total"; tt.textContent = total(pi); tr.appendChild(tt);
-      t.appendChild(tr);
-    });
+    buildCard($("#card"));
     show("done");
     if (st[0] && st[0].thru) { sfx.ace(); confetti(); }
   };
-  $("#again").addEventListener("click", () => { S.s = []; ensureScores(); S.i = 0; S.d = 0; holed.clear(); save(); show("play"); paintHole(); });
-  $("#fresh").addEventListener("click", () => { S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 }; holed.clear(); history.replaceState(null, "", location.pathname); paintSetup(); show("setup"); });
+  $("#again").addEventListener("click", () => { restartRound(); show("play"); paintHole(); });
+  $("#fresh").addEventListener("click", () => { newGame(); paintSetup(); show("setup"); });
   $("#share").addEventListener("click", async () => {
     const url = location.href;
     try {
@@ -836,7 +899,7 @@
   if (load()) {
     ensureScores();
     if (S.d) finish();
-    else if (S.s.some((r) => r.some((v) => v > 0))) { show("play"); paintHole(); }
+    else if (S.t || S.s.some((r) => r.some((v) => v > 0))) { show("play"); paintHole(); }
     else { paintSetup(); show("setup"); }
   } else { ensureScores(); paintSetup(); show("setup"); }
 })();
