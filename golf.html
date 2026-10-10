@@ -344,6 +344,15 @@
   .again button { flex: 1; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .loop { display: block; width: 120px; margin: 0 auto; overflow: visible; }
   .loop .orbit { transform-box: view-box; transform-origin: 60px 52px; animation: spin 1.6s linear infinite; }
+  .save-card {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; margin-top: 18px; padding: 16px;
+    border-radius: 20px; background: var(--turf); color: #04130a;
+    font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.15rem;
+    box-shadow: 0 0 20px rgba(57, 255, 136, 0.5);
+  }
+  .save-card:active { transform: scale(0.98); }
+  .save-card[disabled] { opacity: 0.6; }
   /* mid-round card: tap a hole number to go back to it */
   .card-scroll.mid { margin-top: 14px; }
   #mid-card th button { width: 100%; padding: 2px 0; color: inherit; border-radius: 8px; }
@@ -463,12 +472,13 @@
     <div class="podium" id="podium"></div>
     <div class="awards" id="awards"></div>
     <div class="card-scroll"><table id="card"></table></div>
+    <button class="save-card" id="save-card" aria-label="Save the scorecard as an image"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Save card</button>
     <div class="again">
       <button id="again" aria-label="Play again, same players"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>Again</button>
       <button id="share" aria-label="Share the scorecard"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share</button>
       <button id="fresh" aria-label="New game"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New</button>
     </div>
-    <p class="deal">Nothing stored. The scorecard lives in the link.</p>
+    <p class="deal">Nothing stored here. The card lives in the link — or on your phone, if you save it.</p>
   </section>
 </div>
 
@@ -797,7 +807,7 @@
   });
 
   // ---- resets, each needing a second tap within 3s
-  const restartRound = () => { S.s = []; ensureScores(); S.i = 0; S.d = 0; holed.clear(); save(); };
+  const restartRound = () => { S.s = []; ensureScores(); S.i = 0; S.d = 0; S.dt = new Date().toISOString().slice(0, 10); holed.clear(); save(); };
   const newGame = () => { S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 }; holed.clear(); history.replaceState(null, "", location.pathname); };
   let armT = 0;
   const disarm = () => {
@@ -848,7 +858,9 @@
   $("#cta").addEventListener("click", () => {
     audio();   // phones only allow sound after a tap; this is the first one
     if ($("#setup").classList.contains("on")) {
-      ensureScores(); S.d = 0; S.t = 1; save(); show("play"); paintHole();
+      ensureScores(); S.d = 0; S.t = 1;
+      if (!S.dt) S.dt = new Date().toISOString().slice(0, 10);
+      save(); show("play"); paintHole();
     } else if ($("#play").classList.contains("on")) {
       if (S.i < S.h - 1) goHole(S.i + 1, true); else finish();
     }
@@ -893,6 +905,149 @@
       if (navigator.share) await navigator.share({ title: (S.c || "Mini golf") + " — scorecard", url });
       else { await navigator.clipboard.writeText(url); toast("Link copied"); }
     } catch (_) {}
+  });
+
+  // ---- save the card as a picture ----------------------------------------
+  // Drawn on a canvas and handed to you: the share sheet on a phone (so
+  // "Save Image" puts it in Photos, or send it straight to the group), a
+  // download on a computer. Nothing leaves the page unless you send it.
+  const drawCard = async () => {
+    try { await Promise.all(['800 40px "Syne"', '700 20px "Space Grotesk"', '500 20px "Space Grotesk"'].map((f) => document.fonts.load(f))); } catch (_) {}
+    const W = 1080, PAD = 64, NAME_W = 230, TOT_W = 112, PER = 9;
+    const HOLE_W = (W - PAD * 2 - NAME_W - TOT_W) / PER;
+    const ROW = 64, HEAD = 54, GAP = 34;
+    const blocks = Math.ceil(S.h / PER);
+    const cv = document.createElement("canvas");
+    const x = cv.getContext("2d");
+    const course = S.c || "Mini golf", MAXW = W - PAD * 2;
+    let tSize = 76, tLines = [course];
+    const syne = (px) => "800 " + px + 'px "Syne", sans-serif';
+    x.font = syne(76);
+    if (x.measureText(course).width > MAXW) {
+      tSize = Math.max(50, Math.floor(76 * MAXW / x.measureText(course).width));
+      x.font = syne(tSize);
+      if (x.measureText(course).width > MAXW) {
+        tSize = 60; x.font = syne(tSize);
+        const words = course.split(/\s+/); let a = "";
+        tLines = [];
+        words.forEach((w) => { const t = a ? a + " " + w : w; if (x.measureText(t).width > MAXW && a) { tLines.push(a); a = w; } else a = t; });
+        tLines.push(a);
+        if (tLines.length > 2) tLines = [tLines[0], tLines.slice(1).join(" ")];
+      }
+    }
+    const EXTRA = (tLines.length - 1) * 66;
+    const HEADER = 330 + EXTRA, FOOT = 110;
+    const H = HEADER + blocks * (HEAD + S.p.length * ROW + GAP) + FOOT;
+    cv.width = W; cv.height = H;
+    const SG = (w, px) => w + " " + px + 'px "Space Grotesk", system-ui, sans-serif';
+    const fit = (txt, max) => { if (x.measureText(txt).width <= max) return txt; while (txt.length > 1 && x.measureText(txt + "…").width > max) txt = txt.slice(0, -1); return txt + "…"; };
+    const glow = (c, b) => { x.shadowColor = c; x.shadowBlur = b; };
+    const noGlow = () => { x.shadowBlur = 0; };
+    const ball = (cx, cy, r, c) => {
+      const g = x.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
+      g.addColorStop(0, "#fff"); g.addColorStop(0.55, c); g.addColorStop(1, c);
+      glow(c, r); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); noGlow();
+    };
+
+    // night sky, a pink glow, a neon frame
+    const bg = x.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, "#120a24"); bg.addColorStop(0.4, "#0a0b16"); bg.addColorStop(1, "#07080f");
+    x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    const halo = x.createRadialGradient(W / 2, -60, 0, W / 2, -60, 700);
+    halo.addColorStop(0, "rgba(255,79,216,0.35)"); halo.addColorStop(1, "rgba(255,79,216,0)");
+    x.fillStyle = halo; x.fillRect(0, 0, W, 700);
+    x.strokeStyle = "#39ff88"; x.lineWidth = 3; glow("#39ff88", 18);
+    x.beginPath();
+    if (x.roundRect) x.roundRect(22, 22, W - 44, H - 44, 36); else x.rect(22, 22, W - 44, H - 44);
+    x.stroke(); noGlow();
+
+    // header: Putt., the date, the course, the winner
+    x.textBaseline = "alphabetic";
+    x.font = '800 44px "Syne", sans-serif'; x.fillStyle = "#f2f0ea"; x.fillText("Putt", PAD, 104);
+    const pw = x.measureText("Putt").width;
+    x.fillStyle = "#ff4fd8"; glow("#ff4fd8", 16); x.fillText(".", PAD + pw, 104); noGlow();
+    if (S.dt) {
+      const d = new Date(S.dt + "T12:00:00");
+      x.font = SG(500, 26); x.fillStyle = "rgba(242,240,234,0.6)"; x.textAlign = "right";
+      x.fillText(d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }), W - PAD, 100);
+      x.textAlign = "left";
+    }
+    x.font = syne(tSize); x.fillStyle = "#f2f0ea"; glow("rgba(255,79,216,0.6)", 24);
+    tLines.forEach((ln, k) => x.fillText(fit(ln, MAXW), PAD, 196 + k * 66));
+    noGlow();
+    const st = standings();
+    if (st[0] && st[0].thru) {
+      const win = st[0];
+      const wy = 268 + EXTRA;
+      x.font = SG(700, 30); x.fillStyle = "#ffd23f"; glow("#ffd23f", 14); x.fillText("WINNER", PAD, wy); noGlow();
+      const ww = x.measureText("WINNER").width;
+      ball(PAD + ww + 40, wy - 10, 15, colour(win.pl));
+      x.font = SG(700, 38); x.fillStyle = "#f2f0ea";
+      x.fillText(fit(nameOf(win.pl, win.pi), 560) + "  ·  " + win.t, PAD + ww + 68, wy + 2);
+    }
+
+    // the card, nine holes to a block
+    let y = HEADER;
+    for (let bk = 0; bk < blocks; bk++) {
+      const from = bk * PER, to = Math.min(S.h, from + PER), last = bk === blocks - 1;
+      x.font = SG(500, 22); x.fillStyle = "rgba(242,240,234,0.5)"; x.textAlign = "center";
+      for (let j = from; j < to; j++) x.fillText(String(j + 1), PAD + NAME_W + (j - from + 0.5) * HOLE_W, y + 34);
+      if (last) x.fillText("Σ", W - PAD - TOT_W / 2, y + 34);
+      x.textAlign = "left";
+      x.strokeStyle = "rgba(242,240,234,0.14)"; x.lineWidth = 1.5;
+      x.beginPath(); x.moveTo(PAD, y + HEAD - 6); x.lineTo(W - PAD, y + HEAD - 6); x.stroke();
+      S.p.forEach((pl, pi) => {
+        const ry = y + HEAD + pi * ROW, mid = ry + ROW / 2;
+        if (pi % 2 === 0) { x.fillStyle = "rgba(255,255,255,0.03)"; x.fillRect(PAD, ry, W - PAD * 2, ROW); }
+        ball(PAD + 16, mid, 11, colour(pl));
+        x.font = SG(700, 28); x.fillStyle = colour(pl); x.textBaseline = "middle";
+        x.fillText(fit(nameOf(pl, pi), NAME_W - 48), PAD + 40, mid + 1);
+        x.textAlign = "center";
+        for (let j = from; j < to; j++) {
+          const v = S.s[pi][j] | 0, cx = PAD + NAME_W + (j - from + 0.5) * HOLE_W;
+          if (v === 1) { x.fillStyle = "#ffd23f"; glow("#ffd23f", 14); x.font = SG(700, 32); x.fillText("1", cx, mid + 1); noGlow(); }
+          else { x.fillStyle = v ? "#f2f0ea" : "rgba(242,240,234,0.3)"; x.font = SG(700, 30); x.fillText(v ? String(v) : "–", cx, mid + 1); }
+        }
+        if (last) {
+          x.font = SG(700, 36); x.fillStyle = pi === (st[0] && st[0].pi) ? "#ffd23f" : "#f2f0ea";
+          x.fillText(played(pi) ? String(total(pi)) : "–", W - PAD - TOT_W / 2, mid + 2);
+        }
+        x.textAlign = "left"; x.textBaseline = "alphabetic";
+      });
+      y += HEAD + S.p.length * ROW + GAP;
+    }
+
+    // a little windmill, and where it came from
+    x.font = SG(500, 22); x.fillStyle = "rgba(242,240,234,0.45)";
+    x.fillText("aboutme.robbo-online.uk/golf", PAD, H - 58);
+    const mx = W - PAD - 40, my = H - 70;
+    x.strokeStyle = "#ff4fd8"; x.lineWidth = 3; glow("#ff4fd8", 10);
+    x.beginPath(); x.moveTo(mx - 16, my + 30); x.lineTo(mx - 9, my - 6); x.lineTo(mx + 9, my - 6); x.lineTo(mx + 16, my + 30); x.stroke();
+    x.strokeStyle = "#25e3ee"; glow("#25e3ee", 10);
+    for (let a = 0; a < 4; a++) { const t = Math.PI / 4 + a * Math.PI / 2; x.beginPath(); x.moveTo(mx, my - 10); x.lineTo(mx + Math.cos(t) * 34, my - 10 + Math.sin(t) * 34); x.stroke(); }
+    noGlow();
+    return cv;
+  };
+  $("#save-card").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      const cv = await drawCard();
+      const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
+      const slug = (S.c || "mini-golf").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "mini-golf";
+      const file = new File([blob], "putt-" + slug + (S.dt ? "-" + S.dt : "") + ".png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: (S.c || "Mini golf") + " — scorecard" }); }
+        catch (err) { if (err && err.name !== "AbortError") throw err; }
+      } else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = file.name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        toast("Card saved");
+      }
+    } catch (_) { toast("Couldn't save — try a screenshot"); }
+    btn.disabled = false;
   });
 
   // ---- go --------------------------------------------------------------
