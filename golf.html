@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#07080f">
+<title>Putt. — mini golf scorecard</title>
+<meta name="description" content="A glow-in-the-dark mini golf scorecard. Any number of players, any number of holes. Nothing stored — the card lives in the link.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: "Syne"; font-weight: 800; font-display: swap; src: url("assets/fonts/syne-latin-800-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 500; font-display: swap; src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 700; font-display: swap; src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
+
+  /* Glow-in-the-dark crazy golf: blacklight carpet, neon balls, a windmill. */
+  :root {
+    --bg: #07080f;
+    --ink: #f2f0ea;
+    --muted: rgba(242, 240, 234, 0.55);
+    --line: rgba(242, 240, 234, 0.12);
+    --turf: #39ff88;
+    --pink: #ff4fd8;
+    --cyan: #25e3ee;
+    --gold: #ffd23f;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* scores: Syne's flagged 1 reads as a 7 at a glance, which a scorecard
+       can't afford — numbers use the body face, bold, with lining figures */
+    --num: 700 1em/1 "Space Grotesk", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+  body {
+    min-height: 100svh;
+    color: var(--ink);
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 500;
+    background:
+      radial-gradient(90% 50% at 50% -10%, rgba(255, 79, 216, 0.18), transparent 70%),
+      radial-gradient(70% 40% at 100% 100%, rgba(37, 227, 238, 0.12), transparent 70%),
+      var(--bg);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overflow-x: hidden;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { background: none; border: 0; cursor: pointer; }
+  .wrap { width: min(100%, 560px); margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
+  .screen { display: none; }
+  .screen.on { display: block; animation: in 0.45s var(--ease); }
+  @keyframes in { from { opacity: 0; transform: translateY(10px); } }
+  .glow-pink { color: var(--pink); text-shadow: 0 0 8px var(--pink), 0 0 26px rgba(255, 79, 216, 0.6); }
+  .home { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 16px; color: var(--muted); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.14em; }
+
+  /* ---------- the windmill ---------- */
+  .windmill { display: block; width: min(100%, 360px); margin: 26px auto 0; overflow: visible; }
+  .windmill .blades { transform-box: view-box; transform-origin: 100px 62px; animation: spin 5s linear infinite; }
+  .windmill .mill-ball { animation: roll-through 5s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes roll-through {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(230px); }
+  }
+  h1 {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: clamp(3.4rem, 18vw, 5.2rem);
+    line-height: 0.9;
+    text-align: center;
+    letter-spacing: -0.02em;
+    margin-top: 4px;
+  }
+
+  /* ---------- setup ---------- */
+  .field {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+  }
+  .field:focus-within { border-color: var(--turf); box-shadow: 0 0 0 3px rgba(57, 255, 136, 0.15); }
+  .field svg { flex: none; width: 26px; height: 26px; }
+  .field input { flex: 1; min-width: 0; background: none; border: 0; outline: none; font-size: 1.05rem; padding: 6px 0; }
+  .field input::placeholder { color: rgba(242, 240, 234, 0.35); }
+  .holes { justify-content: space-between; }
+  .holes .num { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 2rem; min-width: 2.2ch; text-align: center; color: var(--turf); text-shadow: 0 0 12px rgba(57, 255, 136, 0.6); }
+  .step {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05);
+    font-size: 1.4rem; line-height: 1;
+  }
+  .chips { display: flex; gap: 8px; }
+  .chip { padding: 8px 12px; border-radius: 100px; border: 1px solid var(--line); font-size: 0.85rem; color: var(--muted); }
+  .chip.on { border-color: var(--turf); color: var(--turf); box-shadow: 0 0 12px rgba(57, 255, 136, 0.3); }
+  .players { margin-top: 14px; display: grid; gap: 10px; }
+  .player-field { margin-top: 0; }
+  .player-field .x { width: 34px; height: 34px; border-radius: 50%; color: var(--muted); font-size: 1.2rem; }
+  .add {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; margin-top: 10px; padding: 14px;
+    border-radius: 18px; border: 1.5px dashed rgba(242, 240, 234, 0.25);
+    color: var(--muted);
+  }
+  .add:active { transform: scale(0.98); }
+
+  /* a neon golf ball, dimples and all */
+  .ball {
+    --b: #fff;
+    position: relative; flex: none;
+    width: 30px; height: 30px; border-radius: 50%;
+    background:
+      radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.95) 0 9%, transparent 10%),
+      radial-gradient(circle, rgba(0, 0, 0, 0.18) 0 1.4px, transparent 1.6px) 0 0 / 6px 6px,
+      radial-gradient(circle at 38% 34%, color-mix(in srgb, var(--b) 55%, white), var(--b) 62%, color-mix(in srgb, var(--b) 70%, black));
+    box-shadow: 0 0 10px color-mix(in srgb, var(--b) 70%, transparent), 0 0 24px color-mix(in srgb, var(--b) 35%, transparent);
+    display: grid; place-items: center;
+    font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 0.8rem; color: rgba(0, 0, 0, 0.72);
+  }
+
+  .cta {
+    position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(calc(100% - 32px), 528px);
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 18px;
+    border-radius: 22px;
+    background: var(--turf);
+    color: #04130a;
+    font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.25rem; letter-spacing: 0.02em;
+    box-shadow: 0 0 22px rgba(57, 255, 136, 0.55), 0 12px 40px rgba(0, 0, 0, 0.5);
+    z-index: 20;
+  }
+  .cta:active { transform: translateX(-50%) scale(0.97); }
+  .cta svg { width: 26px; height: 26px; }
+
+  /* ---------- a hole ---------- */
+  .bar { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+  .bar .course { flex: 1; min-width: 0; font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icon-btn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); }
+  .icon-btn svg { width: 22px; height: 22px; }
+  .hole-head { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .hole-head .nav { width: 52px; height: 52px; border-radius: 50%; font-size: 1.6rem; color: var(--muted); }
+  .hole-head .nav:disabled { opacity: 0.2; }
+  .hole-num { display: flex; align-items: flex-end; gap: 6px; }
+  .hole-num svg { width: 46px; height: 64px; margin-bottom: 4px; }
+  .hole-num b { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-weight: 800; font-size: 4.4rem; line-height: 0.85; color: var(--ink); text-shadow: 0 0 22px rgba(255, 79, 216, 0.55); }
+  .hole-num small { font-size: 1rem; color: var(--muted); margin-bottom: 6px; }
+  .flags { display: flex; gap: 4px; justify-content: center; margin: 12px 0 18px; flex-wrap: wrap; }
+  .flags i { width: 10px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); }
+  .flags i.done { background: var(--turf); box-shadow: 0 0 6px var(--turf); }
+  .flags i.now { background: var(--pink); box-shadow: 0 0 8px var(--pink); width: 18px; }
+
+  .rows { display: grid; gap: 12px; }
+  .row {
+    --b: #fff;
+    padding: 12px 12px 12px 14px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--line);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .row.holed { border-color: color-mix(in srgb, var(--b) 55%, transparent); box-shadow: 0 0 18px color-mix(in srgb, var(--b) 18%, transparent); }
+  .row .who { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .row .who .name { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .who .tot { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.95rem; }
+  .row .play { display: flex; align-items: center; gap: 10px; }
+
+  /* the putting strip: tap for a shot, the ball rolls toward the cup */
+  .green {
+    position: relative; flex: 1; height: 58px;
+    border-radius: 16px;
+    background:
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0 2px, transparent 2px 9px),
+      linear-gradient(180deg, #0e5a33, #0a4327);
+    border: 2px solid rgba(57, 255, 136, 0.45);
+    box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.6), 0 0 14px rgba(57, 255, 136, 0.15);
+    overflow: hidden;
+  }
+  .green .cup {
+    position: absolute; right: 10px; top: 50%;
+    width: 46px; height: 46px; margin-top: -23px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+  }
+  .green .cup::before {
+    content: ""; position: absolute; width: 22px; height: 14px; border-radius: 50%;
+    background: radial-gradient(#000 40%, #04140b);
+    box-shadow: inset 0 3px 4px rgba(0, 0, 0, 0.9), 0 0 0 2px rgba(255, 255, 255, 0.08);
+    top: 22px;
+    z-index: 1;
+  }
+  .green .cup svg { position: absolute; width: 26px; height: 40px; left: 18px; top: -6px; z-index: 3; }
+  .green .putt-ball {
+    position: absolute; top: 50%; left: 10px;
+    width: 20px; height: 20px; margin-top: -10px;
+    transition: left 0.75s var(--ease), transform 0.4s var(--ease), opacity 0.3s;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .row.holed .green .putt-ball { transform: scale(0.55) translateY(10px); opacity: 0.9; }
+  .green .tap-hint {
+    position: absolute; left: 38px; top: 50%; transform: translateY(-50%);
+    font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255, 255, 255, 0.35);
+    pointer-events: none; transition: opacity 0.3s;
+  }
+  .row:not(.fresh) .tap-hint { opacity: 0; }
+  .green:active { filter: brightness(1.15); }
+  .score-ball { width: 52px; height: 52px; font-size: 1.35rem; }
+  .score-ball.empty { background: none; box-shadow: none; border: 2px dashed rgba(255, 255, 255, 0.25); color: var(--muted); }
+  .undo { width: 34px; height: 34px; border-radius: 50%; color: var(--muted); font-size: 1.1rem; }
+  .undo:disabled { opacity: 0.2; }
+
+  /* ---------- sheets ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 50%; bottom: 0; z-index: 41;
+    width: min(100%, 560px);
+    transform: translate(-50%, 105%);
+    transition: transform 0.45s var(--ease);
+    padding: 18px 18px calc(22px + env(safe-area-inset-bottom));
+    border-radius: 28px 28px 0 0;
+    background: #10121c;
+    border: 1px solid var(--line); border-bottom: 0;
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+    max-height: 88svh; overflow-y: auto;
+  }
+  .sheet.on { transform: translate(-50%, 0); }
+  .sheet .grab { width: 44px; height: 5px; border-radius: 5px; background: rgba(255, 255, 255, 0.2); margin: 0 auto 14px; }
+  .sheet-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-weight: 700; }
+  .tray { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; justify-items: center; padding: 14px; border-radius: 22px; background: linear-gradient(#1a1d2b, #121420); box-shadow: inset 0 6px 18px rgba(0, 0, 0, 0.6); }
+  .tray .ball { width: 52px; height: 52px; font-size: 1.1rem; transition: transform 0.2s var(--ease); }
+  .tray .ball:active { transform: scale(0.9); }
+  .tray .ball.sel { outline: 3px solid #fff; outline-offset: 3px; }
+  .tray .ball.ace { --b: var(--gold); }
+  .tray .ball.ace::after { content: "★"; position: absolute; top: -6px; right: -4px; font-size: 0.8rem; color: var(--gold); text-shadow: 0 0 6px var(--gold); }
+  .tray .ball.dim { --b: #8a8fa3; }
+  .clear { display: block; margin: 14px auto 0; padding: 10px 18px; color: var(--muted); border-radius: 100px; border: 1px solid var(--line); }
+
+  .board { display: grid; gap: 8px; }
+  .board .line { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: rgba(255, 255, 255, 0.04); }
+  .board .pos { width: 28px; font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .board .line:first-child .pos { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+  .board .name { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .board .sc { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 1.4rem; }
+  .board .thru { font-size: 0.75rem; color: var(--muted); }
+
+  /* ---------- windmill between holes ---------- */
+  .between {
+    position: fixed; inset: 0; z-index: 60;
+    display: grid; place-items: center; align-content: center; gap: 4px;
+    background: radial-gradient(60% 40% at 50% 45%, rgba(255, 79, 216, 0.22), transparent 70%), rgba(7, 8, 15, 0.94);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .between.on { opacity: 1; pointer-events: auto; }
+  .between .windmill { width: min(80vw, 340px); margin: 0; }
+  .between .windmill .mill-ball { animation: none; }
+  .between.on .windmill .mill-ball { animation: dash-through 1.25s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards; }
+  .between.on .windmill .blades { animation-duration: 1.4s; }
+  @keyframes dash-through { from { transform: translateX(0); } to { transform: translateX(230px); } }
+  .between .next { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-weight: 800; font-size: 3.6rem; opacity: 0; transform: scale(0.6); }
+  .between.on .next { animation: pop 0.5s var(--ease) 0.75s forwards; }
+  @keyframes pop { to { opacity: 1; transform: none; } }
+
+  /* hole in one */
+  .ace-flash {
+    position: fixed; inset: 0; z-index: 70; pointer-events: none;
+    display: grid; place-items: center;
+    font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(2.6rem, 14vw, 5rem); text-align: center; line-height: 0.95;
+    color: var(--gold); text-shadow: 0 0 10px var(--gold), 0 0 40px rgba(255, 210, 63, 0.7);
+    opacity: 0;
+  }
+  .ace-flash.on { animation: ace 1.9s var(--ease); }
+  @keyframes ace { 0% { opacity: 0; transform: scale(0.5) rotate(-6deg); } 15% { opacity: 1; transform: scale(1.08) rotate(2deg); } 30% { transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-30px); } }
+  .confetti { position: fixed; inset: 0; z-index: 69; pointer-events: none; }
+
+  .toast {
+    position: fixed; left: 50%; top: max(18px, env(safe-area-inset-top)); z-index: 75;
+    transform: translate(-50%, -140%);
+    padding: 10px 18px; border-radius: 100px;
+    background: #151827; border: 1px solid var(--line);
+    font-weight: 700; white-space: nowrap;
+    transition: transform 0.4s var(--ease);
+  }
+  .toast.on { transform: translate(-50%, 0); }
+
+  /* ---------- the 19th hole ---------- */
+  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin: 34px 0 24px; min-height: 230px; }
+  .step-col { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 31%; }
+  .step-col .ball { width: 44px; height: 44px; }
+  .step-col .nm { font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .step-col .blk {
+    width: 100%; border-radius: 16px 16px 6px 6px;
+    display: grid; place-items: center; align-content: start; padding-top: 10px;
+    font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 1.7rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--line);
+  }
+  .step-col.p1 .blk { height: 140px; border-color: var(--gold); box-shadow: 0 0 22px rgba(255, 210, 63, 0.35); color: var(--gold); }
+  .step-col.p2 .blk { height: 100px; }
+  .step-col.p3 .blk { height: 72px; }
+  .step-col.p1 .crown { font-size: 1.8rem; filter: drop-shadow(0 0 8px var(--gold)); }
+  .awards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .award { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 18px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); }
+  .award .ico { font-size: 1.6rem; }
+  .award b { display: block; font-size: 0.95rem; }
+  .award span { font-size: 0.78rem; color: var(--muted); }
+  .card-scroll { overflow-x: auto; border-radius: 18px; border: 1px solid var(--line); }
+  table { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 0.9rem; }
+  th, td { padding: 9px 10px; text-align: center; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 0.75rem; }
+  td:first-child, th:first-child { text-align: left; position: sticky; left: 0; background: #0d0f18; }
+  td.ace { color: var(--gold); text-shadow: 0 0 8px var(--gold); font-weight: 700; }
+  td.total { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+  .again { display: flex; gap: 10px; margin-top: 18px; }
+  .again button { flex: 1; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .loop { display: block; width: 120px; margin: 0 auto; overflow: visible; }
+  .loop .orbit { transform-box: view-box; transform-origin: 60px 52px; animation: spin 1.6s linear infinite; }
+  .deal { text-align: center; margin-top: 26px; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .windmill .blades, .windmill .mill-ball, .loop .orbit { animation: none !important; }
+    .screen.on { animation: none; }
+    .green .putt-ball { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- one windmill, cloned wherever it's needed -->
+<template id="windmill-tpl">
+  <svg class="windmill" viewBox="0 0 200 160" aria-hidden="true">
+    <defs>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <!-- carpet -->
+    <rect x="-20" y="138" width="240" height="14" rx="4" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" filter="url(#glow)"/>
+    <!-- the ball, behind the tower: seen through the door -->
+    <g class="mill-ball"><circle cx="-14" cy="132" r="5.5" fill="#fff" filter="url(#glow)"/></g>
+    <!-- tower with a door cut through it -->
+    <path fill="#140e2a" stroke="#ff4fd8" stroke-width="2" stroke-linejoin="round" filter="url(#glow)" fill-rule="evenodd"
+      d="M68 138 L84 64 L116 64 L132 138 Z M90 138 L90 120 A10 10 0 0 1 110 120 L110 138 Z"/>
+    <path d="M78 66 L100 40 L122 66 Z" fill="#140e2a" stroke="#25e3ee" stroke-width="2" stroke-linejoin="round" filter="url(#glow)"/>
+    <circle cx="100" cy="92" r="5" fill="none" stroke="#ffd23f" stroke-width="1.6" filter="url(#glow)"/>
+    <!-- blades -->
+    <g class="blades" filter="url(#glow)">
+      <g stroke="#25e3ee" stroke-width="1.8" fill="rgba(37,227,238,0.08)">
+        <path d="M100 62 L94 8 L106 8 Z"/>
+        <path d="M100 62 L154 56 L154 68 Z"/>
+        <path d="M100 62 L106 116 L94 116 Z"/>
+        <path d="M100 62 L46 68 L46 56 Z"/>
+      </g>
+      <circle cx="100" cy="62" r="5" fill="#ff4fd8"/>
+    </g>
+    <!-- cup and flag on the far side -->
+    <ellipse cx="190" cy="140" rx="7" ry="2.5" fill="#000"/>
+    <line x1="190" y1="140" x2="190" y2="104" stroke="#f2f0ea" stroke-width="1.6"/>
+    <path d="M190 104 L208 110 L190 116 Z" fill="#ff4fd8" filter="url(#glow)"/>
+  </svg>
+</template>
+
+<template id="flag-tpl">
+  <svg viewBox="0 0 26 40" aria-hidden="true"><line x1="3" y1="2" x2="3" y2="39" stroke="#f2f0ea" stroke-width="2.2" stroke-linecap="round"/><path d="M3 3 L24 10 L3 17 Z" fill="#ff4fd8" style="filter:drop-shadow(0 0 4px #ff4fd8)"/></svg>
+</template>
+
+<div class="wrap">
+
+  <!-- ===== tee off ===== -->
+  <section class="screen on" id="setup">
+    <a class="home" href="./">&larr; PR.</a>
+    <div data-windmill></div>
+    <h1>Putt<span class="glow-pink">.</span></h1>
+
+    <label class="field">
+      <svg viewBox="0 0 26 40" aria-hidden="true"><line x1="3" y1="2" x2="3" y2="39" stroke="#f2f0ea" stroke-width="2.2" stroke-linecap="round"/><path d="M3 3 L24 10 L3 17 Z" fill="#ff4fd8"/></svg>
+      <input id="course" placeholder="Course name" maxlength="60" autocomplete="off" aria-label="Course name">
+    </label>
+
+    <div class="field holes">
+      <button class="step" id="holes-down" aria-label="Fewer holes">&minus;</button>
+      <div class="chips" id="hole-chips"><button class="chip" data-h="9">9</button><button class="chip" data-h="18">18</button></div>
+      <span class="num" id="holes-n" aria-live="polite">18</span>
+      <button class="step" id="holes-up" aria-label="More holes">+</button>
+    </div>
+
+    <div class="players" id="players"></div>
+    <button class="add" id="add-player" aria-label="Add a player"><span class="ball" style="--b:#8a8fa3"></span>+</button>
+  </section>
+
+  <!-- ===== a hole ===== -->
+  <section class="screen" id="play">
+    <div class="bar">
+      <button class="icon-btn" id="to-setup" aria-label="Back to setup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <span class="course" id="course-label"></span>
+      <button class="icon-btn" id="sound" aria-label="Sound on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
+      <button class="icon-btn" id="show-board" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg></button>
+    </div>
+    <div class="hole-head">
+      <button class="nav" id="prev" aria-label="Previous hole">&lsaquo;</button>
+      <div class="hole-num"><span data-flag></span><b id="hole-n">1</b><small id="hole-of">/18</small></div>
+      <button class="nav" id="next-arrow" aria-label="Next hole">&rsaquo;</button>
+    </div>
+    <div class="flags" id="flags"></div>
+    <div class="rows" id="rows"></div>
+  </section>
+
+  <!-- ===== the 19th hole ===== -->
+  <section class="screen" id="done">
+    <svg class="loop" viewBox="0 0 120 110" aria-hidden="true">
+      <path d="M0 100 H38 C60 100 86 92 86 62 A26 26 0 1 0 34 62 C34 92 60 100 82 100 H120" fill="none" stroke="#39ff88" stroke-width="4" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #39ff88)"/>
+      <g class="orbit"><circle cx="60" cy="24" r="6" fill="#fff" style="filter:drop-shadow(0 0 6px #fff)"/></g>
+    </svg>
+    <h1 id="done-course" style="font-size:clamp(1.8rem,9vw,2.6rem);margin-top:10px"></h1>
+    <div class="podium" id="podium"></div>
+    <div class="awards" id="awards"></div>
+    <div class="card-scroll"><table id="card"></table></div>
+    <div class="again">
+      <button id="again" aria-label="Play again, same players"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>Again</button>
+      <button id="share" aria-label="Share the scorecard"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share</button>
+      <button id="fresh" aria-label="New game"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New</button>
+    </div>
+    <p class="deal">Nothing stored. The scorecard lives in the link.</p>
+  </section>
+</div>
+
+<button class="cta" id="cta"></button>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="tray-sheet" role="dialog" aria-label="Pick a score">
+  <div class="grab"></div>
+  <div class="sheet-head" id="tray-head"></div>
+  <div class="tray" id="tray"></div>
+  <button class="clear" id="tray-clear" aria-label="Clear this score">&times;</button>
+</div>
+<div class="sheet" id="board-sheet" role="dialog" aria-label="Leaderboard">
+  <div class="grab"></div>
+  <div class="board" id="board"></div>
+</div>
+
+<div class="between" id="between" aria-hidden="true"><div data-windmill></div><div class="next" id="between-n"></div></div>
+<div class="ace-flash" id="ace" aria-hidden="true">HOLE<br>IN ONE</div>
+<canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Putt. — a mini golf scorecard.
+   Nothing is stored and nothing is sent: the whole card (course, players,
+   scores, where you are) is encoded into the page's own address, so a
+   reload keeps it and the link shares it, the same deal as the rest of
+   the site. */
+(() => {
+  const $ = (s, r) => (r || document).querySelector(s);
+  const COLOURS = ["#ff4fd8", "#25e3ee", "#39ff88", "#ffa53d", "#a77bff", "#ffd23f", "#ff5a5a", "#f2f0ea", "#4d8bff", "#ff8fb1"];
+  const MAX = 20;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- state, mirrored into the URL ------------------------------------
+  let S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 };
+  const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const dec = (t) => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/")))));
+  const save = () => { try { history.replaceState(null, "", "#" + enc(S)); } catch (_) {} };
+  const load = () => {
+    if (location.hash.length < 3) return false;
+    try {
+      const o = dec(location.hash.slice(1));
+      if (!o || !Array.isArray(o.p) || !o.p.length) return false;
+      S = Object.assign(S, o);
+      S.h = clampH(S.h);
+      S.s = (S.s || []).map((r) => Array.from({ length: S.h }, (_, j) => (r && r[j]) | 0));
+      return true;
+    } catch (_) { return false; }
+  };
+  const clampH = (n) => { n = Math.round(+n); return Number.isFinite(n) ? Math.max(1, Math.min(36, n)) : 18; };
+  const colour = (pl) => COLOURS[pl.k % COLOURS.length];
+  const nameOf = (pl, i) => (pl.n || "").trim() || "P" + (i + 1);
+  const total = (pi) => (S.s[pi] || []).reduce((a, b) => a + (b || 0), 0);
+  const played = (pi) => (S.s[pi] || []).filter((v) => v > 0).length;
+  const ensureScores = () => {
+    S.s = S.p.map((_, pi) => Array.from({ length: S.h }, (_, j) => (S.s[pi] && S.s[pi][j]) | 0));
+  };
+
+  // ---- little bits of theatre ------------------------------------------
+  let sound = true, ac = null;
+  const audio = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} } return ac; };
+  const tone = (f, t0, dur, type, vol) => {
+    const a = audio(); if (!a || !sound) return;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, a.currentTime + t0);
+    g.gain.setValueAtTime(0.0001, a.currentTime + t0);
+    g.gain.exponentialRampToValueAtTime(vol || 0.18, a.currentTime + t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + t0 + dur);
+    o.connect(g).connect(a.destination); o.start(a.currentTime + t0); o.stop(a.currentTime + t0 + dur + 0.02);
+  };
+  const sfx = {
+    putt: () => { tone(1900, 0, 0.05, "triangle", 0.2); tone(700, 0.01, 0.06, "sine", 0.08); },
+    cup: () => { tone(520, 0, 0.09, "sine", 0.2); tone(330, 0.09, 0.14, "sine", 0.22); tone(180, 0.2, 0.2, "sine", 0.18); },
+    ace: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.22, "triangle", 0.16)),
+    whoosh: () => { tone(220, 0, 0.5, "sawtooth", 0.03); tone(330, 0.15, 0.4, "sawtooth", 0.025); },
+  };
+  const buzz = (ms) => { if (navigator.vibrate) navigator.vibrate(ms); };
+
+  let toastT = 0;
+  const toast = (t) => { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 1500); };
+  // a word for every result — mini golf has no par, so these are by strokes
+  const VERDICT = ["", "ACE!", "Sweet", "Tidy", "Fine", "Meh", "Windmilled", "Windmilled", "Lost in the loop", "Lost in the loop", "Clown's mouth"];
+  const verdict = (n) => n >= 20 ? "Picked it up" : n >= 10 ? "Clown's mouth" : VERDICT[n];
+
+  const confetti = () => {
+    if (reduced) return;
+    const cv = $("#confetti"), x = cv.getContext("2d");
+    const W = cv.width = innerWidth * devicePixelRatio, H = cv.height = innerHeight * devicePixelRatio;
+    const bits = Array.from({ length: 140 }, () => ({
+      x: W / 2, y: H * 0.45, vx: (Math.random() - 0.5) * W * 0.03, vy: -Math.random() * H * 0.025 - H * 0.008,
+      r: (3 + Math.random() * 5) * devicePixelRatio, c: COLOURS[(Math.random() * 7) | 0], a: Math.random() * 6,
+    }));
+    let f = 0;
+    (function tick() {
+      x.clearRect(0, 0, W, H);
+      bits.forEach((b) => { b.vy += H * 0.0009; b.x += b.vx; b.y += b.vy; b.a += 0.2; x.fillStyle = b.c; x.save(); x.translate(b.x, b.y); x.rotate(b.a); x.fillRect(-b.r, -b.r / 2, b.r * 2, b.r); x.restore(); });
+      if (++f < 120) requestAnimationFrame(tick); else x.clearRect(0, 0, W, H);
+    })();
+  };
+  const ace = () => { sfx.ace(); buzz([30, 40, 30, 40, 80]); confetti(); const el = $("#ace"); el.classList.remove("on"); void el.offsetWidth; el.classList.add("on"); };
+
+  document.querySelectorAll("[data-windmill]").forEach((h) => h.replaceWith($("#windmill-tpl").content.cloneNode(true)));
+  document.querySelectorAll("[data-flag]").forEach((h) => h.replaceWith($("#flag-tpl").content.cloneNode(true)));
+
+  // ---- screens -----------------------------------------------------------
+  const show = (id) => {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === id));
+    const cta = $("#cta");
+    if (id === "setup") { cta.innerHTML = teeIcon + "Tee off"; cta.style.display = ""; }
+    else if (id === "play") { cta.style.display = ""; paintCta(); }
+    else cta.style.display = "none";
+    scrollTo(0, 0);
+  };
+  const teeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="4"/><path d="M8 11h8l-3 3v7h-2v-7z"/></svg>';
+  const millIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9l-2-7h4zM12 9l7-2v4zM12 9l2 7h-4zM12 9l-7 2V7z"/><path d="M9 22l1.5-8h3L15 22"/></svg>';
+  const trophyIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/></svg>';
+
+  // ---- setup -------------------------------------------------------------
+  const paintSetup = () => {
+    $("#course").value = S.c;
+    $("#holes-n").textContent = S.h;
+    document.querySelectorAll("#hole-chips .chip").forEach((c) => c.classList.toggle("on", +c.dataset.h === S.h));
+    const box = $("#players"); box.innerHTML = "";
+    S.p.forEach((pl, i) => {
+      const f = document.createElement("label");
+      f.className = "field player-field";
+      f.innerHTML = '<span class="ball"></span><input maxlength="20" autocomplete="off"><button class="x" aria-label="Remove player">&times;</button>';
+      $(".ball", f).style.setProperty("--b", colour(pl));
+      const inp = $("input", f);
+      inp.value = pl.n; inp.placeholder = "Player " + (i + 1); inp.setAttribute("aria-label", "Player " + (i + 1) + " name");
+      inp.addEventListener("input", () => { pl.n = inp.value; save(); });
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); const n = f.nextElementSibling; n ? $("input", n).focus() : inp.blur(); } });
+      const x = $(".x", f);
+      x.style.visibility = S.p.length > 1 ? "" : "hidden";
+      x.addEventListener("click", (e) => { e.preventDefault(); S.p.splice(i, 1); S.s.splice(i, 1); save(); paintSetup(); });
+      box.appendChild(f);
+    });
+  };
+  const setHoles = (n) => { S.h = clampH(n); ensureScores(); if (S.i >= S.h) S.i = S.h - 1; save(); paintSetup(); };
+  $("#course").addEventListener("input", (e) => { S.c = e.target.value; save(); });
+  $("#holes-down").addEventListener("click", () => setHoles(S.h - 1));
+  $("#holes-up").addEventListener("click", () => setHoles(S.h + 1));
+  document.querySelectorAll("#hole-chips .chip").forEach((c) => c.addEventListener("click", () => setHoles(+c.dataset.h)));
+  $("#add-player").addEventListener("click", () => {
+    const used = new Set(S.p.map((p) => p.k % COLOURS.length));
+    let k = 0; while (used.has(k % COLOURS.length) && k < COLOURS.length) k++;
+    if (k >= COLOURS.length) k = S.p.length;
+    S.p.push({ n: "", k }); ensureScores(); save(); paintSetup();
+    const inputs = document.querySelectorAll("#players input"); inputs[inputs.length - 1].focus();
+  });
+
+  // ---- a hole --------------------------------------------------------------
+  const ballLeft = (n) => {   // each shot rolls the ball a bit closer to the cup, but never in
+    const frac = n <= 0 ? 0 : 1 - Math.pow(0.58, n);
+    return "calc(10px + (100% - 82px) * " + frac.toFixed(3) + ")";
+  };
+  let holed = new Set();    // rows the player has tapped into the cup this visit
+  const paintHole = () => {
+    $("#course-label").textContent = S.c || "Mini golf";
+    $("#hole-n").textContent = S.i + 1;
+    $("#hole-of").textContent = "/" + S.h;
+    $("#prev").disabled = S.i === 0;
+    const fl = $("#flags"); fl.innerHTML = "";
+    for (let j = 0; j < S.h; j++) {
+      const i = document.createElement("i");
+      if (j === S.i) i.className = "now"; else if (S.s.every((r) => r[j] > 0)) i.className = "done";
+      fl.appendChild(i);
+    }
+    const rows = $("#rows"); rows.innerHTML = "";
+    S.p.forEach((pl, pi) => {
+      const n = S.s[pi][S.i] | 0;
+      const r = document.createElement("div");
+      r.className = "row" + (n === 0 ? " fresh" : "") + (holed.has(pi + ":" + S.i) || (n > 0 && S.d) ? " holed" : "");
+      r.style.setProperty("--b", colour(pl));
+      r.innerHTML =
+        '<div class="who"><span class="ball"></span><span class="name"></span><span class="tot"></span></div>' +
+        '<div class="play">' +
+          '<button class="undo" aria-label="Take a shot back">&#8630;</button>' +
+          '<button class="green" aria-label="Take a shot"><span class="tap-hint">tap per shot</span><span class="ball putt-ball"></span>' +
+            '<span class="cup" role="button" aria-label="In the hole">' + $("#flag-tpl").innerHTML + '</span></button>' +
+          '<button class="ball score-ball" aria-label="Pick a score"></button>' +
+        '</div>';
+      $(".who .ball", r).style.setProperty("--b", colour(pl));
+      $(".who .name", r).textContent = nameOf(pl, pi);
+      $(".who .tot", r).textContent = played(pi) ? total(pi) : "";
+      const sb = $(".score-ball", r);
+      sb.textContent = n || "";
+      sb.classList.toggle("empty", !n);
+      sb.style.setProperty("--b", n === 1 ? "#ffd23f" : colour(pl));
+      $(".putt-ball", r).style.setProperty("--b", colour(pl));
+      $(".putt-ball", r).style.left = r.classList.contains("holed") ? "calc(100% - 43px)" : ballLeft(n);
+      $(".undo", r).disabled = n === 0;
+
+      const green = $(".green", r);
+      green.addEventListener("click", (e) => {
+        if (e.target.closest(".cup")) return sink(pi, r);
+        shot(pi, 1, r);
+      });
+      $(".undo", r).addEventListener("click", () => shot(pi, -1, r));
+      sb.addEventListener("click", () => openTray(pi));
+      rows.appendChild(r);
+    });
+    paintCta();
+  };
+  const paintRow = (pi, r) => {
+    const n = S.s[pi][S.i] | 0;
+    r.classList.toggle("fresh", n === 0);
+    const sb = $(".score-ball", r);
+    sb.textContent = n || ""; sb.classList.toggle("empty", !n);
+    sb.style.setProperty("--b", n === 1 ? "#ffd23f" : colour(S.p[pi]));
+    $(".undo", r).disabled = n === 0;
+    $(".who .tot", r).textContent = played(pi) ? total(pi) : "";
+    $(".putt-ball", r).style.left = r.classList.contains("holed") ? "calc(100% - 43px)" : ballLeft(n);
+    paintCta();
+  };
+  const shot = (pi, d, r) => {
+    const key = pi + ":" + S.i;
+    const n = Math.max(0, Math.min(MAX, (S.s[pi][S.i] | 0) + d));
+    if (n === (S.s[pi][S.i] | 0)) return;
+    S.s[pi][S.i] = n; holed.delete(key); r.classList.remove("holed");
+    if (d > 0) { sfx.putt(); buzz(12); }
+    save(); paintRow(pi, r);
+  };
+  const sink = (pi, r) => {
+    const key = pi + ":" + S.i;
+    if (!(S.s[pi][S.i] > 0)) S.s[pi][S.i] = 1;   // straight in from the tee
+    holed.add(key); r.classList.add("holed");
+    save(); paintRow(pi, r);
+    const n = S.s[pi][S.i];
+    if (n === 1) ace(); else { sfx.cup(); buzz(25); toast(nameOf(S.p[pi], pi) + " · " + verdict(n)); }
+  };
+
+  // the tray: twenty dimpled balls, tap one to set the score
+  let trayFor = -1;
+  const openTray = (pi) => {
+    trayFor = pi;
+    const pl = S.p[pi], cur = S.s[pi][S.i] | 0;
+    const head = $("#tray-head");
+    head.innerHTML = '<span class="ball"></span><span></span>';
+    $(".ball", head).style.setProperty("--b", colour(pl));
+    head.lastChild.textContent = nameOf(pl, pi) + " · hole " + (S.i + 1);
+    const tray = $("#tray"); tray.innerHTML = "";
+    for (let n = 1; n <= MAX; n++) {
+      const b = document.createElement("button");
+      b.className = "ball" + (n === 1 ? " ace" : "") + (n > 6 ? " dim" : "") + (n === cur ? " sel" : "");
+      if (n > 1 && n <= 6) b.style.setProperty("--b", colour(pl));
+      b.textContent = n;
+      b.setAttribute("aria-label", n + (n === 1 ? " — hole in one" : " shots"));
+      b.addEventListener("click", () => {
+        S.s[pi][S.i] = n; holed.add(pi + ":" + S.i); save(); closeSheets(); paintHole();
+        if (n === 1) ace(); else { sfx.cup(); toast(nameOf(pl, pi) + " · " + verdict(n)); }
+      });
+      tray.appendChild(b);
+    }
+    openSheet("#tray-sheet");
+  };
+  $("#tray-clear").addEventListener("click", () => { if (trayFor < 0) return; S.s[trayFor][S.i] = 0; holed.delete(trayFor + ":" + S.i); save(); closeSheets(); paintHole(); });
+
+  const openSheet = (id) => { $("#scrim").classList.add("on"); $(id).classList.add("on"); };
+  const closeSheets = () => { $("#scrim").classList.remove("on"); document.querySelectorAll(".sheet").forEach((s) => s.classList.remove("on")); };
+  $("#scrim").addEventListener("click", closeSheets);
+  addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheets(); });
+
+  const standings = () => S.p.map((pl, pi) => ({ pl, pi, t: total(pi), thru: played(pi) }))
+    .sort((a, b) => (b.thru > 0) - (a.thru > 0) || a.t - b.t || b.thru - a.thru);
+  $("#show-board").addEventListener("click", () => {
+    const box = $("#board"); box.innerHTML = "";
+    standings().forEach((s, i) => {
+      const l = document.createElement("div"); l.className = "line";
+      l.innerHTML = '<span class="pos"></span><span class="ball"></span><span class="name"></span><span class="thru"></span><span class="sc"></span>';
+      $(".pos", l).textContent = i + 1;
+      $(".ball", l).style.setProperty("--b", colour(s.pl));
+      $(".name", l).textContent = nameOf(s.pl, s.pi);
+      $(".thru", l).textContent = s.thru ? "thru " + s.thru : "";
+      $(".sc", l).textContent = s.thru ? s.t : "–";
+      box.appendChild(l);
+    });
+    openSheet("#board-sheet");
+  });
+
+  const paintCta = () => {
+    if (!$("#play").classList.contains("on")) return;
+    const last = S.i === S.h - 1;
+    $("#cta").innerHTML = last ? trophyIcon + "Finish" : millIcon + "Next hole";
+  };
+  const goHole = (j, withMill) => {
+    j = Math.max(0, Math.min(S.h - 1, j));
+    S.i = j; save();
+    if (withMill && !reduced) {
+      const b = $("#between");
+      $("#between-n").textContent = j + 1;
+      b.classList.remove("on"); void b.offsetWidth; b.classList.add("on");
+      sfx.whoosh();
+      setTimeout(() => { paintHole(); scrollTo(0, 0); }, 500);
+      setTimeout(() => b.classList.remove("on"), 1500);
+    } else { paintHole(); scrollTo(0, 0); }
+  };
+  $("#between").addEventListener("click", () => $("#between").classList.remove("on"));
+  $("#prev").addEventListener("click", () => goHole(S.i - 1, false));
+  $("#next-arrow").addEventListener("click", () => S.i < S.h - 1 ? goHole(S.i + 1, false) : finish());
+  $("#to-setup").addEventListener("click", () => { paintSetup(); show("setup"); });
+  $("#sound").addEventListener("click", (e) => {
+    sound = !sound;
+    e.currentTarget.querySelector(".wave").style.display = sound ? "" : "none";
+    e.currentTarget.setAttribute("aria-label", sound ? "Sound on" : "Sound off");
+  });
+
+  $("#cta").addEventListener("click", () => {
+    audio();   // phones only allow sound after a tap; this is the first one
+    if ($("#setup").classList.contains("on")) {
+      ensureScores(); S.d = 0; save(); show("play"); paintHole();
+    } else if ($("#play").classList.contains("on")) {
+      if (S.i < S.h - 1) goHole(S.i + 1, true); else finish();
+    }
+  });
+
+  // ---- the 19th hole -------------------------------------------------------
+  const finish = () => {
+    S.d = 1; save();
+    $("#done-course").textContent = S.c || "Putt.";
+    const st = standings();
+    const pod = $("#podium"); pod.innerHTML = "";
+    const order = [1, 0, 2].filter((i) => st[i]);
+    order.forEach((i) => {
+      const s = st[i];
+      const c = document.createElement("div");
+      c.className = "step-col p" + (i + 1);
+      c.innerHTML = (i === 0 ? '<span class="crown">🏆</span>' : "") + '<span class="ball"></span><span class="nm"></span><div class="blk"></div>';
+      $(".ball", c).style.setProperty("--b", colour(s.pl));
+      $(".nm", c).textContent = nameOf(s.pl, s.pi);
+      $(".blk", c).textContent = s.thru ? s.t : "–";
+      pod.appendChild(c);
+    });
+    // awards: aces, the cleanest card, and the hole that got away
+    const aw = $("#awards"); aw.innerHTML = "";
+    const add = (ico, title, who) => { const a = document.createElement("div"); a.className = "award"; a.innerHTML = '<span class="ico"></span><div><b></b><span></span></div>'; $(".ico", a).textContent = ico; $("b", a).textContent = title; $("span:last-child", a).textContent = who; aw.appendChild(a); };
+    const aces = S.p.map((pl, pi) => ({ pl, pi, n: S.s[pi].filter((v) => v === 1).length })).filter((a) => a.n).sort((a, b) => b.n - a.n);
+    if (aces.length) add("⛳", "Hole in one" + (aces[0].n > 1 ? " ×" + aces[0].n : ""), aces.map((a) => nameOf(a.pl, a.pi)).join(", "));
+    let worst = null;
+    S.p.forEach((pl, pi) => S.s[pi].forEach((v, j) => { if (v > 0 && (!worst || v > worst.v)) worst = { pl, pi, v, j }; }));
+    if (worst && worst.v >= 5) add("🌀", "Windmilled", nameOf(worst.pl, worst.pi) + " · " + worst.v + " on " + (worst.j + 1));
+    const steady = S.p.map((pl, pi) => ({ pl, pi, m: Math.max(0, ...S.s[pi]) })).filter((x) => x.m > 0).sort((a, b) => a.m - b.m)[0];
+    if (steady && S.p.length > 1) add("🧊", "Cool head", nameOf(steady.pl, steady.pi) + " · never over " + steady.m);
+    // the card itself
+    const t = $("#card");
+    let h = "<tr><th></th>";
+    for (let j = 0; j < S.h; j++) h += "<th>" + (j + 1) + "</th>";
+    h += "<th>Σ</th></tr>";
+    t.innerHTML = h;
+    S.p.forEach((pl, pi) => {
+      const tr = document.createElement("tr");
+      const nm = document.createElement("td"); nm.textContent = nameOf(pl, pi); nm.style.color = colour(pl); tr.appendChild(nm);
+      S.s[pi].forEach((v) => { const td = document.createElement("td"); td.textContent = v || "–"; if (v === 1) td.className = "ace"; tr.appendChild(td); });
+      const tt = document.createElement("td"); tt.className = "total"; tt.textContent = total(pi); tr.appendChild(tt);
+      t.appendChild(tr);
+    });
+    show("done");
+    if (st[0] && st[0].thru) { sfx.ace(); confetti(); }
+  };
+  $("#again").addEventListener("click", () => { S.s = []; ensureScores(); S.i = 0; S.d = 0; holed.clear(); save(); show("play"); paintHole(); });
+  $("#fresh").addEventListener("click", () => { S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 }; holed.clear(); history.replaceState(null, "", location.pathname); paintSetup(); show("setup"); });
+  $("#share").addEventListener("click", async () => {
+    const url = location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: (S.c || "Mini golf") + " — scorecard", url });
+      else { await navigator.clipboard.writeText(url); toast("Link copied"); }
+    } catch (_) {}
+  });
+
+  // ---- go --------------------------------------------------------------
+  if (load()) {
+    ensureScores();
+    if (S.d) finish();
+    else if (S.s.some((r) => r.some((v) => v > 0))) { show("play"); paintHole(); }
+    else { paintSetup(); show("setup"); }
+  } else { ensureScores(); paintSetup(); show("setup"); }
+})();
+</script>
+</body>
+</html>
