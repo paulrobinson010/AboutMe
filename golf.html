@@ -55,27 +55,39 @@
   .home { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 16px; color: var(--muted); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.14em; }
 
   /* ---------- the windmill ---------- */
-  .windmill { display: block; width: min(100%, 360px); margin: 26px auto 0; overflow: visible; }
-  .windmill .blades { transform-box: view-box; transform-origin: 100px 62px; animation: spin 5s linear infinite; }
-  /* the ball rolls in through the windmill's door, slows on the green and
-     drops into the cup, then the next one comes; the flag twitches as it
-     goes in. Scaling happens about the ball's own centre. */
-  .windmill .mill-ball { transform-box: fill-box; transform-origin: center; animation: roll-through 5s infinite; }
-  .windmill .pin { transform-box: view-box; transform-origin: 190px 140px; animation: pin-twitch 5s infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .windmill { display: block; width: min(100%, 300px); margin: 18px auto 0; overflow: visible; }
+  /* One turn per cycle, starting as a "+" (a blade straight down, blocking
+     the door). A blade covers the door at 0, ¼, ½ and ¾ of the cycle; the
+     ball reaches the door at 37.5%, bang in the middle of a gap. */
+  .windmill .blades { transform-box: view-box; transform-origin: 100px 52px; animation: spin 5s linear infinite; }
+  /* The ball: up the fairway (shrinking as it goes away), between the
+     blades, into the hole; out of the chute on the side, down to the
+     lower green, into the cup. Moved in SVG units about its own centre. */
+  .windmill .mill-ball { transform-box: view-box; transform-origin: 0 0; animation: roll-through 5s infinite; opacity: 0; }
+  .windmill .pin { transform-box: view-box; transform-origin: 180px 151px; animation: pin-twitch 5s infinite; }
   @keyframes roll-through {
-    0%   { transform: translate(0, 0) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.25, 0.5, 0.35, 1); }
-    66%  { transform: translate(204px, 0) scale(1); opacity: 1; animation-timing-function: ease-in; }
-    74%  { transform: translate(204px, 8px) scale(0.35); opacity: 0; }
-    100% { transform: translate(204px, 8px) scale(0.35); opacity: 0; }
+    /* up the fairway, stopping short of the blades… */
+    0%    { transform: translate(100px, 166px) scale(1.35); opacity: 1; animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1); }
+    22%   { transform: translate(100px, 142px) scale(0.85); opacity: 1; animation-timing-function: linear; }
+    /* …waiting while the blade sweeps past the door (it's down at 25%)… */
+    30%   { transform: translate(100px, 141px) scale(0.84); opacity: 1; animation-timing-function: cubic-bezier(0.45, 0, 0.6, 1); }
+    /* …then through the gap and in */
+    37.5% { transform: translate(100px, 127px) scale(0.7);  opacity: 1; animation-timing-function: ease-in; }
+    42%   { transform: translate(100px, 123px) scale(0.3);  opacity: 0; }
+    49%   { transform: translate(130px, 131px) scale(0.55); opacity: 0; animation-timing-function: ease-out; }
+    51%   { transform: translate(131px, 132px) scale(0.75); opacity: 1; animation-timing-function: ease-in; }
+    58%   { transform: translate(143px, 146px) scale(0.8);  opacity: 1; animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1); }
+    72%   { transform: translate(180px, 146px) scale(0.8);  opacity: 1; animation-timing-function: ease-in; }
+    77%   { transform: translate(180px, 151px) scale(0.3);  opacity: 0; }
+    100%  { transform: translate(180px, 151px) scale(0.3);  opacity: 0; }
   }
   @keyframes pin-twitch {
-    0%, 70%, 100% { transform: rotate(0); }
-    74% { transform: rotate(-5deg); }
-    79% { transform: rotate(3deg); }
-    84% { transform: rotate(0); }
+    0%, 76%, 100% { transform: rotate(0); }
+    79% { transform: rotate(-5deg); }
+    83% { transform: rotate(3deg); }
+    87% { transform: rotate(0); }
   }
-  }
+  @keyframes spin { to { transform: rotate(360deg); } }
   h1 {
     font-family: "Syne", sans-serif;
     font-weight: 800;
@@ -271,23 +283,11 @@
   }
   .between.on { opacity: 1; pointer-events: auto; }
   .between .windmill { width: min(80vw, 340px); margin: 0; }
-  .between .windmill .mill-ball, .between .windmill .pin { animation: none; }
-  .between.on .windmill .mill-ball { animation: dash-through 1.3s forwards; }
-  .between.on .windmill .pin { animation: pin-drop 1.6s forwards; }
-  .between.on .windmill .blades { animation-duration: 1.4s; }
-  @keyframes dash-through {
-    0%   { transform: translate(0, 0) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.3, 0.55, 0.35, 1); }
-    82%  { transform: translate(204px, 0) scale(1); opacity: 1; animation-timing-function: ease-in; }
-    100% { transform: translate(204px, 8px) scale(0.35); opacity: 0; }
-  }
-  @keyframes pin-drop {
-    0%, 66%, 100% { transform: rotate(0); }
-    72% { transform: rotate(-6deg); }
-    80% { transform: rotate(4deg); }
-    88% { transform: rotate(0); }
-  }
-  .between .next { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-weight: 800; font-size: 3.6rem; opacity: 0; transform: scale(0.6); }
-  .between.on .next { animation: pop 0.5s var(--ease) 1.25s forwards; }
+  .between .windmill .mill-ball, .between .windmill .pin, .between .windmill .blades { animation: none; }
+  .between.on .windmill .mill-ball { animation: roll-through 2.4s forwards; }
+  .between.on .windmill .pin { animation: pin-twitch 2.4s forwards; }
+  .between.on .windmill .blades { animation: spin 2.4s linear forwards; }
+  .between.on .next { animation: pop 0.45s var(--ease) 1.95s forwards; }
   @keyframes pop { to { opacity: 1; transform: none; } }
 
   /* hole in one */
@@ -357,34 +357,45 @@
 
 <!-- one windmill, cloned wherever it's needed -->
 <template id="windmill-tpl">
-  <svg class="windmill" viewBox="0 0 200 160" aria-hidden="true">
+  <!-- Front-on, the way a real windmill hole looks from the tee: the ball
+       rolls up the fairway, has to slip between the blades — which sweep
+       right down to the ground in front of the door — and goes in the
+       hole. It pops out of a chute on the side, rolls down to the lower
+       green, and drops in the cup by the flag. -->
+  <svg class="windmill" viewBox="0 -28 200 200" aria-hidden="true">
     <defs>
       <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
-    <!-- carpet -->
-    <rect x="-20" y="138" width="240" height="14" rx="4" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" filter="url(#glow)"/>
-    <!-- the ball, behind the tower: seen through the door -->
-    <g class="mill-ball"><circle cx="-14" cy="132" r="5.5" fill="#fff" filter="url(#glow)"/></g>
-    <!-- tower with a door cut through it -->
+    <!-- lower green, with the cup -->
+    <path d="M138 150 L198 150 L198 160 L138 160 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow)"/>
+    <ellipse cx="180" cy="151" rx="6.5" ry="2.2" fill="#000"/>
+    <!-- the chute from the windmill's side down to the lower green -->
+    <path d="M130 134 L142 150" stroke="#39ff88" stroke-width="2" stroke-linecap="round" opacity="0.7" filter="url(#glow)"/>
+    <!-- the fairway, running up to the door -->
+    <path d="M28 172 L172 172 L122 132 L78 132 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow)"/>
+    <!-- tower, with the hole through its base -->
     <path fill="#140e2a" stroke="#ff4fd8" stroke-width="2" stroke-linejoin="round" filter="url(#glow)" fill-rule="evenodd"
-      d="M68 138 L84 64 L116 64 L132 138 Z M90 138 L90 120 A10 10 0 0 1 110 120 L110 138 Z"/>
-    <path d="M78 66 L100 40 L122 66 Z" fill="#140e2a" stroke="#25e3ee" stroke-width="2" stroke-linejoin="round" filter="url(#glow)"/>
-    <circle cx="100" cy="92" r="5" fill="none" stroke="#ffd23f" stroke-width="1.6" filter="url(#glow)"/>
-    <!-- blades -->
+      d="M70 134 L84 56 L116 56 L130 134 Z M89 134 L89 117 A11 11 0 0 1 111 117 L111 134 Z"/>
+    <path d="M78 58 L100 32 L122 58 Z" fill="#140e2a" stroke="#25e3ee" stroke-width="2" stroke-linejoin="round" filter="url(#glow)"/>
+    <circle cx="100" cy="84" r="5" fill="none" stroke="#ffd23f" stroke-width="1.6" filter="url(#glow)"/>
+    <!-- the way out, on the side -->
+    <ellipse cx="128.5" cy="129" rx="2.6" ry="4.2" fill="#000" stroke="#ff4fd8" stroke-width="1"/>
+    <!-- the ball: a unit circle moved and sized by the animation -->
+    <g class="mill-ball"><circle cx="0" cy="0" r="5" fill="#fff" filter="url(#glow)"/></g>
+    <!-- blades, in front of the door, long enough to sweep the ground -->
     <g class="blades" filter="url(#glow)">
-      <g stroke="#25e3ee" stroke-width="1.8" fill="rgba(37,227,238,0.08)">
-        <path d="M100 62 L94 8 L106 8 Z"/>
-        <path d="M100 62 L154 56 L154 68 Z"/>
-        <path d="M100 62 L106 116 L94 116 Z"/>
-        <path d="M100 62 L46 68 L46 56 Z"/>
+      <g stroke="#25e3ee" stroke-width="1.8" stroke-linejoin="round" fill="rgba(37,227,238,0.10)">
+        <path d="M100 52 L93 -26 L107 -26 Z M100 30 L100 -20"/>
+        <path d="M100 52 L178 45 L178 59 Z M122 52 L172 52"/>
+        <path d="M100 52 L107 132 L93 132 Z M100 74 L100 126"/>
+        <path d="M100 52 L22 59 L22 45 Z M78 52 L28 52"/>
       </g>
-      <circle cx="100" cy="62" r="5" fill="#ff4fd8"/>
+      <circle cx="100" cy="52" r="5" fill="#ff4fd8"/>
     </g>
-    <!-- cup and flag on the far side -->
-    <ellipse cx="190" cy="140" rx="7" ry="2.5" fill="#000"/>
+    <!-- the flag -->
     <g class="pin">
-      <line x1="190" y1="140" x2="190" y2="104" stroke="#f2f0ea" stroke-width="1.6"/>
-      <path d="M190 104 L208 110 L190 116 Z" fill="#ff4fd8" filter="url(#glow)"/>
+      <line x1="180" y1="151" x2="180" y2="116" stroke="#f2f0ea" stroke-width="1.6"/>
+      <path d="M180 116 L198 122 L180 128 Z" fill="#ff4fd8" filter="url(#glow)"/>
     </g>
   </svg>
 </template>
@@ -744,9 +755,9 @@
       $("#between-n").textContent = j + 1;
       b.classList.remove("on"); void b.offsetWidth; b.classList.add("on");
       sfx.whoosh();
-      setTimeout(sfx.cup, 1150);      // as it drops in the cup
+      setTimeout(sfx.cup, 1800);      // as it drops in the cup
       setTimeout(() => { paintHole(); scrollTo(0, 0); }, 500);
-      setTimeout(() => b.classList.remove("on"), 2000);
+      setTimeout(() => b.classList.remove("on"), 2700);
     } else { paintHole(); scrollTo(0, 0); }
   };
   $("#between").addEventListener("click", () => $("#between").classList.remove("on"));
