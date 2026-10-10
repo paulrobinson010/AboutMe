@@ -328,6 +328,16 @@
   .step-col.p2 .blk { height: 100px; }
   .step-col.p3 .blk { height: 72px; }
   .step-col.p1 .crown { font-size: 1.8rem; filter: drop-shadow(0 0 8px var(--gold)); }
+  .step-col .balls { display: flex; justify-content: center; }
+  .step-col .balls .ball + .ball { margin-left: -12px; }   /* tied balls huddle together */
+  .step-col.shared .ball { width: calc(44px - (var(--n) - 1) * 6px); height: calc(44px - (var(--n) - 1) * 6px); min-width: 26px; min-height: 26px; }
+  .step-col .nm { text-align: center; white-space: normal; line-height: 1.2; }
+  .step-col .tie {
+    font-family: "Syne", sans-serif; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.08em;
+    color: var(--gold); text-shadow: 0 0 10px var(--gold);
+    animation: tie-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes tie-pulse { 50% { opacity: 0.55; } }
   .awards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
   .award { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 18px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); }
   .award .ico { font-size: 1.6rem; }
@@ -788,14 +798,26 @@
   // Ranked by strokes per hole played, so someone a hole behind isn't
   // "leading" just for having played less; once everyone has played every
   // hole this is the same order as the totals.
-  const standings = () => S.p.map((pl, pi) => ({ pl, pi, t: total(pi), thru: played(pi) }))
-    .sort((a, b) => (b.thru > 0) - (a.thru > 0) || (a.thru && b.thru ? a.t / a.thru - b.t / b.thru : 0) || a.t - b.t || b.thru - a.thru);
+  // Level scores share a place ("=1", and the next player is 3rd), so a tie
+  // is never quietly broken by the order the players were entered in.
+  const rankKey = (s) => (s.thru ? s.t / s.thru : Infinity);
+  const standings = () => {
+    const list = S.p.map((pl, pi) => ({ pl, pi, t: total(pi), thru: played(pi) }))
+      .sort((a, b) => (b.thru > 0) - (a.thru > 0) || rankKey(a) - rankKey(b) || a.t - b.t || b.thru - a.thru);
+    list.forEach((s, i) => {
+      const prev = list[i - 1];
+      s.pos = prev && s.thru && Math.abs(rankKey(s) - rankKey(prev)) < 1e-9 ? prev.pos : i + 1;
+    });
+    list.forEach((s) => { s.tied = list.filter((o) => o.pos === s.pos).length > 1; });
+    return list;
+  };
+  const winners = (st) => st.filter((s) => s.thru && s.pos === 1);
   $("#show-board").addEventListener("click", () => {
     const box = $("#board"); box.innerHTML = "";
     standings().forEach((s, i) => {
       const l = document.createElement("div"); l.className = "line";
       l.innerHTML = '<span class="pos"></span><span class="ball"></span><span class="name"></span><span class="thru"></span><span class="sc"></span>';
-      $(".pos", l).textContent = i + 1;
+      $(".pos", l).textContent = (s.tied ? "=" : "") + s.pos;
       $(".ball", l).style.setProperty("--b", colour(s.pl));
       $(".name", l).textContent = nameOf(s.pl, s.pi);
       $(".thru", l).textContent = s.thru ? "thru " + s.thru : "";
@@ -876,27 +898,40 @@
     $("#done-course").textContent = S.c || "Putt.";
     const st = standings();
     const pod = $("#podium"); pod.innerHTML = "";
-    const order = [1, 0, 2].filter((i) => st[i]);
-    order.forEach((i) => {
-      const s = st[i];
+    // the first three distinct places, each a step that holds everyone on it
+    const steps = [];
+    st.forEach((s) => { const g = steps.find((x) => x.pos === s.pos); if (g) g.who.push(s); else if (steps.length < 3) steps.push({ pos: s.pos, who: [s] }); });
+    [1, 0, 2].filter((k) => steps[k]).forEach((k) => {
+      const g = steps[k], lead = g.who[0];
       const c = document.createElement("div");
-      c.className = "step-col p" + (i + 1);
-      c.innerHTML = (i === 0 ? '<span class="crown">🏆</span>' : "") + '<span class="ball"></span><span class="nm"></span><div class="blk"></div>';
-      $(".ball", c).style.setProperty("--b", colour(s.pl));
-      $(".nm", c).textContent = nameOf(s.pl, s.pi);
-      $(".blk", c).textContent = s.thru ? s.t : "–";
+      c.className = "step-col p" + (k + 1) + (g.who.length > 1 ? " shared" : "");
+      c.style.setProperty("--n", g.who.length);
+      c.innerHTML = (k === 0 ? (g.who.length > 1 ? '<span class="tie">Tie!</span>' : "") + '<span class="crown">🏆</span>' : "") + '<span class="balls"></span><span class="nm"></span><div class="blk"></div>';
+      g.who.forEach((s) => { const b = document.createElement("span"); b.className = "ball"; b.style.setProperty("--b", colour(s.pl)); $(".balls", c).appendChild(b); });
+      $(".nm", c).textContent = g.who.map((s) => nameOf(s.pl, s.pi)).join(" & ");
+      $(".blk", c).textContent = lead.thru ? lead.t : "–";
       pod.appendChild(c);
     });
     // awards: aces, the cleanest card, and the hole that got away
     const aw = $("#awards"); aw.innerHTML = "";
     const add = (ico, title, who) => { const a = document.createElement("div"); a.className = "award"; a.innerHTML = '<span class="ico"></span><div><b></b><span></span></div>'; $(".ico", a).textContent = ico; $("b", a).textContent = title; $("span:last-child", a).textContent = who; aw.appendChild(a); };
     const aces = S.p.map((pl, pi) => ({ pl, pi, n: S.s[pi].filter((v) => v === 1).length })).filter((a) => a.n).sort((a, b) => b.n - a.n);
-    if (aces.length) add("⛳", "Hole in one" + (aces[0].n > 1 ? " ×" + aces[0].n : ""), aces.map((a) => nameOf(a.pl, a.pi)).join(", "));
-    let worst = null;
-    S.p.forEach((pl, pi) => S.s[pi].forEach((v, j) => { if (v > 0 && (!worst || v > worst.v)) worst = { pl, pi, v, j }; }));
-    if (worst && worst.v >= 5) add("🌀", "Windmilled", nameOf(worst.pl, worst.pi) + " · " + worst.v + " on " + (worst.j + 1));
-    const steady = S.p.map((pl, pi) => ({ pl, pi, m: Math.max(0, ...S.s[pi]) })).filter((x) => x.m > 0).sort((a, b) => a.m - b.m)[0];
-    if (steady && S.p.length > 1) add("🧊", "Cool head", nameOf(steady.pl, steady.pi) + " · never over " + steady.m);
+    if (aces.length) add("⛳", "Hole in one", aces.map((a) => nameOf(a.pl, a.pi) + (a.n > 1 ? " ×" + a.n : "")).join(", "));
+    // the hole that got away — everyone who matched the worst score
+    let worstV = 0;
+    S.s.forEach((r) => r.forEach((v) => { if (v > worstV) worstV = v; }));
+    if (worstV >= 5) {
+      const hits = [];
+      S.p.forEach((pl, pi) => S.s[pi].forEach((v, j) => { if (v === worstV) hits.push(nameOf(pl, pi) + " on " + (j + 1)); }));
+      add("🌀", "Windmilled · " + worstV, hits.join(", "));
+    }
+    // the steadiest card — everyone whose worst hole was the lowest
+    const maxes = S.p.map((pl, pi) => ({ pl, pi, m: Math.max(0, ...S.s[pi]) })).filter((x) => x.m > 0);
+    if (maxes.length && S.p.length > 1) {
+      const low = Math.min(...maxes.map((x) => x.m));
+      const cool = maxes.filter((x) => x.m === low);
+      if (cool.length < S.p.length) add("🧊", "Cool head · never over " + low, cool.map((x) => nameOf(x.pl, x.pi)).join(", "));
+    }
     buildCard($("#card"));
     show("done");
     if (st[0] && st[0].thru) { sfx.ace(); confetti(); }
@@ -980,14 +1015,16 @@
     tLines.forEach((ln, k) => x.fillText(fit(ln, MAXW), PAD, 196 + k * 66));
     noGlow();
     const st = standings();
-    if (st[0] && st[0].thru) {
-      const win = st[0];
+    const wins = winners(st);
+    if (wins.length) {
       const wy = 268 + EXTRA;
-      x.font = SG(700, 30); x.fillStyle = "#ffd23f"; glow("#ffd23f", 14); x.fillText("WINNER", PAD, wy); noGlow();
-      const ww = x.measureText("WINNER").width;
-      ball(PAD + ww + 40, wy - 10, 15, colour(win.pl));
+      const label = wins.length > 1 ? "JOINT WINNERS" : "WINNER";
+      x.font = SG(700, 30); x.fillStyle = "#ffd23f"; glow("#ffd23f", 14); x.fillText(label, PAD, wy); noGlow();
+      let bx = PAD + x.measureText(label).width + 40;
+      wins.forEach((w, k) => ball(bx + k * 22, wy - 10, 15, colour(w.pl)));
+      bx += (wins.length - 1) * 22 + 28;
       x.font = SG(700, 38); x.fillStyle = "#f2f0ea";
-      x.fillText(fit(nameOf(win.pl, win.pi), 560) + "  ·  " + win.t, PAD + ww + 68, wy + 2);
+      x.fillText(fit(wins.map((w) => nameOf(w.pl, w.pi)).join(" & "), W - PAD - bx - 90) + "  ·  " + wins[0].t, bx, wy + 2);
     }
 
     // the card, nine holes to a block
@@ -1013,7 +1050,7 @@
           else { x.fillStyle = v ? "#f2f0ea" : "rgba(242,240,234,0.3)"; x.font = SG(700, 30); x.fillText(v ? String(v) : "–", cx, mid + 1); }
         }
         if (last) {
-          x.font = SG(700, 36); x.fillStyle = pi === (st[0] && st[0].pi) ? "#ffd23f" : "#f2f0ea";
+          x.font = SG(700, 36); x.fillStyle = wins.some((w) => w.pi === pi) ? "#ffd23f" : "#f2f0ea";
           x.fillText(played(pi) ? String(total(pi)) : "–", W - PAD - TOT_W / 2, mid + 2);
         }
         x.textAlign = "left"; x.textBaseline = "alphabetic";
