@@ -343,7 +343,6 @@
   .again { display: flex; gap: 10px; margin-top: 18px; }
   .again button { flex: 1; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .loop { display: block; width: 120px; margin: 0 auto; overflow: visible; }
-  .loop .orbit { transform-box: view-box; transform-origin: 60px 52px; animation: spin 1.6s linear infinite; }
   .save-card {
     display: flex; align-items: center; justify-content: center; gap: 10px;
     width: 100%; margin-top: 18px; padding: 16px;
@@ -364,7 +363,7 @@
   .deal { text-align: center; margin-top: 26px; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
 
   @media (prefers-reduced-motion: reduce) {
-    .windmill .blades, .windmill .mill-ball, .windmill .pin, .loop .orbit { animation: none !important; }
+    .windmill .blades, .windmill .mill-ball, .windmill .pin { animation: none !important; }
     .screen.on { animation: none; }
     .green .putt-ball { transition: none; }
   }
@@ -465,8 +464,13 @@
   <!-- ===== the 19th hole ===== -->
   <section class="screen" id="done">
     <svg class="loop" viewBox="0 0 120 110" aria-hidden="true">
-      <path d="M0 100 H38 C60 100 86 92 86 62 A26 26 0 1 0 34 62 C34 92 60 100 82 100 H120" fill="none" stroke="#39ff88" stroke-width="4" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #39ff88)"/>
-      <g class="orbit"><circle cx="60" cy="24" r="6" fill="#fff" style="filter:drop-shadow(0 0 6px #fff)"/></g>
+      <!-- the loop-the-loop: the ball rides the track itself, in along the
+           bottom, up and over the loop, and out the far side -->
+      <path id="loop-track" d="M0 100 H38 C60 100 86 92 86 62 A26 26 0 1 0 34 62 C34 92 60 100 82 100 H120" fill="none" stroke="#39ff88" stroke-width="4" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #39ff88)"/>
+      <circle class="loop-ball" r="5.5" fill="#fff" style="filter:drop-shadow(0 0 6px #fff)">
+        <animateMotion dur="2.6s" repeatCount="indefinite" calcMode="paced"><mpath href="#loop-track"/></animateMotion>
+        <animate attributeName="opacity" dur="2.6s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.06;0.92;1"/>
+      </circle>
     </svg>
     <h1 id="done-course" style="font-size:clamp(1.8rem,9vw,2.6rem);margin-top:10px"></h1>
     <div class="podium" id="podium"></div>
@@ -1049,6 +1053,11 @@
     } catch (_) { toast("Couldn't save — try a screenshot"); }
     btn.disabled = false;
   });
+
+  if (reduced) {
+    const lb = $(".loop-ball");
+    if (lb) { lb.querySelectorAll("animate, animateMotion").forEach((a) => a.remove()); lb.setAttribute("cx", 60); lb.setAttribute("cy", 36); }
+  }
 
   // ---- go --------------------------------------------------------------
   if (load()) {
