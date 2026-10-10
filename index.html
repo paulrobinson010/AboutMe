@@ -812,14 +812,36 @@
     .work-item .preview img.small { height: 100px; align-self: center; }
   }
 
-  /* ---------- treadgame spotlight (brand-flip band in TreadGame's palette) ---------- */
+  /* ---------- treadgame spotlight (in treadgame.com's night-arena palette) ---------- */
   .spotlight {
-    background: #faf7f0;
-    color: #1f2230;
+    background:
+      radial-gradient(70% 55% at 50% 0%, rgba(250, 128, 30, 0.16), transparent 70%),
+      linear-gradient(180deg, #0c0a1a 0%, #140c2a 55%, #0a0a12 100%);
+    color: var(--ink);
     position: relative;
     z-index: 1;
+    overflow: hidden;
+    border-block: 1px solid rgba(250, 128, 30, 0.35);
+    box-shadow: 0 0 40px rgba(250, 128, 30, 0.12);
   }
-  .spotlight ::selection { background: #fa801e; color: #faf7f0; }
+  /* the boardwalk's neon floor, running away under the band's lower edge */
+  .spotlight::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 46%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(transparent calc(100% - 1px), rgba(37, 227, 238, 0.5) 0) 0 0 / 100% 56px,
+      linear-gradient(90deg, transparent calc(100% - 1px), rgba(255, 79, 216, 0.38) 0) 50% 0 / 72px 100%;
+    transform: perspective(420px) rotateX(64deg);
+    transform-origin: 50% 100%;
+    -webkit-mask-image: linear-gradient(to top, #000, transparent 80%);
+    mask-image: linear-gradient(to top, #000, transparent 80%);
+    opacity: 0.4;
+  }
+  .spotlight ::selection { background: #fa801e; color: #0a0a0f; }
   .spotlight .sec-head .num { color: #fa801e; }
   .spot-intro {
     display: grid;
@@ -835,39 +857,42 @@
     line-height: 1.3;
   }
   .spot-lede em { font-style: normal; color: #fa801e; }
-  .spot-copy { margin-top: 18px; color: #4a4f60; line-height: 1.7; font-size: clamp(0.95rem, 1.3vw, 1.05rem); }
+  .spot-copy { margin-top: 18px; color: var(--muted); line-height: 1.7; font-size: clamp(0.95rem, 1.3vw, 1.05rem); }
   .spot-stats { display: flex; flex-wrap: wrap; gap: 10px 12px; }
   .spot-stats span {
     font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.18em;
-    color: #4a4f60;
-    border: 1px solid #e0dac9;
+    color: #ffd0a8;
+    border: 1px solid rgba(250, 128, 30, 0.45);
     border-radius: 100px;
     padding: 8px 16px;
-    background: #fff;
+    background: rgba(250, 128, 30, 0.08);
+    box-shadow: 0 0 14px rgba(250, 128, 30, 0.14), inset 0 0 10px rgba(250, 128, 30, 0.08);
   }
   .spot-badges { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 22px; }
   .spot-badges img { height: 48px; width: auto; display: block; }
   .spot-badges a { transition: transform 0.3s var(--ease); }
-  .spot-badges a:hover { transform: translateY(-3px); }
+  @media (hover: hover) and (pointer: fine) {
+    .spot-badges a:hover { transform: translateY(-3px); }   /* a tap would leave it lifted */
+  }
   .spot-shots { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(14px, 2vw, 24px); }
   .spot-shots img {
     width: 100%;
     height: auto;
     display: block;
     border-radius: 18px;
-    border: 1px solid #e0dac9;
-    box-shadow: 0 14px 48px rgba(31, 34, 48, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(250, 128, 30, 0.12);
     transition: transform 0.5s var(--ease), box-shadow 0.5s var(--ease);
   }
-  .spot-shots img:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 24px 70px rgba(31, 34, 48, 0.2); }
+  .spot-shots img:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 34px rgba(250, 128, 30, 0.35); }
   .spot-shots img.main { grid-column: 1 / -1; }
   .tile-marquee {
     overflow: hidden;
     margin-top: clamp(32px, 5vw, 56px);
     padding-top: clamp(24px, 3vw, 36px);
-    border-top: 1px solid #e0dac9;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     white-space: nowrap;
   }
   .tile-marquee .track {
@@ -878,16 +903,16 @@
     height: clamp(84px, 9vw, 124px);
     width: auto;
     aspect-ratio: 1;
-    background: #efe9dc;
+    background: #141828;
     border-radius: 18px;
-    border: 1px solid #e0dac9;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     margin-right: 14px;
-    box-shadow: 0 6px 22px rgba(31, 34, 48, 0.1);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
   }
   .tile-cap {
     white-space: normal;
     margin-top: 16px;
-    color: #7a8090;
+    color: var(--muted);
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.22em;
@@ -899,7 +924,7 @@
     gap: clamp(20px, 4vw, 48px);
     margin-top: clamp(32px, 5vw, 56px);
     padding-top: clamp(24px, 3vw, 36px);
-    border-top: 1px solid #e0dac9;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
   .spot-watch img { height: clamp(120px, 14vw, 180px); width: auto; }
   .spot-watch p {
@@ -1762,12 +1787,6 @@
     22% { opacity: 1; }
     100% { transform: translateY(-22px); opacity: 0.1; }
   }
-  /* over the cream TreadGame band the cyan all but disappears, so the radar
-     repaints itself in the spotlight's own ink */
-  .radar.on-light .ring, .radar.on-light .cross { stroke: rgba(31, 34, 48, 0.38); }
-  .radar.on-light .sweep { fill: rgba(13, 148, 172, 0.22); }
-  .radar.on-light .me { fill: #1f2230; }
-  .radar.on-light b { background: #1f2230; color: #7fe9f4; }
   .radar b {
     position: absolute;
     left: 50%;
@@ -2291,6 +2310,145 @@
     .work-item .preview img { opacity: 1; transform: none; }
     .bellow.on b, .crt-flash.go b { opacity: 1; transform: none; }
     html { scroll-behavior: auto; }
+  }
+
+  /* ---------- neon ---------- */
+  /* The site after dark: the outlined words become lit tubes, each project
+     glows in its own app's colour, and a floor grid runs away under the
+     hero, the same night as treadgame.com. Glows are text-shadow and
+     drop-shadow only, so nothing reflows; motion is gated below. */
+  :root {
+    --neon-pink: #ff4fd8;
+    --neon-cyan: #25e3ee;
+  }
+
+  /* "that keep score": a sign. It doesn't slide up like the solid words —
+     it is already there as dim glass, flickers on as they finish rising,
+     then hums, with the odd stutter like a real tube. Its row stops
+     clipping: the rise needs overflow hidden, but that cut the glow off
+     in a hard-edged box. */
+  .hero h1 .row.outline { overflow: visible; }
+  .hero h1 .row.outline > span {
+    -webkit-text-stroke: 2px var(--neon-pink);
+    transform: none;
+    filter:
+      drop-shadow(0 0 4px rgba(255, 79, 216, 0.95))
+      drop-shadow(0 0 18px rgba(255, 79, 216, 0.55))
+      drop-shadow(0 0 44px rgba(230, 26, 204, 0.35));
+    animation:
+      neon-on 1.7s linear 0.95s both,
+      neon-hum 9s linear 4s infinite;
+  }
+  @keyframes neon-on {
+    0%   { opacity: 0.12; }
+    6%   { opacity: 1; }
+    9%   { opacity: 0.18; }
+    14%  { opacity: 1; }
+    17%  { opacity: 0.45; }
+    22%, 100% { opacity: 1; }
+  }
+  @keyframes neon-hum {
+    0%, 91%, 93.5%, 100% { opacity: 1; }
+    92%  { opacity: 0.55; }
+    93%  { opacity: 0.9; }
+  }
+  /* the solid words get a faint warm bloom so they sit in the same light */
+  .hero h1 .row:not(.outline) > span {
+    text-shadow: 0 0 34px rgba(255, 255, 255, 0.14);
+  }
+
+  /* a neon floor running away under the hero */
+  .hero-wrap::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 38%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(transparent calc(100% - 1px), rgba(37, 227, 238, 0.55) 0) 0 0 / 100% 52px,
+      linear-gradient(90deg, transparent calc(100% - 1px), rgba(255, 79, 216, 0.42) 0) 50% 0 / 68px 100%;
+    transform: perspective(380px) rotateX(63deg);
+    transform-origin: 50% 100%;
+    -webkit-mask-image: linear-gradient(to top, #000 5%, transparent 85%);
+    mask-image: linear-gradient(to top, #000 5%, transparent 85%);
+    opacity: 0.38;
+  }
+  @media (prefers-reduced-motion: no-preference) and (min-width: 720px) {
+    .hero-wrap::before { animation: floor-run 2.2s linear infinite; }
+  }
+  @keyframes floor-run { to { background-position: 0 52px, 50% 0; } }
+
+  /* the marquee as a lit strip */
+  .marquee {
+    border-color: rgba(255, 79, 216, 0.35);
+    box-shadow: 0 0 22px rgba(255, 79, 216, 0.12), inset 0 0 22px rgba(37, 227, 238, 0.06);
+  }
+  .marquee span {
+    color: #fff;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.45), 0 0 20px color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+  .marquee span em {
+    color: var(--neon-cyan);
+    -webkit-text-stroke: 0;
+    text-shadow: 0 0 8px var(--neon-cyan), 0 0 18px rgba(37, 227, 238, 0.6);
+  }
+
+  /* section numbers glow in the mood colour */
+  .sec-head .num {
+    text-shadow: 0 0 10px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+
+  /* projects: each row wears its app's neon. The index and activity mark
+     are lit at rest; hovering lights the whole row's edge. */
+  .work-item .idx { color: color-mix(in srgb, var(--c) 75%, var(--ink)); }
+  .work-item .idx i { text-shadow: 0 0 10px color-mix(in srgb, var(--c) 80%, transparent); }
+  .work-item .act {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 3px var(--c)) drop-shadow(0 0 8px color-mix(in srgb, var(--c) 55%, transparent));
+  }
+  .work-item:hover .act { opacity: 1; }
+  .work-item .mark { box-shadow: 0 0 18px color-mix(in srgb, var(--c) 28%, transparent); }
+  .work-item .play-chip {
+    box-shadow: 0 0 12px color-mix(in srgb, var(--c) 55%, transparent), 0 0 26px color-mix(in srgb, var(--c) 25%, transparent);
+  }
+  .work-item::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--c) 20%, var(--c) 80%, transparent);
+    box-shadow: 0 0 12px var(--c), 0 0 28px color-mix(in srgb, var(--c) 60%, transparent);
+    opacity: 0;
+    transform: scaleX(0.4);
+    transition: opacity 0.45s var(--ease), transform 0.6s var(--ease);
+    pointer-events: none;
+  }
+  .work-item:hover::after { opacity: 1; transform: none; }
+  .work-item:hover .body h3 {
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--c) 55%, transparent));
+  }
+
+  /* The Deal: the outlined words are tubes too, in cyan */
+  .manifesto em {
+    -webkit-text-stroke: 1.5px var(--neon-cyan);
+    filter: drop-shadow(0 0 3px rgba(37, 227, 238, 0.9)) drop-shadow(0 0 14px rgba(37, 227, 238, 0.45));
+  }
+  .manifesto .sign { filter: drop-shadow(0 0 16px rgba(255, 79, 216, 0.35)); }
+  .pledges span {
+    border-color: rgba(37, 227, 238, 0.35);
+    color: color-mix(in srgb, var(--neon-cyan) 55%, var(--ink));
+    box-shadow: 0 0 12px rgba(37, 227, 238, 0.12), inset 0 0 10px rgba(37, 227, 238, 0.06);
+  }
+
+  /* the big sign-off lights up */
+  footer .big-link:hover, footer .big-link:focus-visible {
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 26px var(--neon-pink), 0 0 60px rgba(255, 79, 216, 0.55);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero h1 .row.outline > span { animation: none; transform: none; opacity: 1; }
+    .hero-wrap::before { animation: none; }
   }
 </style>
 </head>
@@ -3591,20 +3749,6 @@
     // a decisive flick, well clear of reading pace — a plain mouse wheel spun
     // hard gets here, an ordinary scroll is a third of it
     const FLICK = 1400;
-    const spotlight = document.querySelector(".spotlight");
-    let bandRaf = null;
-    const watchBand = () => {
-      if (bandRaf) return;
-      const step = () => {
-        if (!radarEl.classList.contains("on")) { bandRaf = null; return; }
-        const r = radarEl.getBoundingClientRect();
-        const s = spotlight.getBoundingClientRect();
-        const cy = r.top + r.height / 2;
-        radarEl.classList.toggle("on-light", s.top < cy && s.bottom > cy);
-        bandRaf = requestAnimationFrame(step);
-      };
-      bandRaf = requestAnimationFrame(step);
-    };
     const flicked = () => { lastFlick = performance.now(); };
     addEventListener("wheel", flicked, { passive: true });
     addEventListener("touchmove", flicked, { passive: true });
@@ -3619,7 +3763,6 @@
       if (up > FLICK && now > quietUntil && !arcadeOpen()) {
         quietUntil = now + 12000;                  // rare enough to feel found
         radarEl.classList.add("on");
-        watchBand();
         clearTimeout(radarTimer);
         radarTimer = setTimeout(() => radarEl.classList.remove("on"), 3600);
       }
