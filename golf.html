@@ -73,22 +73,33 @@
      lower green, into the cup. Moved in SVG units about its own centre. */
   .windmill .mill-ball { transform-box: view-box; transform-origin: 0 0; animation: roll-through 5s infinite; opacity: 0; }
   .windmill .pin { transform-box: view-box; transform-origin: 180px 151px; animation: pin-twitch 5s infinite; }
+  /* Real putting physics: a struck ball only ever slows down (rolling
+     friction, so its speed falls in a straight line), except going
+     downhill. So: the ball sits on the tee, is putted at 16%, and slows
+     all the way up the fairway — hard enough, and late enough, that it
+     reaches the blades just as a gap opens (a blade is down at 25%, the
+     gap is centred on 37.5%) and rolls into the hole still moving. The
+     only speed-up is down the chute; then it slows along the lower green
+     and drops in the cup. Each easing curve is a constant-deceleration
+     (or acceleration) curve, and the speeds match where segments meet. */
   @keyframes roll-through {
-    /* up the fairway, stopping short of the blades… */
-    0%    { transform: translate(100px, 166px) scale(1.35); opacity: 1; animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1); }
-    22%   { transform: translate(100px, 142px) scale(0.85); opacity: 1; animation-timing-function: linear; }
-    /* …waiting while the blade sweeps past the door (it's down at 25%)… */
-    30%   { transform: translate(100px, 141px) scale(0.84); opacity: 1; animation-timing-function: cubic-bezier(0.45, 0, 0.6, 1); }
-    /* …then through the gap and in */
-    37.5% { transform: translate(100px, 127px) scale(0.7);  opacity: 1; animation-timing-function: ease-in; }
+    0%    { transform: translate(100px, 166px) scale(1.35); opacity: 0; animation-timing-function: linear; }
+    3%    { transform: translate(100px, 166px) scale(1.35); opacity: 1; animation-timing-function: linear; }
+    /* putted: speed falls from v to 0.3v by the door */
+    16%   { transform: translate(100px, 166px) scale(1.35); opacity: 1; animation-timing-function: cubic-bezier(0.333, 0.513, 0.667, 0.847); }
+    /* through the gap, into the hole at the speed it arrived with */
+    37.5% { transform: translate(100px, 127px) scale(0.7);  opacity: 1; animation-timing-function: linear; }
     42%   { transform: translate(100px, 123px) scale(0.3);  opacity: 0; }
     49%   { transform: translate(130px, 131px) scale(0.55); opacity: 0; animation-timing-function: ease-out; }
-    51%   { transform: translate(131px, 132px) scale(0.75); opacity: 1; animation-timing-function: ease-in; }
-    58%   { transform: translate(143px, 146px) scale(0.8);  opacity: 1; animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1); }
+    /* out of the chute and downhill: the one place it gathers speed */
+    51%   { transform: translate(131px, 132px) scale(0.75); opacity: 1; animation-timing-function: cubic-bezier(0.333, 0, 0.667, 0.333); }
+    /* along the lower green, slowing steadily to the cup */
+    58%   { transform: translate(143px, 146px) scale(0.8);  opacity: 1; animation-timing-function: cubic-bezier(0.333, 0.667, 0.667, 1); }
     72%   { transform: translate(180px, 146px) scale(0.8);  opacity: 1; animation-timing-function: ease-in; }
     77%   { transform: translate(180px, 151px) scale(0.3);  opacity: 0; }
     100%  { transform: translate(180px, 151px) scale(0.3);  opacity: 0; }
   }
+
   @keyframes pin-twitch {
     0%, 76%, 100% { transform: rotate(0); }
     79% { transform: rotate(-5deg); }
