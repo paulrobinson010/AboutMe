@@ -1,0 +1,19 @@
+# Putt. live relay — a Cloudflare Worker with one Durable Object per game.
+# See README.md for the one-off deploy.
+name = "putt-relay"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+# Only these pages may open a room. Comma-separated.
+[vars]
+ALLOWED_ORIGINS = "https://aboutme.robbo-online.uk,http://localhost:8903"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+# SQLite-backed Durable Objects are the kind the Workers free plan offers.
+# The relay never writes to storage; this only declares the class.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]

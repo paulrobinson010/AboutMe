@@ -26,8 +26,10 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Stage site (relay/ is a Cloudflare Worker, not part of the site)
+        run: rsync -a --exclude '.git*' --exclude 'relay/' --exclude '_site/' ./ _site/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

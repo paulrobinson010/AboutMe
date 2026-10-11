@@ -38,6 +38,7 @@
     --num: 700 1em/1 "Space Grotesk", system-ui, sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
   html { background: var(--bg); -webkit-text-size-adjust: 100%; }
   body {
     min-height: 100svh;
@@ -393,6 +394,47 @@
   .resets button.arm { border-color: #ff5a5a; color: #ff8a80; background: rgba(255, 90, 90, 0.10); }
   .deal { text-align: center; margin-top: 26px; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
 
+  /* ---------- live: friends watch the card as it's kept ---------- */
+  .icon-btn { position: relative; }
+  #go-live.on { color: #ff5a5a; border-color: rgba(255, 90, 90, 0.6); box-shadow: 0 0 14px rgba(255, 90, 90, 0.35); }
+  #go-live .badge {
+    position: absolute; top: -5px; right: -5px;
+    min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px;
+    background: #ff5a5a; color: #160404; font-size: 0.7rem; font-weight: 700; line-height: 19px; text-align: center;
+  }
+  #go-live .badge:empty { display: none; }
+  .live-pill {
+    display: inline-flex; align-items: center; gap: 7px; flex: none;
+    padding: 6px 11px; border-radius: 100px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em;
+    color: #ff6b6b; border: 1px solid rgba(255, 90, 90, 0.55); box-shadow: 0 0 12px rgba(255, 90, 90, 0.25);
+  }
+  .live-pill i { width: 8px; height: 8px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 8px #ff5a5a; animation: tie-pulse 1.2s ease-in-out infinite; }
+  .live-pill.off { color: var(--muted); border-color: var(--line); box-shadow: none; }
+  .live-pill.off i { background: var(--muted); box-shadow: none; animation: none; }
+  .live-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .live-head .eyes { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 1.1rem; }
+  .qr {
+    width: min(100%, 280px); aspect-ratio: 1; margin: 0 auto;
+    border-radius: 24px; padding: 6px; background: #f2f0ea;
+    box-shadow: 0 0 0 3px var(--pink), 0 0 30px rgba(255, 79, 216, 0.55);
+  }
+  .qr svg { display: block; width: 100%; height: 100%; }
+  .live-sheet .deal { margin-top: 16px; }
+  #live-stop { color: #ff8a80; }
+
+  /* the watching screen */
+  .w-wait { text-align: center; color: var(--muted); padding-top: 8vh; }
+  .w-wait p { margin-top: 18px; letter-spacing: 0.08em; }
+  .w-head { display: flex; justify-content: center; margin-top: 10px; }
+  .w-champ { text-align: center; font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(1.8rem, 9vw, 2.6rem); line-height: 1.05; margin-top: 12px; color: var(--gold); text-shadow: 0 0 12px rgba(255, 210, 63, 0.6); }
+  #w-board { margin-top: 4px; }
+  #w-board .line { transition: box-shadow 0.4s, background 0.4s; }
+  #w-board .line.bump { animation: bump 1.4s var(--ease); }
+  @keyframes bump { 0% { background: rgba(255, 79, 216, 0.28); box-shadow: 0 0 22px rgba(255, 79, 216, 0.45); } }
+  #w-card th.cur, #w-card td.cur { background: rgba(255, 79, 216, 0.14); }
+  #w-card th.cur { color: var(--pink); text-shadow: 0 0 8px var(--pink); font-weight: 700; }
+
   @media (prefers-reduced-motion: reduce) {
     .windmill .blades, .windmill .mill-ball, .windmill .pin { animation: none !important; }
     .screen.on { animation: none; }
@@ -481,6 +523,7 @@
       <button class="icon-btn" id="to-setup" aria-label="Back to setup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
       <span class="course" id="course-label"></span>
       <button class="icon-btn" id="sound" aria-label="Sound on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
+      <button class="icon-btn" id="go-live" aria-label="Let others watch live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg><span class="badge"></span></button>
       <button class="icon-btn" id="show-board" aria-label="Scorecard and standings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg></button>
     </div>
     <div class="hole-head">
@@ -507,6 +550,21 @@
     </div>
     <p class="deal">Nothing stored here. The card lives in the link — or on your phone, if you save it.</p>
   </section>
+
+  <!-- ===== watching someone else's card, live ===== -->
+  <section class="screen" id="watch">
+    <div class="bar"><span class="live-pill off" id="w-pill"><i></i>LIVE</span><span class="course" id="w-course"></span></div>
+    <div class="w-wait" id="w-wait"><div data-windmill></div><p id="w-wait-msg">Waiting for the scorer…</p></div>
+    <div id="w-game" hidden>
+      <div class="w-head" id="w-hole-head"><div class="hole-num"><span data-flag></span><b id="w-hole">1</b><small id="w-of">/18</small></div></div>
+      <div class="w-champ" id="w-champ" hidden></div>
+      <div class="flags" id="w-flags"></div>
+      <div class="board" id="w-board"></div>
+      <div class="card-scroll mid"><table id="w-card"></table></div>
+      <button class="save-card" id="w-save" hidden aria-label="Save the scorecard as an image"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Save card</button>
+    </div>
+    <p class="deal">Watching live · nothing stored</p>
+  </section>
 </div>
 
 <button class="cta" id="cta"></button>
@@ -528,6 +586,17 @@
   </div>
 </div>
 
+<div class="sheet live-sheet" id="live-sheet" role="dialog" aria-label="Watch live">
+  <div class="grab"></div>
+  <div class="live-head"><span class="live-pill off" id="live-pill"><i></i>LIVE</span><span class="eyes" id="live-eyes" aria-label="People watching"></span></div>
+  <div class="qr" id="live-qr"></div>
+  <div class="again">
+    <button id="live-share" aria-label="Share the watch link"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share</button>
+    <button id="live-stop" aria-label="Stop sharing live"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
+  </div>
+  <p class="deal">Scrambled on this phone. Only people with the link can watch.</p>
+</div>
+
 <div class="between" id="between" aria-hidden="true"><div data-windmill></div><div class="next" id="between-n"></div></div>
 <div class="ace-flash" id="ace" aria-hidden="true">HOLE<br>IN ONE</div>
 <canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
@@ -535,10 +604,11 @@
 
 <script>
 /* Putt. — a mini golf scorecard.
-   Nothing is stored and nothing is sent: the whole card (course, players,
-   scores, where you are) is encoded into the page's own address, so a
-   reload keeps it and the link shares it, the same deal as the rest of
-   the site. */
+   Nothing is stored: the whole card (course, players, scores, where you
+   are) is encoded into the page's own address, so a reload keeps it and
+   the link shares it, the same deal as the rest of the site. Nothing is
+   sent either, unless the scorer goes live — and then only scrambled (see
+   "live" below). */
 (() => {
   const $ = (s, r) => (r || document).querySelector(s);
   const COLOURS = ["#ff4fd8", "#25e3ee", "#39ff88", "#ffa53d", "#a77bff", "#ffd23f", "#ff5a5a", "#f2f0ea", "#4d8bff", "#ff8fb1"];
@@ -547,9 +617,15 @@
 
   // ---- state, mirrored into the URL ------------------------------------
   let S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 };
+  // a watch link (#w=<room>.<key>) opens a read-only, live copy of someone's card
+  const WATCH = location.hash.match(/^#w=([A-Za-z0-9_-]{16,64})\.([A-Za-z0-9_-]{43})$/);
   const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const dec = (t) => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/")))));
-  const save = () => { try { history.replaceState(null, "", "#" + enc(S)); } catch (_) {} };
+  const save = () => {
+    if (WATCH) return;   // a watcher's address is the watch link; leave it be
+    try { history.replaceState(null, "", "#" + enc(S)); } catch (_) {}
+    publish();
+  };
   const load = () => {
     if (location.hash.length < 3) return false;
     try {
@@ -572,7 +648,13 @@
 
   // ---- little bits of theatre ------------------------------------------
   let sound = true, ac = null;
-  const audio = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} } return ac; };
+  const audio = () => {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} }
+    if (ac && ac.state === "suspended") ac.resume().catch(() => {});
+    return ac;
+  };
+  // phones only allow sound after a tap, so the first tap anywhere wakes it
+  addEventListener("pointerdown", audio, { once: true });
   const tone = (f, t0, dur, type, vol) => {
     const a = audio(); if (!a || !sound) return;
     const o = a.createOscillator(), g = a.createGain();
@@ -668,18 +750,21 @@
     const frac = n <= 0 ? 0 : 1 - Math.pow(0.58, n);
     return "calc(10px + (100% - 82px) * " + frac.toFixed(3) + ")";
   };
+  const paintFlags = (fl) => {   // a dash per hole: done, now, to come
+    fl.innerHTML = "";
+    for (let j = 0; j < S.h; j++) {
+      const i = document.createElement("i");
+      if (j === S.i) i.className = "now"; else if (S.s.every((r) => r[j] > 0)) i.className = "done";
+      fl.appendChild(i);
+    }
+  };
   let holed = new Set();    // rows the player has tapped into the cup this visit
   const paintHole = () => {
     $("#course-label").textContent = S.c || "Mini golf";
     $("#hole-n").textContent = S.i + 1;
     $("#hole-of").textContent = "/" + S.h;
     $("#prev").disabled = S.i === 0;
-    const fl = $("#flags"); fl.innerHTML = "";
-    for (let j = 0; j < S.h; j++) {
-      const i = document.createElement("i");
-      if (j === S.i) i.className = "now"; else if (S.s.every((r) => r[j] > 0)) i.className = "done";
-      fl.appendChild(i);
-    }
+    paintFlags($("#flags"));
     const rows = $("#rows"); rows.innerHTML = "";
     S.p.forEach((pl, pi) => {
       const n = S.s[pi][S.i] | 0;
@@ -777,7 +862,7 @@
 
   // The scorecard grid: players down, holes across, Σ at the end. Mid-round
   // the current hole is lit and every hole number is a button back to it.
-  const buildCard = (t, live) => {
+  const buildCard = (t, live, mark) => {
     t.innerHTML = "";
     const head = document.createElement("tr");
     head.appendChild(document.createElement("th"));
@@ -790,7 +875,10 @@
         b.addEventListener("click", () => { closeSheets(); if (j !== S.i) goHole(j, false); });
         th.appendChild(b);
         if (j === S.i) th.className = "cur";
-      } else th.textContent = j + 1;
+      } else {
+        th.textContent = j + 1;
+        if (mark && j === S.i) th.className = "cur";
+      }
       head.appendChild(th);
     }
     const sig = document.createElement("th"); sig.textContent = "Σ"; head.appendChild(sig);
@@ -800,7 +888,7 @@
       const nm = document.createElement("td"); nm.textContent = nameOf(pl, pi); nm.style.color = colour(pl); tr.appendChild(nm);
       S.s[pi].forEach((v, j) => {
         const td = document.createElement("td"); td.textContent = v || "–";
-        td.className = (v === 1 ? "ace" : "") + (live && j === S.i ? " cur" : "");
+        td.className = (v === 1 ? "ace" : "") + ((live || mark) && j === S.i ? " cur" : "");
         tr.appendChild(td);
       });
       const tt = document.createElement("td"); tt.className = "total"; tt.textContent = played(pi) ? total(pi) : "–"; tr.appendChild(tt);
@@ -825,10 +913,10 @@
     return list;
   };
   const winners = (st) => st.filter((s) => s.thru && s.pos === 1);
-  $("#show-board").addEventListener("click", () => {
-    const box = $("#board"); box.innerHTML = "";
-    standings().forEach((s, i) => {
-      const l = document.createElement("div"); l.className = "line";
+  const paintBoard = (box) => {
+    box.innerHTML = "";
+    standings().forEach((s) => {
+      const l = document.createElement("div"); l.className = "line"; l.dataset.pi = s.pi;
       l.innerHTML = '<span class="pos"></span><span class="ball"></span><span class="name"></span><span class="thru"></span><span class="sc"></span>';
       $(".pos", l).textContent = (s.tied ? "=" : "") + s.pos;
       $(".ball", l).style.setProperty("--b", colour(s.pl));
@@ -837,6 +925,9 @@
       $(".sc", l).textContent = s.thru ? s.t : "–";
       box.appendChild(l);
     });
+  };
+  $("#show-board").addEventListener("click", () => {
+    paintBoard($("#board"));
     buildCard($("#mid-card"), true);
     disarm();
     openSheet("#board-sheet");
@@ -847,7 +938,7 @@
 
   // ---- resets, each needing a second tap within 3s
   const restartRound = () => { S.s = []; ensureScores(); S.i = 0; S.d = 0; S.dt = new Date().toISOString().slice(0, 10); holed.clear(); save(); };
-  const newGame = () => { S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 }; holed.clear(); history.replaceState(null, "", location.pathname); };
+  const newGame = () => { stopLive(); S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 }; holed.clear(); history.replaceState(null, "", location.pathname + location.search); };
   let armT = 0;
   const disarm = () => {
     clearTimeout(armT);
@@ -875,14 +966,19 @@
     j = Math.max(0, Math.min(S.h - 1, j));
     S.i = j; save();
     if (withMill && !reduced) {
-      const b = $("#between");
-      $("#between-n").textContent = j + 1;
-      b.classList.remove("on"); void b.offsetWidth; b.classList.add("on");
-      sfx.whoosh();
-      setTimeout(sfx.cup, 1800);      // as it drops in the cup
+      millShow(j + 1);
       setTimeout(() => { paintHole(); scrollTo(0, 0); }, 500);
-      setTimeout(() => b.classList.remove("on"), 2700);
     } else { paintHole(); scrollTo(0, 0); }
+  };
+  // the windmill between holes: the ball through the blades, into the cup
+  let millT = 0;
+  const millShow = (n) => {
+    const b = $("#between");
+    $("#between-n").textContent = n;
+    b.classList.remove("on"); void b.offsetWidth; b.classList.add("on");
+    sfx.whoosh();
+    clearTimeout(millT); setTimeout(sfx.cup, 1800);      // as it drops in the cup
+    millT = setTimeout(() => b.classList.remove("on"), 2700);
   };
   $("#between").addEventListener("click", () => $("#between").classList.remove("on"));
   $("#prev").addEventListener("click", () => goHole(S.i - 1, false));
@@ -952,7 +1048,8 @@
   $("#again").addEventListener("click", () => { restartRound(); show("play"); paintHole(); });
   $("#fresh").addEventListener("click", () => { newGame(); paintSetup(); show("setup"); });
   $("#share").addEventListener("click", async () => {
-    const url = location.href;
+    const { L, ...card } = S;   // the card, never the live key
+    const url = location.href.split("#")[0] + "#" + enc(card);
     try {
       if (navigator.share) await navigator.share({ title: (S.c || "Mini golf") + " — scorecard", url });
       else { await navigator.clipboard.writeText(url); toast("Link copied"); }
@@ -1082,7 +1179,7 @@
     noGlow();
     return cv;
   };
-  $("#save-card").addEventListener("click", async (e) => {
+  const saveCard = async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;
     try {
@@ -1102,11 +1199,207 @@
       }
     } catch (_) { toast("Couldn't save — try a screenshot"); }
     btn.disabled = false;
+  };
+  $("#save-card").addEventListener("click", saveCard);
+  $("#w-save").addEventListener("click", saveCard);
+
+
+  // ---- live: friends watch the card as it's kept ---------------------------
+  // No server of ours, no accounts, nothing stored. The scorer's phone
+  // scrambles the card (AES-GCM, in the browser) and sends it to a tiny
+  // relay that passes it on to whoever's in the same "room". The key is
+  // after the # in the watch link, and browsers never send that part
+  // anywhere, so the relay only ever handles gibberish — and forgets it.
+  const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const RELAY = (LOCAL && new URLSearchParams(location.search).get("relay")) || "wss://relay.robbo-online.uk";
+  const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64u = (t) => Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  const importKey = (k) => crypto.subtle.importKey("raw", unb64u(k), "AES-GCM", false, ["encrypt", "decrypt"]);
+  const seal = async (key, o) => {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(o))));
+    const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
+    return b64u(out);
+  };
+  const unseal = async (key, t) => {
+    const b = unb64u(t);
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b.slice(0, 12) }, key, b.slice(12))));
+  };
+
+  // A socket to a room that keeps itself up: retries with backoff, pings so
+  // a quiet game isn't dropped, and reconnects the moment a phone that was
+  // put away comes back.
+  const Link = (room, onMsg, onState) => {
+    let ws = null, back = 1000, t = 0, ping = 0, heard = 0, stopped = false;
+    const drop = () => {
+      if (ws) { ws.onclose = ws.onmessage = null; try { ws.close(); } catch (_) {} ws = null; }
+      clearInterval(ping); onState("off");
+    };
+    const retry = () => { if (stopped) return; clearTimeout(t); t = setTimeout(connect, back); back = Math.min(back * 2, 15000); };
+    const connect = () => {
+      if (stopped || ws) return;
+      clearTimeout(t); onState("connecting");
+      try { ws = new WebSocket(RELAY + "/room/" + room); } catch (_) { ws = null; return retry(); }
+      ws.onopen = () => {
+        back = 1000; heard = Date.now(); onState("on"); onMsg({ t: "open" });
+        ping = setInterval(() => {
+          if (Date.now() - heard > 75000) { drop(); return connect(); }   // gone quiet: start again
+          try { ws.send("ping"); } catch (_) {}
+        }, 25000);
+      };
+      ws.onmessage = (e) => { heard = Date.now(); let m; try { m = JSON.parse(e.data); } catch (_) { return; } onMsg(m); };
+      ws.onclose = () => { drop(); retry(); };
+    };
+    const wake = () => {
+      if (stopped || document.visibilityState !== "visible") return;
+      if (!ws) { back = 1000; return connect(); }
+      // back from the pocket: check the line is still alive
+      const asked = Date.now();
+      try { ws.send("ping"); } catch (_) {}
+      setTimeout(() => { if (ws && heard < asked) { drop(); connect(); } }, 4000);
+    };
+    document.addEventListener("visibilitychange", wake);
+    addEventListener("online", wake);
+    connect();
+    return {
+      send: (o) => { if (ws && ws.readyState === 1) { ws.send(JSON.stringify(o)); return true; } return false; },
+      stop: () => { stopped = true; clearTimeout(t); document.removeEventListener("visibilitychange", wake); removeEventListener("online", wake); drop(); },
+    };
+  };
+  const paintPill = (el, st) => { el.classList.toggle("off", st !== "on"); el.lastChild.textContent = st === "on" ? "LIVE" : st === "connecting" ? "…" : "OFFLINE"; };
+
+  // -- the scorer's side
+  let host = null, hostKey = null, hostState = "off", watchers = 0, pubT = 0;
+  const watchUrl = () => location.href.split("#")[0] + "#w=" + S.L.r + "." + S.L.k;
+  function publish() {
+    if (!host) return;
+    clearTimeout(pubT);
+    pubT = setTimeout(async () => {
+      const { L, ...card } = S;
+      card.at = Date.now();
+      try { host.send({ t: "s", v: await seal(await hostKey, card) }); } catch (_) {}
+    }, 120);
+  }
+  const startHost = () => {
+    if (host || !S.L) return;
+    hostKey = importKey(S.L.k);
+    host = Link(S.L.r, (m) => {
+      if (m.t === "open" || m.t === "hi") publish();   // someone new: send them the card
+      else if (m.t === "n") { watchers = Math.max(0, (m.n | 0) - 1); paintLive(); }
+    }, (st) => { hostState = st; if (st !== "on") watchers = 0; paintLive(); });
+  };
+  function stopLive() {
+    if (host) host.stop();
+    host = null; watchers = 0; hostState = "off";
+    if (S.L) { delete S.L; save(); }
+    paintLive();
+  }
+  const paintLive = () => {
+    const btn = $("#go-live");
+    btn.classList.toggle("on", !!host);
+    $(".badge", btn).textContent = host && watchers ? watchers : "";
+    paintPill($("#live-pill"), hostState);
+    $("#live-eyes").textContent = host ? "👀 " + watchers : "";
+  };
+  let qrLib = null;
+  const loadQR = () => qrLib || (qrLib = new Promise((ok, no) => {
+    const sc = document.createElement("script");
+    sc.src = "assets/vendor/qrcode.js"; sc.onload = () => ok(window.qrcode); sc.onerror = () => { qrLib = null; no(); };
+    document.head.appendChild(sc);
+  }));
+  const paintQR = async () => {
+    const box = $("#live-qr"), url = watchUrl();
+    if (box.dataset.url === url) return;
+    box.innerHTML = ""; box.dataset.url = url;
+    try {
+      const qr = (await loadQR())(0, "L");   // a clean screen, so low error correction: fewer, bigger squares
+      qr.addData(url); qr.make();
+      const n = qr.getModuleCount(); let d = "";
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += "M" + c + " " + r + "h1v1h-1z";
+      box.innerHTML = '<svg viewBox="-2 -2 ' + (n + 4) + " " + (n + 4) + '" shape-rendering="crispEdges" role="img" aria-label="QR code for the watch link"><path fill="#07080f" d="' + d + '"/></svg>';
+    } catch (_) { box.dataset.url = ""; }
+  };
+  $("#go-live").addEventListener("click", async () => {
+    if (!S.L) {
+      if (!(window.crypto && crypto.subtle)) return toast("This browser can't go live");
+      const k = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+      S.L = { r: b64u(crypto.getRandomValues(new Uint8Array(16))), k: b64u(await crypto.subtle.exportKey("raw", k)) };
+      save();
+    }
+    startHost(); paintLive(); paintQR();
+    openSheet("#live-sheet");
   });
+  $("#live-share").addEventListener("click", async () => {
+    if (!S.L) return;
+    const url = watchUrl();
+    try {
+      if (navigator.share) await navigator.share({ title: (S.c || "Mini golf") + " — live", url });
+      else { await navigator.clipboard.writeText(url); toast("Link copied"); }
+    } catch (_) {}
+  });
+  $("#live-stop").addEventListener("click", () => { stopLive(); closeSheets(); toast("No longer live"); });
+
+  // -- the watcher's side
+  const startWatch = async ([, room, k]) => {
+    document.title = "Putt. — live";
+    show("watch");
+    let key;
+    try { key = await importKey(k); } catch (_) { $("#w-wait-msg").textContent = "That link doesn't look right"; return; }
+    let last = 0, first = true;
+    const link = Link(room, async (m) => {
+      if (m.t === "open") link.send({ t: "hi" });
+      else if (m.t === "s" && typeof m.v === "string") {
+        let o;
+        try { o = await unseal(key, m.v); } catch (_) { return; }   // not for us
+        if (!o || !Array.isArray(o.p) || !o.p.length || !Array.isArray(o.s) || (+o.at || 0) < last) return;
+        last = +o.at || 0;
+        const was = first ? null : JSON.parse(JSON.stringify(S));
+        S = {
+          c: String(o.c || "").slice(0, 60), h: clampH(o.h), i: 0, d: o.d ? 1 : 0, dt: typeof o.dt === "string" ? o.dt.slice(0, 10) : "",
+          p: o.p.slice(0, 64).map((pl) => ({ n: String((pl && pl.n) || "").slice(0, 20), k: Math.abs((pl && pl.k) | 0) })),
+          s: o.s,
+        };
+        S.i = Math.max(0, Math.min(S.h - 1, o.i | 0));
+        S.s = S.p.map((_, pi) => Array.from({ length: S.h }, (_, j) => Math.max(0, Math.min(MAX, (o.s[pi] && o.s[pi][j]) | 0))));
+        first = false;
+        paintWatch(was);
+      }
+    }, (st) => paintPill($("#w-pill"), st));
+  };
+  const paintWatch = (was) => {
+    $("#w-wait").hidden = true; $("#w-game").hidden = false;
+    $("#w-course").textContent = S.c || "Mini golf";
+    $("#w-hole").textContent = S.i + 1; $("#w-of").textContent = "/" + S.h;
+    $("#w-hole-head").hidden = !!S.d;
+    const champ = $("#w-champ"), wins = winners(standings());
+    champ.hidden = !S.d;
+    champ.textContent = S.d && wins.length ? "🏆 " + wins.map((w) => nameOf(w.pl, w.pi)).join(" & ") : "";
+    $("#w-save").hidden = !S.d;
+    paintFlags($("#w-flags")); $("#w-flags").hidden = !!S.d;
+    paintBoard($("#w-board"));
+    buildCard($("#w-card"), false, !S.d);
+    const wrap = $("#w-card").parentNode, cur = $("#w-card th.cur");
+    if (cur) wrap.scrollLeft = Math.max(0, cur.offsetLeft - wrap.clientWidth / 2 + cur.offsetWidth / 2);
+    if (!was) return;
+    // the fun bits, as they happen on the course
+    S.p.forEach((pl, pi) => {
+      const before = (was.s[pi] || []), now = S.s[pi];
+      if (now.some((v, j) => v !== (before[j] | 0))) {
+        const l = $('#w-board .line[data-pi="' + pi + '"]');
+        if (l) { l.classList.remove("bump"); void l.offsetWidth; l.classList.add("bump"); }
+      }
+      if (now.filter((v) => v === 1).length > before.filter((v) => v === 1).length) { ace(); toast(nameOf(pl, pi) + " · ACE!"); }
+    });
+    if (S.d && !was.d) { sfx.ace(); confetti(); }
+    else if (!S.d && S.i === was.i + 1 && !reduced) millShow(S.i + 1);
+  };
 
   // ---- go --------------------------------------------------------------
-  if (load()) {
+  if (WATCH) startWatch(WATCH);
+  else if (load()) {
     ensureScores();
+    startHost();   // was live before a reload: carry on
+    paintLive();
     if (S.d) finish();
     else if (S.t || S.s.some((r) => r.some((v) => v > 0))) { show("play"); paintHole(); }
     else { paintSetup(); show("setup"); }
