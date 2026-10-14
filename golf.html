@@ -304,13 +304,30 @@
     opacity: 0; pointer-events: none; transition: opacity 0.25s;
   }
   .between.on { opacity: 1; pointer-events: auto; }
-  .between .windmill { width: min(80vw, 340px); margin: 0; }
+  .between .stage { width: min(80vw, 340px); }
+  .between .stage svg { display: block; width: 100%; margin: 0; overflow: visible; }
   .between .windmill .mill-ball, .between .windmill .pin, .between .windmill .blades { animation: none; }
   .between.on .windmill .mill-ball { animation: roll-through 2.4s forwards; }
   .between.on .windmill .pin { animation: pin-twitch 2.4s forwards; }
   .between.on .windmill .blades { animation: spin 2.4s linear forwards; }
+  /* the next hole's number, big and lit, once the ball's dropped */
+  .between .next { display: flex; align-items: flex-end; gap: 10px; margin-top: 2px; opacity: 0; transform: scale(0.6) translateY(14px); }
+  .between .next svg { width: 40px; height: 62px; margin-bottom: 12px; }
+  .between .next b {
+    font: 700 clamp(5.5rem, 30vw, 9rem)/0.85 "Space Grotesk", system-ui, sans-serif; font-variant-numeric: tabular-nums;
+    color: var(--ink); text-shadow: 0 0 18px rgba(255, 79, 216, 0.75), 0 0 50px rgba(255, 79, 216, 0.45);
+  }
   .between.on .next { animation: pop 0.45s var(--ease) 1.95s forwards; }
   @keyframes pop { to { opacity: 1; transform: none; } }
+
+  /* the other obstacles: the ball is moved by script, the scenery by CSS */
+  .hole-art .waves { animation: waves 1.1s linear infinite; }
+  @keyframes waves { to { transform: translateX(-17px); } }
+  .hole-art .duck { transform-box: fill-box; transform-origin: 50% 90%; animation: bob 1.5s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(1.4px) rotate(-4deg); } }
+  .hole-art .pin { transform-box: view-box; }
+  .hole-art .pin.twitch { animation: twitch 0.7s ease-out; }
+  @keyframes twitch { 25% { transform: rotate(-5deg); } 60% { transform: rotate(3deg); } }
 
   /* hole in one */
   .ace-flash {
@@ -489,6 +506,55 @@
   </svg>
 </template>
 
+<!-- Between holes, one of these (or the windmill) at random. Same size,
+     same neon; the script rolls the ball through with real-ish physics. -->
+<template id="art-loop">
+  <!-- side on: putted hard enough to make it round the loop, then up the
+       ramp to the raised green, slowing to the cup -->
+  <svg class="hole-art" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-l" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <circle cx="82" cy="88" r="47" fill="none" stroke="#25e3ee" stroke-width="6" opacity="0.16"/>
+    <g fill="none" stroke="#25e3ee" stroke-width="1.8" filter="url(#glow-l)"><circle cx="82" cy="88" r="44"/><circle cx="82" cy="88" r="50"/></g>
+    <path d="M22 132 L35 104 M142 132 L129 104" stroke="#ff4fd8" stroke-width="2.2" stroke-linecap="round" filter="url(#glow-l)"/>
+    <circle cx="35" cy="104" r="2.4" fill="#ffd23f"/><circle cx="129" cy="104" r="2.4" fill="#ffd23f"/>
+    <path d="M6 132 L118 132 C134 132 146 108 162 108 L174 108 L174 118 L186 118 L186 108 L198 108 L198 142 L6 142 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-l)"/>
+    <rect x="174.8" y="108.8" width="10.4" height="8.4" fill="#000"/>
+    <path d="M18 134.5 l3.5 2.5 l-3.5 2.5 M26 134.5 l3.5 2.5 l-3.5 2.5 M34 134.5 l3.5 2.5 l-3.5 2.5" fill="none" stroke="#ffd23f" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-l)"/></g>
+    <g class="pin" style="transform-origin: 180px 118px"><line x1="180" y1="118" x2="180" y2="74" stroke="#f2f0ea" stroke-width="1.6"/><path d="M180 74 L198 80 L180 86 Z" fill="#ff4fd8" filter="url(#glow-l)"/></g>
+  </svg>
+</template>
+<template id="art-water">
+  <!-- side on: up the kicker, over the pond (mind the duck), a bounce on
+       the far bank and a roll to the cup -->
+  <svg class="hole-art" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-w" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <clipPath id="pond-w"><rect x="72" y="131" width="68" height="16"/></clipPath>
+    <rect x="72" y="138" width="68" height="8" fill="rgba(37,227,238,0.14)"/>
+    <g clip-path="url(#pond-w)"><path class="waves" d="M55 138 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0" fill="none" stroke="#25e3ee" stroke-width="1.6" filter="url(#glow-w)"/></g>
+    <g class="duck"><path d="M98 137.6 C98 133.4 102 132.6 106.4 133.6 C107 130.6 107.6 128 110.4 128 C112.8 128 113.8 129.8 113.2 131 L116 131.8 L113 132.8 C112.4 134.4 113 135.8 112.4 137.6 Z" fill="rgba(255,210,63,0.16)" stroke="#ffd23f" stroke-width="1.2" stroke-linejoin="round" filter="url(#glow-w)"/><circle cx="110.6" cy="130.4" r="0.8" fill="#ffd23f"/></g>
+    <path d="M6 128 L72 128 L72 146 L6 146 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-w)"/>
+    <path d="M38 128 C54 128 62 124 70 118 L70 128 Z" fill="#140e2a" stroke="#ff4fd8" stroke-width="2" stroke-linejoin="round" filter="url(#glow-w)"/>
+    <path d="M140 128 L174 128 L174 138 L186 138 L186 128 L198 128 L198 146 L140 146 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-w)"/>
+    <rect x="174.8" y="128.8" width="10.4" height="8.4" fill="#000"/>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-w)"/></g>
+    <g class="pin" style="transform-origin: 180px 138px"><line x1="180" y1="138" x2="180" y2="94" stroke="#f2f0ea" stroke-width="1.6"/><path d="M180 94 L198 100 L180 106 Z" fill="#ff4fd8" filter="url(#glow-w)"/></g>
+  </svg>
+</template>
+<template id="art-zigzag">
+  <!-- from above: up a zig-zag lane, off the end walls, into the cup -->
+  <svg class="hole-art" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-z" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <polyline points="28,150 170,118 30,70 150,24" fill="none" stroke="#ff4fd8" stroke-width="36" stroke-linejoin="round" stroke-linecap="round" filter="url(#glow-z)"/>
+    <polyline points="28,150 170,118 30,70 150,24" fill="none" stroke="#0b4a2a" stroke-width="29" stroke-linejoin="round" stroke-linecap="round"/>
+    <polyline points="28,150 170,118 30,70 150,24" fill="none" stroke="#39ff88" stroke-width="0.8" stroke-dasharray="2 6" opacity="0.45"/>
+    <path d="M22 158 l-3 3 M34 158 l3 3" stroke="#ffd23f" stroke-width="1.6" stroke-linecap="round"/>
+    <ellipse cx="150" cy="24" rx="6.5" ry="5" fill="#000" stroke="rgba(255,255,255,0.12)"/>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-z)"/></g>
+    <g class="pin" style="transform-origin: 150px 24px"><line x1="150" y1="24" x2="150" y2="-14" stroke="#f2f0ea" stroke-width="1.6"/><path d="M150 -14 L168 -8 L150 -2 Z" fill="#ff4fd8" filter="url(#glow-z)"/></g>
+  </svg>
+</template>
+
 <template id="flag-tpl">
   <svg viewBox="0 0 26 40" aria-hidden="true"><line x1="3" y1="2" x2="3" y2="39" stroke="#f2f0ea" stroke-width="2.2" stroke-linecap="round"/><path d="M3 3 L24 10 L3 17 Z" fill="#ff4fd8" style="filter:drop-shadow(0 0 4px #ff4fd8)"/></svg>
 </template>
@@ -597,7 +663,7 @@
   <p class="deal">Scrambled on this phone. Only people with the link can watch.</p>
 </div>
 
-<div class="between" id="between" aria-hidden="true"><div data-windmill></div><div class="next" id="between-n"></div></div>
+<div class="between" id="between" aria-hidden="true"><div class="stage" id="between-stage"></div><div class="next"><span data-flag></span><b id="between-n"></b></div></div>
 <div class="ace-flash" id="ace" aria-hidden="true">HOLE<br>IN ONE</div>
 <canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -669,6 +735,7 @@
     cup: () => { tone(520, 0, 0.09, "sine", 0.2); tone(330, 0.09, 0.14, "sine", 0.22); tone(180, 0.2, 0.2, "sine", 0.18); },
     ace: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.22, "triangle", 0.16)),
     whoosh: () => { tone(220, 0, 0.5, "sawtooth", 0.03); tone(330, 0.15, 0.4, "sawtooth", 0.025); },
+    tick: () => tone(1100, 0, 0.04, "triangle", 0.12),
   };
   const buzz = (ms) => { if (navigator.vibrate) navigator.vibrate(ms); };
 
@@ -971,14 +1038,174 @@
       setTimeout(() => { paintHole(); scrollTo(0, 0); }, 500);
     } else { paintHole(); scrollTo(0, 0); }
   };
-  // the windmill between holes: the ball through the blades, into the cup
-  let millT = 0;
+  // ---- between holes: a different obstacle each time --------------------
+  // The windmill runs on CSS. The others are rolled by a little physics
+  // model (gravity along the slope, rolling friction, a knock off every
+  // wall, free flight over the water), so the ball slows climbing the loop,
+  // flies the pond and loses pace off each zig-zag wall like a real one.
+  // The putt is just hard enough to die into the cup. Played back at about
+  // real speed, struck so it drops in at 1.8s, the same moment as the
+  // windmill's ball (and the cup sound, and the number).
+  const COURSES = {
+    // side on: ball rides on the surface paths (offset by its radius)
+    loop: {
+      // round the inside of the loop (r44 about 82,88) as four quarter curves
+      legs: ["M14 132 L82 132 C106.3 132 126 112.3 126 88 C126 63.7 106.3 44 82 44 C57.7 44 38 63.7 38 88 C38 112.3 57.7 132 82 132 L118 132 C134 132 146 108 162 108 L196 108"],
+      side: true, g: 700, cup: [176, 103], hole: [180, 112],
+      mu: (x, y) => (x < 132 && y < 124 ? 40 : 480),     // the loop's a slick steel track; the rest is carpet
+    },
+    water: {
+      legs: ["M12 128 L38 128 C54 128 62 124 70 118", "M140 128 L198 128"],   // off the end of the first, it flies
+      side: true, g: 700, cup: [176, 123], hole: [180, 132], bounce: [0.3, 0.6],   // a dead bounce on landing
+      mu: (x) => (x > 138 ? 300 : 170),
+    },
+    // from above: the path is the ball's centre, corners are wall bounces
+    zigzag: {
+      legs: ["M28 150 L180 118.5 L20 70.2 L150 24 L158 21.2"],
+      side: false, g: 0, cup: [150, 24], hole: [150, 24], e: 0.72,
+      mu: () => 200,
+    },
+  };
+  const R = 5, HZ = 1200;   // ball radius; simulation steps a second
+  // A track (absolute M, L and C only) as points every half unit: done by
+  // hand, as the browser's own path measuring is slow on curves.
+  const measure = (d, off) => {
+    const tk = d.match(/[MLC]|-?[\d.]+/g), raw = [];
+    let i = 0, cmd = "", x = 0, y = 0;
+    while (i < tk.length) {
+      if (/[MLC]/.test(tk[i])) cmd = tk[i++];
+      if (cmd === "C") {
+        const [x1, y1, x2, y2, x3, y3] = tk.slice(i, i + 6).map(Number); i += 6;
+        for (let k = 1; k <= 48; k++) {
+          const t = k / 48, u = 1 - t;
+          raw.push([u * u * u * x + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3, u * u * u * y + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3]);
+        }
+        x = x3; y = y3;
+      } else { x = +tk[i]; y = +tk[i + 1]; i += 2; raw.push([x, y]); }
+    }
+    const rc = [0];
+    for (let k = 1; k < raw.length; k++) rc.push(rc[k - 1] + Math.hypot(raw[k][0] - raw[k - 1][0], raw[k][1] - raw[k - 1][1]));
+    const L = rc[rc.length - 1], N = Math.ceil(L / 0.5), px = [], py = [], xs = [], ys = [];
+    for (let k = 0, j = 0; k <= N; k++) {
+      const l = L * k / N;
+      while (j < raw.length - 2 && rc[j + 1] < l) j++;
+      const f = (l - rc[j]) / ((rc[j + 1] - rc[j]) || 1);
+      px.push(raw[j][0] + (raw[j + 1][0] - raw[j][0]) * f); py.push(raw[j][1] + (raw[j + 1][1] - raw[j][1]) * f);
+    }
+    for (let i = 0; i <= N; i++) {
+      const a = Math.max(0, i - 1), b = Math.min(N, i + 1);
+      const h = Math.hypot(px[b] - px[a], py[b] - py[a]) || 1, tx = (px[b] - px[a]) / h, ty = (py[b] - py[a]) / h;
+      xs.push(px[i] + ty * off); ys.push(py[i] - tx * off);   // up off the surface (or in, round the loop)
+    }
+    const cum = [0], corners = [];
+    for (let i = 1; i <= N; i++) cum.push(cum[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]));
+    for (let i = 1; i < N; i++) {
+      const a1 = Math.atan2(ys[i] - ys[i - 1], xs[i] - xs[i - 1]), a2 = Math.atan2(ys[i + 1] - ys[i], xs[i + 1] - xs[i]);
+      let da = Math.abs(a2 - a1); if (da > Math.PI) da = 2 * Math.PI - da;
+      if (da > 0.5 && !(corners.length && i - corners[corners.length - 1] < 4)) corners.push(i);
+    }
+    return { xs, ys, cum, L: cum[N], corners: corners.map((i) => cum[i]) };
+  };
+  const at = (g, s) => {   // position and dy/ds at arc length s
+    let lo = 0, hi = g.cum.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (g.cum[m] <= s) lo = m; else hi = m; }
+    const span = g.cum[hi] - g.cum[lo] || 1, f = Math.max(0, Math.min(1, (s - g.cum[lo]) / span));
+    return { x: g.xs[lo] + (g.xs[hi] - g.xs[lo]) * f, y: g.ys[lo] + (g.ys[hi] - g.ys[lo]) * f, slope: (g.ys[hi] - g.ys[lo]) / span,
+      tx: (g.xs[hi] - g.xs[lo]) / span, ty: (g.ys[hi] - g.ys[lo]) / span };
+  };
+  const simulate = (c, legs, v0, cupS) => {
+    const dt = 1 / HZ, out = [], ev = [];
+    let li = 0, s = 0, v = v0, fly = null, x = legs[0].xs[0], y = legs[0].ys[0], slow = Infinity;
+    for (let k = 0; k < 60000; k++) {
+      if (fly) {
+        fly.vy += c.g * dt; x += fly.vx * dt; y += fly.vy * dt;
+        const nl = legs[li + 1];
+        if (y > 175) return { out, ev, fell: true };
+        if (x >= nl.xs[0] && y >= nl.ys[0]) {
+          y = nl.ys[0];
+          if (fly.vy > 30) { fly.vy *= -c.bounce[0]; fly.vx *= c.bounce[1]; ev.push(out.length); }   // a bounce
+          else { li++; s = x - nl.xs[0]; v = fly.vx; fly = null; }
+        }
+      } else {
+        const g = legs[li], P = at(g, s), grav = c.g * P.slope, mu = c.mu(P.x, P.y);
+        x = P.x; y = P.y;
+        if (P.y < 70 && c.side) slow = Math.min(slow, v * v / (c.g * 39));   // over the top of the loop
+        if (Math.abs(v) < 0.5 && Math.abs(grav) <= mu) return { out, ev, li, s, slow };
+        const dir = v ? Math.sign(v) : Math.sign(grav);
+        const nv = v + (grav - mu * dir) * dt;
+        v = v && Math.sign(nv) !== Math.sign(v) && Math.abs(grav) <= mu ? 0 : nv;
+        if (v < 0) return { out, ev, li, s, slow };   // didn't make it (the loop, the ramp): not this putt
+        const s2 = s + v * dt;
+        for (const cs of g.corners) if (s < cs && s2 >= cs) { v *= c.e || 1; ev.push(out.length); }
+        s = Math.max(0, s2);
+        if (cupS != null && li === legs.length - 1 && s >= cupS) { out.push({ x, y }); return { out, ev, li, s, slow, cupV: v }; }
+        if (s >= g.L) {
+          if (li < legs.length - 1) { const E = at(g, g.L); fly = { vx: v * E.tx, vy: v * E.ty }; x = E.x; y = E.y; }
+          else { s = g.L; v = 0; }
+        }
+      }
+      out.push({ x, y });
+    }
+    return { out, ev, li, s, timeout: true };
+  };
+  const PLANS = {};
+  const plan = (name) => {
+    if (PLANS[name]) return PLANS[name];
+    const c = COURSES[name], legs = c.legs.map((d) => measure(d, c.side ? R : 0));
+    const last = legs[legs.length - 1];
+    let ci = 0, best = Infinity;   // where on the last leg the cup is
+    last.xs.forEach((x, i) => { const d = Math.hypot(x - c.cup[0], last.ys[i] - c.cup[1]); if (d < best) { best = d; ci = i; } });
+    const cupS = last.cum[ci], before = legs.slice(0, -1).reduce((a, g) => a + g.L, 0), target = before + cupS + 5;
+    const reach = (r) => (r.fell ? -1 : legs.slice(0, r.li).reduce((a, g) => a + g.L, 0) + r.s);
+    let lo = 20, hi = 3000;   // how hard to putt it: just enough to die in the hole
+    for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (reach(simulate(c, legs, m)) < target) lo = m; else hi = m; }
+    return (PLANS[name] = Object.assign(simulate(c, legs, hi, cupS), { v0: hi }));
+  };
+  let rollRaf = 0;
+  const roll = (svg, name) => {
+    const c = COURSES[name], P = plan(name), f = P.out, n = f.length;
+    const ball = $(".roll-ball", svg), pin = $(".pin", svg);
+    const RUN = Math.max(1.15, Math.min(1.5, n / HZ)), STRIKE = 1.8 - RUN, DROP = 0.15, t0 = performance.now();
+    let e = 0, struck = false, dropped = false;
+    const put = (x, y, k, o) => { ball.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") scale(" + k.toFixed(3) + ")"); ball.setAttribute("opacity", o.toFixed(3)); };
+    cancelAnimationFrame(rollRaf);
+    const tick = (now) => {
+      const t = (now - t0) / 1000;
+      if (t < STRIKE) put(f[0].x, f[0].y, 1, Math.min(1, t / 0.1));
+      else if (t < STRIKE + RUN) {
+        if (!struck) { struck = true; sfx.putt(); }
+        const i = Math.min(n - 1, Math.floor((t - STRIKE) / RUN * n));
+        while (e < P.ev.length && P.ev[e] <= i) { sfx.tick(); e++; }
+        put(f[i].x, f[i].y, 1, 1);
+      } else {
+        const p = Math.min(1, (t - STRIKE - RUN) / DROP), end = f[n - 1];
+        if (!dropped) { dropped = true; sfx.cup(); pin.classList.add("twitch"); }
+        put(end.x + (c.hole[0] - end.x) * p, end.y + (c.hole[1] - end.y) * p, c.side ? 1 - 0.25 * p : 1 - 0.7 * p, 1 - p * p);
+        if (p >= 1) return;
+      }
+      rollRaf = requestAnimationFrame(tick);
+    };
+    rollRaf = requestAnimationFrame(tick);
+  };
+  // the overlay: a random obstacle (never the same twice running), the ball
+  // through it and into the cup, then the next hole's number
+  const ARTS = ["windmill", "loop", "water", "zigzag"];
+  const ART_PICK = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get("art");   // for testing
+  let millT = 0, lastArt = "";
   const millShow = (n) => {
-    const b = $("#between");
+    const b = $("#between"), stage = $("#between-stage");
+    const pool = ARTS.filter((a) => a !== lastArt);
+    const art = ARTS.includes(ART_PICK) ? ART_PICK : pool[(Math.random() * pool.length) | 0];
+    lastArt = art;
+    cancelAnimationFrame(rollRaf);
+    stage.innerHTML = "";
+    stage.appendChild($(art === "windmill" ? "#windmill-tpl" : "#art-" + art).content.cloneNode(true));
     $("#between-n").textContent = n;
     b.classList.remove("on"); void b.offsetWidth; b.classList.add("on");
     sfx.whoosh();
-    clearTimeout(millT); setTimeout(sfx.cup, 1800);      // as it drops in the cup
+    clearTimeout(millT);
+    if (art === "windmill") setTimeout(sfx.cup, 1800);      // as it drops in the cup
+    else roll(stage.firstElementChild, art);
     millT = setTimeout(() => b.classList.remove("on"), 2700);
   };
   $("#between").addEventListener("click", () => $("#between").classList.remove("on"));
