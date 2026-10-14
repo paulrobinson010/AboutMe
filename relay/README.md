@@ -1,8 +1,9 @@
 # Putt. live relay
 
-Lets other people watch a Putt. scorecard live. The page at
-`/golf.html` encrypts the card on the scorer's phone and sends it here;
-this relay passes it to everyone else in the same room. It never sees a
+Lets other people watch a Putt. scorecard live, or score on it from
+their own phones. The page at `/golf.html` encrypts the card on each
+phone and sends it here; this relay passes it to everyone else in the
+same room. It never sees a
 score (the key is after the `#` in the watch link, which browsers never
 send to a server) and it stores nothing — a room exists only in memory
 while someone is connected.

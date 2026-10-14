@@ -500,6 +500,10 @@
   }
   .qr svg { display: block; width: 100%; height: 100%; }
   .live-sheet .deal { margin-top: 16px; }
+  /* watch or play: which link the QR code is for */
+  .seg { display: flex; gap: 6px; padding: 5px; margin: 0 auto 16px; width: min(100%, 280px); border-radius: 100px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
+  .seg button { flex: 1; padding: 9px 0; border-radius: 100px; font-weight: 700; color: var(--muted); transition: background 0.2s, color 0.2s; }
+  .seg button.on { background: var(--ink); color: var(--bg); }
   #live-stop { color: #ff8a80; }
 
   /* the watching screen */
@@ -843,12 +847,13 @@
 <div class="sheet live-sheet" id="live-sheet" role="dialog" aria-label="Watch live">
   <div class="grab"></div>
   <div class="live-head"><span class="live-pill off" id="live-pill"><i></i>LIVE</span><span class="eyes" id="live-eyes" aria-label="People watching"></span></div>
+  <div class="seg" id="live-mode" role="group" aria-label="Link for"><button class="on" data-m="w">&#128064; Watch</button><button data-m="j">&#9971; Play</button></div>
   <div class="qr" id="live-qr"></div>
   <div class="again">
     <button id="live-share" aria-label="Share the watch link"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share</button>
     <button id="live-stop" aria-label="Stop sharing live"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop</button>
   </div>
-  <p class="deal">Scrambled on this phone. Only people with the link can watch.</p>
+  <p class="deal" id="live-note">Scrambled on this phone. Only people with the link can watch.</p>
 </div>
 
 <div class="between" id="between" aria-hidden="true"><div class="stage" id="between-stage"></div><div class="next"><span data-flag></span><b id="between-n"></b></div></div>
@@ -873,10 +878,13 @@
   let S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 };
   // a watch link (#w=<room>.<key>) opens a read-only, live copy of someone's card
   const WATCH = location.hash.match(/^#w=([A-Za-z0-9_-]{16,64})\.([A-Za-z0-9_-]{43})$/);
+  // a play link (#j=<room>.<key>.<play key>) joins in as another scorer
+  const JOIN = location.hash.match(/^#j=([A-Za-z0-9_-]{16,64})\.([A-Za-z0-9_-]{43})\.([A-Za-z0-9_-]{43})$/);
   const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const dec = (t) => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/")))));
   const save = () => {
-    if (WATCH) return;   // a watcher's address is the watch link; leave it be
+    if (WATCH || joining) return;   // a watcher's address is the watch link; leave it be
+    if (host) stampChanges();
     try { history.replaceState(null, "", "#" + enc(S)); } catch (_) {}
     publish();
   };
@@ -1202,7 +1210,7 @@
   });
 
   // ---- resets, each needing a second tap within 3s
-  const restartRound = () => { S.s = []; ensureScores(); S.i = 0; S.d = 0; S.dt = new Date().toISOString().slice(0, 10); holed.clear(); save(); };
+  const restartRound = () => { S.s = []; ensureScores(); S.i = 0; S.d = 0; S.dt = new Date().toISOString().slice(0, 10); holed.clear(); group(0, 0); save(); };
   const newGame = () => { stopLive(); S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 }; holed.clear(); history.replaceState(null, "", location.pathname + location.search); };
   let armT = 0;
   const disarm = () => {
@@ -1540,7 +1548,7 @@
   };
   $("#between").addEventListener("click", () => $("#between").classList.remove("on"));
   $("#prev").addEventListener("click", () => goHole(S.i - 1, false));
-  $("#next-arrow").addEventListener("click", () => S.i < S.h - 1 ? goHole(S.i + 1, false) : finish());
+  $("#next-arrow").addEventListener("click", () => { if (S.i < S.h - 1) goHole(S.i + 1, false); else { group(S.i, 1); finish(); } });
   $("#to-setup").addEventListener("click", () => { S.t = 0; save(); paintSetup(); show("setup"); });
   $("#sound").addEventListener("click", (e) => {
     sound = !sound;
@@ -1555,12 +1563,12 @@
       if (!S.dt) S.dt = new Date().toISOString().slice(0, 10);
       save(); show("play"); paintHole();
     } else if ($("#play").classList.contains("on")) {
-      if (S.i < S.h - 1) goHole(S.i + 1, true); else finish();
+      if (S.i < S.h - 1) { group(S.i + 1, 0); goHole(S.i + 1, true); } else { group(S.i, 1); finish(); }
     }
   });
 
   // ---- the 19th hole -------------------------------------------------------
-  const finish = () => {
+  const finish = (quiet) => {
     S.d = 1; save();
     $("#done-course").textContent = S.c || "Putt.";
     const st = standings();
@@ -1600,13 +1608,14 @@
       if (cool.length < S.p.length) add("🧊", "Cool head · never over " + low, cool.map((x) => nameOf(x.pl, x.pi)).join(", "));
     }
     buildCard($("#card"));
+    if (quiet && $("#done").classList.contains("on")) return;   // just the card changing under it
     show("done");
-    if (st[0] && st[0].thru) { sfx.ace(); confetti(); }
+    if (st[0] && st[0].thru && !quiet) { sfx.ace(); confetti(); }
   };
   $("#again").addEventListener("click", () => { restartRound(); show("play"); paintHole(); });
   $("#fresh").addEventListener("click", () => { newGame(); paintSetup(); show("setup"); });
   $("#share").addEventListener("click", async () => {
-    const { L, ...card } = S;   // the card, never the live key
+    const { L, V, sv, g, ...card } = S;   // the card, never the live keys
     const url = location.href.split("#")[0] + "#" + enc(card);
     try {
       if (navigator.share) await navigator.share({ title: (S.c || "Mini golf") + " — scorecard", url });
@@ -1826,49 +1835,167 @@
   };
   const paintPill = (el, st) => { el.classList.toggle("off", st !== "on"); el.lastChild.textContent = st === "on" ? "LIVE" : st === "connecting" ? "…" : st === "off" ? "OFFLINE" : st; };
 
-  // -- the scorer's side
-  let host = null, hostKey = null, hostState = "off", watchers = 0, pubT = 0, beat = 0, outs = [];
-  // A tapped shot isn't a result — only a ball in the cup is. Hole-outs go
-  // along with the card (the last few, time-stamped) so watchers can cheer
-  // the right moment: an ace, or "Paul · Tidy".
+  // -- scoring together ---------------------------------------------------
+  // Every scoring phone keeps the whole card. Each score it changes gets a
+  // stamp (when, which phone) and the newer stamp wins, so phones can score
+  // at once, drop out (locked in a pocket) and catch up, and all end up with
+  // the same card, with no phone in charge. Course, holes and players are
+  // stamped as one; so is "which hole the group's on", which moves when
+  // anyone taps Next hole or Finish.
+  // Watchers get the card under one key; scorers swap it under a second
+  // that only the play link carries, so a watch link can look but not touch.
+  const DEV = b64u(crypto.getRandomValues(new Uint8Array(3)));   // this phone, this visit
+  let clock = 0, shadow = null, joining = false;
+  const stamp = () => [(clock = Math.max(clock + 1, Date.now())), DEV];
+  const newer = (a, b) => !!a && (!b || a[0] > b[0] || (a[0] === b[0] && a[1] > b[1]));
+  const shape = () => JSON.stringify([S.c, S.h, S.p, S.dt]);
+  const snapShadow = () => { shadow = { shape: shape(), n: S.p.length, h: S.h, s: S.s.map((r) => r.slice()) }; };
+  function stampChanges() {   // from save(): stamp whatever's changed here since last time
+    if (!shadow) return snapShadow();
+    if (shape() !== shadow.shape) {
+      S.sv = stamp();
+      if (S.p.length !== shadow.n || S.h !== shadow.h) S.V = {};   // a different card: it goes over whole
+    }
+    S.V = S.V || {};
+    S.s.forEach((r, pi) => r.forEach((v, j) => {
+      if (v !== ((shadow.s[pi] && shadow.s[pi][j]) | 0)) S.V[pi + "." + j] = stamp();
+    }));
+    snapShadow();
+  }
+  const group = (i, d) => { if (S.L) S.g = { i, d, v: stamp() }; };
+  const okStamp = (v) => (Array.isArray(v) && Number.isFinite(+v[0]) && typeof v[1] === "string" ? [+v[0], v[1].slice(0, 8)] : null);
+  const clean = (o) => {   // anything off the wire is checked and trimmed
+    if (!o || !Array.isArray(o.p) || !o.p.length || !Array.isArray(o.s)) return null;
+    const h = clampH(o.h);
+    const p = o.p.slice(0, 64).map((pl) => ({ n: String((pl && pl.n) || "").slice(0, 20), k: Math.abs((pl && pl.k) | 0) }));
+    const s = p.map((_, pi) => Array.from({ length: h }, (_, j) => Math.max(0, Math.min(MAX, (o.s[pi] && o.s[pi][j]) | 0))));
+    const V = {};
+    if (o.V && typeof o.V === "object") for (const key in o.V) {
+      const m = /^(\d+)\.(\d+)$/.exec(key), st = okStamp(o.V[key]);
+      if (m && st && +m[1] < p.length && +m[2] < h) V[key] = st;
+    }
+    const g = o.g && okStamp(o.g.v) ? { i: Math.max(0, Math.min(h - 1, o.g.i | 0)), d: o.g.d ? 1 : 0, v: okStamp(o.g.v) } : null;
+    return { c: String(o.c || "").slice(0, 60), h, p, s, V, g, sv: okStamp(o.sv), dt: typeof o.dt === "string" ? o.dt.slice(0, 10) : "",
+      e: (Array.isArray(o.e) ? o.e : []).slice(-8), from: String(o.from || "").slice(0, 8) };
+  };
+  // Fold another phone's card into ours. Returns what happened: whether
+  // ours changed, whether theirs is missing something of ours, and where
+  // the group was before.
+  const merge = (o) => {
+    const r = { changed: false, behind: false, was: S.g ? { ...S.g } : null };
+    [o.sv, o.g && o.g.v, ...Object.values(o.V)].forEach((st) => { if (st) clock = Math.max(clock, st[0]); });
+    const fresh = !S.sv, same = o.p.length === S.p.length && o.h === S.h;
+    if (fresh || newer(o.sv, S.sv)) {
+      S.c = o.c; S.h = o.h; S.p = o.p; S.dt = o.dt; S.sv = o.sv; r.changed = true;
+      if (fresh || !same) { S.s = o.s.map((row) => row.slice()); S.V = { ...o.V }; }
+    } else if (newer(S.sv, o.sv)) r.behind = true;
+    if (!fresh && same) {
+      S.V = S.V || {};
+      new Set([...Object.keys(o.V), ...Object.keys(S.V)]).forEach((key) => {
+        const [pi, j] = key.split(".").map(Number);
+        if (newer(o.V[key], S.V[key])) { S.s[pi][j] = o.s[pi][j]; S.V[key] = o.V[key]; r.changed = true; }
+        else if (newer(S.V[key], o.V[key])) r.behind = true;
+      });
+    }
+    if (o.g && (!S.g || newer(o.g.v, S.g.v))) { S.g = o.g; r.changed = true; }
+    else if (S.g && (!o.g || newer(S.g.v, o.g.v))) r.behind = true;
+    return r;
+  };
+  // hole-outs from other phones, to cheer (their first card is history)
+  const seenOut = new Set(), knownFrom = new Set();
+  const freshOuts = (o) => {
+    const first = !knownFrom.has(o.from);
+    knownFrom.add(o.from);
+    const list = o.e.filter((e) => e && e.d !== DEV && S.p[e.p | 0] && !seenOut.has(e.d + ":" + e.q));
+    list.forEach((e) => seenOut.add(e.d + ":" + e.q));
+    return first ? [] : list.sort((a, b) => a.q - b.q);
+  };
+  const cheer = (e) => {
+    const n = e.n | 0, who = nameOf(S.p[e.p | 0], e.p | 0);
+    if (n === 1) { ace(); toast(who + " · ACE!"); } else if (n > 1) { sfx.cup(); toast(who + " · " + verdict(n)); }
+  };
+
+  // -- a scoring phone (whoever went live, and anyone with the play link)
+  let host = null, keyW = null, keyP = null, hostState = "off", inRoom = 0, pubT = 0, beat = 0, outs = [], mode = "w";
+  const scorers = new Map();   // the other scoring phones, and when we last heard them
+  // A tapped shot isn't a result, only a ball in the cup is. Hole-outs go
+  // along with the card so the other phones can cheer the right moment.
   function holedOut(pi, n) {
     if (!host) return;
-    outs = outs.concat({ q: Date.now(), p: pi, n }).slice(-6);
+    outs = outs.concat({ q: stamp()[0], d: DEV, p: pi, j: S.i, n }).slice(-6);
   }
-  const watchUrl = () => location.href.split("#")[0] + "#w=" + S.L.r + "." + S.L.k;
+  const base = () => location.href.split("#")[0];
+  const watchUrl = () => base() + "#w=" + S.L.r + "." + S.L.k;
+  const playUrl = () => base() + "#j=" + S.L.r + "." + S.L.k + "." + S.L.p;
+  const snapshot = () => ({ c: S.c, h: S.h, p: S.p, dt: S.dt, s: S.s, sv: S.sv, V: S.V || {}, g: S.g, e: outs, from: DEV, at: Date.now() });
   function publish() {
-    if (!host) return;
+    if (!host || joining || !S.sv) return;
     clearTimeout(pubT);
     pubT = setTimeout(async () => {
-      const { L, ...card } = S;
-      card.at = Date.now();
-      card.e = outs;
-      try { host.send({ t: "s", v: await seal(await hostKey, card) }); } catch (_) {}
+      const snap = snapshot();
+      try {
+        host.send({ t: "s", v: await seal(await keyW, snap) });   // for watchers
+        host.send({ t: "S", v: await seal(await keyP, snap) });   // for the other scorers
+      } catch (_) {}
     }, 120);
   }
+  const keepUrl = () => { try { history.replaceState(null, "", "#" + enc(S)); } catch (_) {} };
+  const others = () => { const now = Date.now(); let n = 0; scorers.forEach((t) => { if (now - t < 50000) n++; }); return n; };
+  // Someone else scored, or moved the group on: catch up on this phone.
+  const fromScorer = (o) => {
+    scorers.set(o.from, Date.now());
+    const cheers = freshOuts(o), r = merge(o);
+    if (joining) return joined();
+    if (r.behind) publish();
+    if (!r.changed && !cheers.length) return;
+    S.p.forEach((_, pi) => { if (!S.s[pi]) S.s[pi] = Array(S.h).fill(0); });
+    snapShadow(); keepUrl();
+    cheers.forEach((e) => { if ((e.j | 0) === S.i) holed.add(e.p + ":" + e.j); cheer(e); });
+    // follow the group if this phone was where the group was
+    const g = S.g, on = (id) => $("#" + id).classList.contains("on");
+    const withGroup = !r.was || S.i === r.was.i;
+    if (g && g.d && !(r.was && r.was.d) && on("play") && (withGroup || S.i === S.h - 1)) return finish();
+    if (g && !g.d && on("done")) { S.d = 0; S.i = g.i; save(); show("play"); return paintHole(); }   // they went again
+    if (g && !g.d && on("play") && withGroup && g.i !== S.i) return goHole(g.i, g.i === S.i + 1);
+    if (on("play")) paintHole();
+    else if (on("done")) finish(true);
+    else if (on("setup") && !document.activeElement.closest("#setup")) paintSetup();
+  };
   const startHost = () => {
     if (host || !S.L) return;
-    hostKey = importKey(S.L.k);
-    host = Link(S.L.r, (m) => {
-      if (m.t === "open" || m.t === "hi") publish();   // someone new: send them the card
-      else if (m.t === "n") { watchers = Math.max(0, (m.n | 0) - 1); paintLive(); }
-    }, (st) => { hostState = st; if (st !== "on") watchers = 0; paintLive(); });
-    // "still here": lets watchers tell a scorer between holes from one who's gone
-    beat = setInterval(() => host && host.send({ t: "h" }), 20000);
+    keyW = importKey(S.L.k);
+    keyP = S.L.p ? importKey(S.L.p) : crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])
+      .then(async (k) => { S.L.p = b64u(await crypto.subtle.exportKey("raw", k)); keepUrl(); return k; });   // live from before play links
+    if (!joining && !S.sv) { S.sv = stamp(); S.V = S.V || {}; S.g = S.g || { i: S.i, d: S.d, v: stamp() }; }
+    if (!joining) snapShadow();
+    host = Link(S.L.r, async (m) => {
+      if (m.t === "open") { host.send({ t: "h", d: DEV }); host.send({ t: "hi" }); publish(); }   // here; catch me up; here's mine
+      else if (m.t === "hi") publish();
+      else if (m.t === "h" && m.d && m.d !== DEV) { scorers.set(String(m.d), Date.now()); paintLive(); }
+      else if (m.t === "bye") { scorers.delete(String(m.d)); paintLive(); }
+      else if (m.t === "n") { inRoom = Math.max(0, (m.n | 0) - 1); paintLive(); }
+      else if (m.t === "S" && typeof m.v === "string") {
+        let o;
+        try { o = clean(await unseal(await keyP, m.v)); } catch (_) { return; }   // not a scorer of ours
+        if (o && o.from !== DEV) { fromScorer(o); paintLive(); }
+      }
+    }, (st) => { hostState = st; if (st !== "on") inRoom = 0; paintLive(); if (joining) paintPill($("#w-pill"), st); });
+    // "still here": lets the others tell a phone between holes from one that's gone
+    beat = setInterval(() => host && host.send({ t: "h", d: DEV }), 20000);
   };
   function stopLive() {
-    if (host) { host.send({ t: "bye" }); host.stop(); }   // tell watchers it's over
+    if (host) { host.send({ t: "bye", d: DEV }); host.stop(); }   // tell the others this phone's out
     clearInterval(beat);
-    host = null; watchers = 0; hostState = "off"; outs = [];
-    if (S.L) { delete S.L; save(); }
+    host = null; inRoom = 0; hostState = "off"; outs = []; shadow = null; scorers.clear();
+    if (S.L) { delete S.L; delete S.V; delete S.sv; delete S.g; save(); }
     paintLive();
   }
   const paintLive = () => {
-    const btn = $("#go-live");
+    const btn = $("#go-live"), n = others(), eyes = Math.max(0, inRoom - n);
     btn.classList.toggle("on", !!host);
-    $(".badge", btn).textContent = host && watchers ? watchers : "";
+    $(".badge", btn).textContent = host && inRoom ? inRoom : "";
     paintPill($("#live-pill"), hostState);
-    $("#live-eyes").textContent = host ? "👀 " + watchers : "";
+    $("#live-eyes").textContent = host ? (n ? "⛳ " + n + "  " : "") + "👀 " + eyes : "";
   };
   let qrLib = null;
   const loadQR = () => qrLib || (qrLib = new Promise((ok, no) => {
@@ -1877,7 +2004,11 @@
     document.head.appendChild(sc);
   }));
   const paintQR = async () => {
-    const box = $("#live-qr"), url = watchUrl();
+    const box = $("#live-qr");
+    if (mode === "j" && !S.L.p) await keyP;
+    const url = mode === "j" ? playUrl() : watchUrl();
+    document.querySelectorAll("#live-mode button").forEach((b) => b.classList.toggle("on", b.dataset.m === mode));
+    $("#live-note").textContent = mode === "j" ? "Whoever scans this can score too." : "Scrambled on this phone. Only people with the link can watch.";
     if (box.dataset.url === url) return;
     box.innerHTML = ""; box.dataset.url = url;
     try {
@@ -1885,28 +2016,48 @@
       qr.addData(url); qr.make();
       const n = qr.getModuleCount(); let d = "";
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += "M" + c + " " + r + "h1v1h-1z";
-      box.innerHTML = '<svg viewBox="-2 -2 ' + (n + 4) + " " + (n + 4) + '" shape-rendering="crispEdges" role="img" aria-label="QR code for the watch link"><path fill="#07080f" d="' + d + '"/></svg>';
+      box.innerHTML = '<svg viewBox="-2 -2 ' + (n + 4) + " " + (n + 4) + '" shape-rendering="crispEdges" role="img" aria-label="QR code for the ' + (mode === "j" ? "play" : "watch") + ' link"><path fill="#07080f" d="' + d + '"/></svg>';
     } catch (_) { box.dataset.url = ""; }
   };
+  document.querySelectorAll("#live-mode button").forEach((b) => b.addEventListener("click", () => { mode = b.dataset.m; paintQR(); }));
+  const newKey = async () => b64u(await crypto.subtle.exportKey("raw", await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])));
   $("#go-live").addEventListener("click", async () => {
     if (!S.L) {
       if (!(window.crypto && crypto.subtle)) return toast("This browser can't go live");
-      const k = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
-      S.L = { r: b64u(crypto.getRandomValues(new Uint8Array(16))), k: b64u(await crypto.subtle.exportKey("raw", k)) };
-      save();
+      S.L = { r: b64u(crypto.getRandomValues(new Uint8Array(16))), k: await newKey(), p: await newKey() };
+      keepUrl();
     }
     startHost(); paintLive(); paintQR();
     openSheet("#live-sheet");
   });
   $("#live-share").addEventListener("click", async () => {
     if (!S.L) return;
-    const url = watchUrl();
+    if (mode === "j" && !S.L.p) await keyP;
+    const url = mode === "j" ? playUrl() : watchUrl();
     try {
-      if (navigator.share) await navigator.share({ title: (S.c || "Mini golf") + " — live", url });
+      if (navigator.share) await navigator.share({ title: (S.c || "Mini golf") + (mode === "j" ? " — score with us" : " — live"), url });
       else { await navigator.clipboard.writeText(url); toast("Link copied"); }
     } catch (_) {}
   });
   $("#live-stop").addEventListener("click", () => { stopLive(); closeSheets(); toast("No longer live"); });
+
+  // -- joining with a play link: wait for a scorer's card, then play on it
+  const startJoin = ([, r, k, p]) => {
+    joining = true;
+    S = { c: "", h: 18, p: [], s: [], i: 0, d: 0, t: 1, L: { r, k, p } };
+    show("watch");
+    $("#w-wait-msg").textContent = "Joining the game…";
+    startHost();
+  };
+  function joined() {
+    joining = false;
+    S.t = 1; S.i = S.g ? S.g.i : 0; S.d = S.g ? S.g.d : 0;
+    ensureScores(); snapShadow(); keepUrl();
+    $("#w-wait-msg").textContent = "Waiting for the scorer…";
+    toast("You're in. Score away");
+    if (S.d) finish(true); else { show("play"); paintHole(); }
+    paintLive();
+  }
 
   // -- the watcher's side
   const startWatch = async ([, room, k]) => {
@@ -1914,36 +2065,32 @@
     show("watch");
     let key;
     try { key = await importKey(k); } catch (_) { $("#w-wait-msg").textContent = "That link doesn't look right"; return; }
-    // LIVE only while the scorer is actually broadcasting: heard from in
-    // the last 50s (the card, or the scorer's 20s "still here"); PAUSED if
-    // their phone has gone quiet (locked, say); ENDED once they stop.
-    let last = 0, first = true, sock = "connecting", heardHost = 0, ended = false, lastOut = 0;
-    const pill = () => paintPill($("#w-pill"),
-      sock !== "on" ? sock : ended ? "ENDED" : Date.now() - heardHost < 50000 ? "on" : heardHost ? "PAUSED" : "connecting");
+    // LIVE while any scorer is broadcasting (heard from in the last 50s:
+    // a card, or a 20s "still here"); PAUSED if they've all gone quiet
+    // (phones locked, say); ENDED once the last one stops.
+    S = { c: "", h: 18, p: [], s: [], i: 0, d: 0 };
+    let sock = "connecting", ended = false, first = true;
+    const live = new Map();
+    const pill = () => {
+      const now = Date.now(), on = [...live.values()].some((t) => now - t < 50000);
+      paintPill($("#w-pill"), sock !== "on" ? sock : ended ? "ENDED" : on ? "on" : live.size ? "PAUSED" : "connecting");
+    };
     setInterval(pill, 5000);
     const link = Link(room, async (m) => {
       if (m.t === "open") link.send({ t: "hi" });
-      else if (m.t === "h") { heardHost = Date.now(); ended = false; pill(); }
-      else if (m.t === "bye") { ended = true; pill(); }
+      else if (m.t === "h") { live.set(String(m.d), Date.now()); ended = false; pill(); }
+      else if (m.t === "bye") { live.delete(String(m.d)); if (!live.size) ended = true; pill(); }
       else if (m.t === "s" && typeof m.v === "string") {
         let o;
-        try { o = await unseal(key, m.v); } catch (_) { return; }   // not for us
-        if (!o || !Array.isArray(o.p) || !o.p.length || !Array.isArray(o.s) || (+o.at || 0) < last) return;
-        last = +o.at || 0;
-        heardHost = Date.now(); ended = false; pill();
+        try { o = clean(await unseal(key, m.v)); } catch (_) { return; }   // not for us
+        if (!o) return;
+        live.set(o.from, Date.now()); ended = false; pill();
         const was = first ? null : JSON.parse(JSON.stringify(S));
-        S = {
-          c: String(o.c || "").slice(0, 60), h: clampH(o.h), i: 0, d: o.d ? 1 : 0, dt: typeof o.dt === "string" ? o.dt.slice(0, 10) : "",
-          p: o.p.slice(0, 64).map((pl) => ({ n: String((pl && pl.n) || "").slice(0, 20), k: Math.abs((pl && pl.k) | 0) })),
-          s: o.s,
-        };
-        S.i = Math.max(0, Math.min(S.h - 1, o.i | 0));
-        S.s = S.p.map((_, pi) => Array.from({ length: S.h }, (_, j) => Math.max(0, Math.min(MAX, (o.s[pi] && o.s[pi][j]) | 0))));
-        // hole-outs since the last card (none to cheer on the first one: that's history)
-        const outs = (Array.isArray(o.e) ? o.e : []).filter((e) => e && +e.q > lastOut && S.p[e.p | 0]).sort((a, b) => a.q - b.q);
-        if (outs.length) lastOut = +outs[outs.length - 1].q;
+        const cheers = freshOuts(o), r = merge(o);
+        if (!r.changed && !cheers.length && !first) return;
+        S.i = S.g ? S.g.i : 0; S.d = S.g ? S.g.d : 0;
         first = false;
-        paintWatch(was, was ? outs : []);
+        paintWatch(was, was ? cheers : []);
       }
     }, (st) => { sock = st; pill(); });
   };
@@ -1970,16 +2117,14 @@
         if (l) { l.classList.remove("bump"); void l.offsetWidth; l.classList.add("bump"); }
       }
     });
-    outs.forEach((e) => {
-      const n = e.n | 0, who = nameOf(S.p[e.p | 0], e.p | 0);
-      if (n === 1) { ace(); toast(who + " · ACE!"); } else if (n > 1) { sfx.cup(); toast(who + " · " + verdict(n)); }
-    });
+    outs.forEach(cheer);
     if (S.d && !was.d) { sfx.ace(); confetti(); }
     else if (!S.d && S.i === was.i + 1 && !reduced) millShow(S.i + 1);
   };
 
   // ---- go --------------------------------------------------------------
   if (WATCH) startWatch(WATCH);
+  else if (JOIN) startJoin(JOIN);
   else if (load()) {
     ensureScores();
     startHost();   // was live before a reload: carry on

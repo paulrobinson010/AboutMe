@@ -12,7 +12,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 const ROOM_ID = /^[A-Za-z0-9_-]{16,64}$/;   // the page makes 22-character ids
-const MAX_MESSAGE = 16 * 1024;              // a big card is ~2 kB encrypted
+const MAX_MESSAGE = 64 * 1024;              // a big card, with every score's stamp, is ~10 kB
 const MAX_PEOPLE = 64;
 
 export default {
