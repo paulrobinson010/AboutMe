@@ -65,6 +65,13 @@
 
   /* ---------- the windmill ---------- */
   .windmill { display: block; width: min(100%, 300px); margin: 18px auto 0; overflow: visible; }
+  /* the home screen's reel of obstacles, one after another */
+  .reel { width: min(100%, 300px); aspect-ratio: 1; margin: 18px auto 0; transition: opacity 0.3s; }
+  .reel.fade { opacity: 0; }
+  .reel svg { display: block; width: 100%; margin: 0; overflow: visible; }
+  .reel .windmill .mill-ball { animation: roll-through 2.4s forwards; }
+  .reel .windmill .pin { animation: pin-twitch 2.4s forwards; }
+  .reel .windmill .blades { animation: spin 2.4s linear forwards; }
   /* One turn per cycle, starting as a "+" (a blade straight down, blocking
      the door). A blade covers the door at 0, ¼, ½ and ¾ of the cycle; the
      ball reaches the door at 37.5%, bang in the middle of a gap. */
@@ -745,7 +752,7 @@
   <!-- ===== tee off ===== -->
   <section class="screen on" id="setup">
     <a class="home" href="./">&larr; PR.</a>
-    <div data-windmill></div>
+    <div class="reel" id="reel"></div>
     <h1>Putt<span class="glow-pink">.</span></h1>
 
     <label class="field">
@@ -961,6 +968,7 @@
     if (id === "setup") { cta.innerHTML = teeIcon + "Tee off"; cta.style.display = ""; }
     else if (id === "play") { cta.style.display = ""; paintCta(); }
     else cta.style.display = "none";
+    reel(id === "setup");
     scrollTo(0, 0);
   };
   const teeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="4"/><path d="M8 11h8l-3 3v7h-2v-7z"/></svg>';
@@ -1264,7 +1272,7 @@
         $(".bridge", svg).setAttribute("transform", "rotate(" + a.toFixed(2) + " 120 136)");
         const r = a * Math.PI / 180;
         $(".chain", svg).setAttribute("d", "M" + (120 - 48 * Math.cos(r)).toFixed(2) + " " + (136 - 48 * Math.sin(r)).toFixed(2) + " L121 94");
-        if (p >= 1 && !A.thud) { A.thud = true; sfx.thud(); }
+        if (p >= 1 && !A.thud) { A.thud = true; A.sfx("thud"); }
       },
     },
     // from above: the path is the ball's centre, corners are wall bounces
@@ -1285,7 +1293,7 @@
       side: true, g: 700, cup: [178, 121], hole: [182, 131], aim: { at: [110, 107], v: 35 },
       cannon: { wait: 0.28, at: [133.5, 94], dir: [0.766, -0.643] }, bounce: [0.3, 0.55],
       mu: (x) => (x > 150 ? 320 : 170), sound: "bell",
-      frame: (svg, t, A) => { if (A.fire != null && t >= A.fire && !A.boom) { A.boom = true; svg.classList.add("fired"); sfx.boom(); } },
+      frame: (svg, t, A) => { if (A.fire != null && t >= A.fire && !A.boom) { A.boom = true; svg.classList.add("fired"); A.sfx("boom"); } },
     },
     // side on: between a T-rex's legs; it lifts a foot for the ball and
     // stomps down behind it, then roars when it drops
@@ -1298,7 +1306,7 @@
         const lift = Math.max(0, Math.min(1, (t - (A.up - 0.3)) / 0.3)), drop = Math.max(0, Math.min(1, (t - A.down) / 0.12));
         const a = -42 * (lift < 1 ? 1 - (1 - lift) * (1 - lift) : 1 - drop * drop);
         $(".leg-near", svg).setAttribute("transform", "rotate(" + a.toFixed(2) + " 84 98)");
-        if (drop >= 1 && !A.stomped) { A.stomped = true; sfx.thud(); svg.classList.add("stomp"); }
+        if (drop >= 1 && !A.stomped) { A.stomped = true; A.sfx("thud"); svg.classList.add("stomp"); }
       },
     },
     // front on, like the windmill: straight up the felt and into the mouth,
@@ -1434,31 +1442,32 @@
     }
     return (PLANS[name] = Object.assign(simulate(c, legs, hi, cupS), { v0: hi }));
   };
-  let rollRaf = 0;
-  const roll = (svg, name) => {
+  // Plays one run; returns a stop(). Quiet on the home screen.
+  const roll = (svg, name, quiet) => {
     const c = COURSES[name], P = plan(name), f = P.out, n = f.length;
     const ball = $(".roll-ball", svg), pin = $(".pin", svg);
     const RUN = Math.max(1.15, Math.min(1.5, n / HZ)), STRIKE = 1.8 - RUN, DROP = 0.15, t0 = performance.now();
-    const A = { strike: STRIKE, arrive: STRIKE + RUN, fire: P.fire != null ? STRIKE + P.fire / n * RUN : null,
+    const play = (k) => { if (!quiet) sfx[k](); };
+    const A = { strike: STRIKE, arrive: STRIKE + RUN, fire: P.fire != null ? STRIKE + P.fire / n * RUN : null, sfx: play,
       timeAtX: (x) => { const i = f.findIndex((q) => q.x >= x); return STRIKE + (i < 0 ? n : i) / n * RUN; } };
     // front on, the ball shrinks as it rolls away
     const depth = (y) => (c.persp ? c.persp[1] + (y - c.persp[0]) * (c.persp[3] - c.persp[1]) / (c.persp[2] - c.persp[0]) : 1);
     let e = 0, struck = false, dropped = false;
     const put = (x, y, k, o) => { ball.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") scale(" + k.toFixed(3) + ")"); ball.setAttribute("opacity", o.toFixed(3)); };
-    cancelAnimationFrame(rollRaf);
+    let raf = 0;
     const tick = (now) => {
       const t = (now - t0) / 1000;
       let x = f[0].x, y = f[0].y, k = 1, o = 1;
       if (t < STRIKE) o = Math.min(1, t / 0.1);
       else if (t < STRIKE + RUN) {
-        if (!struck) { struck = true; sfx.putt(); }
+        if (!struck) { struck = true; play("putt"); }
         const i = Math.min(n - 1, Math.floor((t - STRIKE) / RUN * n));
-        while (e < P.ev.length && P.ev[e] <= i) { sfx.tick(); e++; }
+        while (e < P.ev.length && P.ev[e] <= i) { play("tick"); e++; }
         x = f[i].x; y = f[i].y; if (f[i].h) o = 0;   // out of sight (in the cannon)
       } else {
         const p = Math.min(1, (t - STRIKE - RUN) / DROP), end = f[n - 1];
         if (!dropped) {
-          dropped = true; sfx.cup(); if (c.sound) sfx[c.sound]();
+          dropped = true; play("cup"); if (c.sound) play(c.sound);
           if (pin) pin.classList.add("twitch");
           svg.classList.add("holed");   // the scenery's reaction, in CSS
         }
@@ -1467,30 +1476,67 @@
       }
       put(x, y, k * depth(y), o);
       if (c.frame) c.frame(svg, t, A, x, y);
-      if (t < 2.7) rollRaf = requestAnimationFrame(tick);
+      if (t < 2.7) raf = requestAnimationFrame(tick);
     };
-    rollRaf = requestAnimationFrame(tick);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   };
   // the overlay: a random obstacle (never the same twice running), the ball
   // through it and into the cup, then the next hole's number
   const ARTS = ["windmill", "loop", "water", "zigzag", "volcano", "castle", "clown", "lighthouse", "pirate", "dino"];
   const ART_PICK = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get("art");   // for testing
-  let millT = 0, lastArt = "";
+  const scene = (art) => $(art === "windmill" ? "#windmill-tpl" : "#art-" + art).content.cloneNode(true);
+  let millT = 0, lastArt = "", millStop = null;
   const millShow = (n) => {
     const b = $("#between"), stage = $("#between-stage");
     const pool = ARTS.filter((a) => a !== lastArt);
     const art = ARTS.includes(ART_PICK) ? ART_PICK : pool[(Math.random() * pool.length) | 0];
     lastArt = art;
-    cancelAnimationFrame(rollRaf);
+    if (millStop) millStop();
     stage.innerHTML = "";
-    stage.appendChild($(art === "windmill" ? "#windmill-tpl" : "#art-" + art).content.cloneNode(true));
+    stage.appendChild(scene(art));
     $("#between-n").textContent = n;
     b.classList.remove("on"); void b.offsetWidth; b.classList.add("on");
     sfx.whoosh();
     clearTimeout(millT);
     if (art === "windmill") setTimeout(sfx.cup, 1800);      // as it drops in the cup
-    else roll(stage.firstElementChild, art);
+    else millStop = roll(stage.firstElementChild, art);
     millT = setTimeout(() => b.classList.remove("on"), 2700);
+  };
+
+  // ---- the home screen: every obstacle in turn ----------------------------
+  // The windmill first, as ever, then the rest in a shuffled order (no
+  // repeats until they've all had a go), each run once and crossfaded into
+  // the next. Silent, and only while the home screen is showing.
+  let reelT = 0, reelStop = null, reelOn = false, reelBag = [], reelLast = "";
+  const reelNext = () => {
+    if (!reelOn) return;
+    if (!reelBag.length) {
+      reelBag = ARTS.filter((a) => a !== "windmill").sort(() => Math.random() - 0.5).concat("windmill");
+      if (reelBag[0] === reelLast) reelBag.push(reelBag.shift());
+    }
+    const art = reelBag.shift(), box = $("#reel");
+    reelLast = art;
+    box.classList.add("fade");
+    reelT = setTimeout(() => {
+      if (reelStop) reelStop();
+      box.innerHTML = ""; box.appendChild(scene(art));
+      reelStop = art === "windmill" ? null : roll(box.firstElementChild, art, true);
+      box.classList.remove("fade");
+      reelT = setTimeout(reelNext, 3100);
+    }, 300);
+  };
+  const reel = (on) => {
+    if (on === reelOn) return;
+    reelOn = on;
+    clearTimeout(reelT);
+    if (reelStop) { reelStop(); reelStop = null; }
+    const box = $("#reel");
+    box.innerHTML = "";
+    if (!on) return;
+    reelBag = ["windmill"]; reelLast = "";
+    if (reduced) { box.appendChild(scene("windmill")); return; }   // still, and just the windmill
+    reelNext();
   };
   $("#between").addEventListener("click", () => $("#between").classList.remove("on"));
   $("#prev").addEventListener("click", () => goHole(S.i - 1, false));
