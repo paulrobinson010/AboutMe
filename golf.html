@@ -343,6 +343,39 @@
   /* the castle: the portcullis drops behind the ball */
   .castle .portcullis { transform: translateY(-38px); transition: transform 0.16s cubic-bezier(0.5, 0, 1, 1); }
   .castle.holed .portcullis { transform: none; }
+  /* the lighthouse: the beam sweeps round; it flashes gold for the ball */
+  .lighthouse .beam { transform-box: view-box; transform-origin: 150px 30px; animation: sweep 2.6s linear infinite; }
+  @keyframes sweep {
+    0% { transform: scaleX(1); opacity: 0.9; animation-timing-function: ease-in; }
+    25% { transform: scaleX(0.02); opacity: 1; animation-timing-function: ease-out; }
+    50% { transform: scaleX(-1); opacity: 0.9; animation-timing-function: ease-in; }
+    75% { transform: scaleX(-0.02); opacity: 0.25; animation-timing-function: ease-out; }
+    100% { transform: scaleX(1); opacity: 0.9; }
+  }
+  .lighthouse.holed .lamp { animation: lamp 0.9s ease-out; }
+  @keyframes lamp { 20% { fill: #ffd23f; filter: drop-shadow(0 0 10px #ffd23f); } }
+  .lighthouse.holed .beam path { animation: beam-gold 0.9s ease-out; }
+  @keyframes beam-gold { 20% { fill: rgba(255, 210, 63, 0.6); } }
+  /* the pirate ship: the cannon kicks, a flash and a puff of smoke */
+  .pirate .barrel { transform-box: view-box; }
+  .pirate.fired .barrel { animation: recoil 0.35s ease-out; }
+  @keyframes recoil { 20% { transform: translateX(-4px); } }
+  .pirate .puff circle, .pirate .flash { opacity: 0; transform-box: fill-box; transform-origin: center; }
+  .pirate.fired .puff circle { animation: puff 0.9s ease-out forwards; }
+  .pirate.fired .puff circle:nth-child(2) { animation-delay: 0.05s; }
+  .pirate.fired .puff circle:nth-child(3) { animation-delay: 0.1s; }
+  @keyframes puff { 0% { opacity: 0.9; transform: scale(0.3); } 100% { opacity: 0; transform: scale(1.6) translateY(-6px); } }
+  .pirate.fired .flash { animation: flash 0.2s ease-out; }
+  @keyframes flash { 0% { opacity: 1; transform: scale(1.4); } 100% { opacity: 0; } }
+  .pirate .jolly { transform-box: view-box; transform-origin: 96px 23px; animation: flutter 0.9s ease-in-out infinite; }
+  @keyframes flutter { 50% { transform: skewY(6deg) scaleX(0.9); } }
+  /* the T-rex: a stomp shakes the ground; a roar with its jaw wide */
+  .dino.stomp { animation: shake 0.25s ease-out; }
+  @keyframes shake { 25% { transform: translateY(1.5px); } 50% { transform: translateY(-1px); } 75% { transform: translateY(0.5px); } }
+  .dino .jaw { transform-box: view-box; transform-origin: 168px 55px; transition: transform 0.15s ease-out; }
+  .dino.holed .jaw { transform: rotate(22deg); }
+  .dino .eye { transform-box: fill-box; transform-origin: center; animation: blink 3s infinite; }
+  @keyframes blink { 0%, 92%, 100% { transform: none; } 95% { transform: scaleY(0.1); } }
   /* the clown: happy eyes and a honk of the nose once it's swallowed one */
   .clown .eyes-happy { opacity: 0; }
   .clown.holed .eyes-open { opacity: 0; }
@@ -632,6 +665,77 @@
     <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-c)"/></g>
   </svg>
 </template>
+<template id="art-lighthouse">
+  <!-- front on: round the rock, curling in to the cup at the lighthouse's
+       foot while the beam sweeps -->
+  <svg class="hole-art lighthouse" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-h" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <linearGradient id="beam-h" x1="0" x2="1"><stop offset="0" stop-color="#f2f0ea" stop-opacity="0.55"/><stop offset="1" stop-color="#f2f0ea" stop-opacity="0"/></linearGradient>
+    <g class="beam"><path d="M150 30 L214 8 L214 52 Z" fill="url(#beam-h)"/></g>
+    <clipPath id="sea-h"><rect x="0" y="90" width="200" height="40"/></clipPath>
+    <g fill="none" stroke="#25e3ee" stroke-width="1.2" filter="url(#glow-h)" clip-path="url(#sea-h)"><path d="M-4 100 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0 q6 -1.6 12 0 t12 0" opacity="0.35"/><path d="M-4 108 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0 q6 -2 12 0 t12 0" opacity="0.5"/><path d="M-4 117 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0 q6 -2.4 12 0 t12 0" opacity="0.7"/></g>
+    <path d="M10 172 C6 148 34 130 76 127 L158 122 C186 121 198 146 192 172 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-h)"/>
+    <path d="M128 128 C126 118 136 112 150 113 C164 112 174 118 172 128 C160 131 140 131 128 128 Z" fill="#1b1730" stroke="#a77bff" stroke-width="1.5" filter="url(#glow-h)"/>
+    <path d="M58 150 C56 140 66 135 76 137 C86 138 90 146 86 152 C78 156 64 156 58 150 Z" fill="#1b1730" stroke="#a77bff" stroke-width="1.5" filter="url(#glow-h)"/>
+    <path d="M136 126 L142 40 L158 40 L164 126 Z" fill="#f2f0ea" fill-opacity="0.1" stroke="#f2f0ea" stroke-width="1.6" stroke-linejoin="round" filter="url(#glow-h)"/>
+    <g fill="#ff4fd8" opacity="0.85" filter="url(#glow-h)"><path d="M141.2 52 L158.8 52 L159.7 64 L140.3 64 Z"/><path d="M139.3 78 L160.7 78 L161.5 90 L138.5 90 Z"/><path d="M137.5 104 L162.5 104 L163.3 116 L136.7 116 Z"/></g>
+    <path d="M146 126 L146 120 A4 4 0 0 1 154 120 L154 126 Z" fill="#000" stroke="#ffd23f" stroke-width="1"/>
+    <rect x="137" y="36" width="26" height="4" fill="#140e2a" stroke="#ffd23f" stroke-width="1.2" filter="url(#glow-h)"/>
+    <rect class="lamp" x="143" y="24" width="14" height="12" fill="rgba(255,210,63,0.4)" stroke="#25e3ee" stroke-width="1.4" filter="url(#glow-h)"/>
+    <path d="M141 24 Q150 11 159 24 Z" fill="#140e2a" stroke="#ff4fd8" stroke-width="1.6" stroke-linejoin="round" filter="url(#glow-h)"/>
+    <line x1="150" y1="14" x2="150" y2="8" stroke="#ff4fd8" stroke-width="1.4"/>
+    <ellipse cx="122" cy="130.5" rx="5" ry="2" fill="#000"/>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-h)"/></g>
+    <g class="pin" style="transform-origin: 122px 130px"><line x1="122" y1="130" x2="122" y2="104" stroke="#f2f0ea" stroke-width="1.3"/><path d="M122 104 L134 108 L122 112 Z" fill="#ff4fd8" filter="url(#glow-h)"/></g>
+  </svg>
+</template>
+<template id="art-pirate">
+  <!-- side on: up the gangplank and into the cannon, which fires it over
+       the sea to the island -->
+  <svg class="hole-art pirate" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-p" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <clipPath id="sea-p"><rect x="0" y="131" width="200" height="22"/></clipPath>
+    <rect x="0" y="138" width="200" height="14" fill="rgba(37,227,238,0.12)"/>
+    <g clip-path="url(#sea-p)"><path class="waves" d="M-12 138 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0" fill="none" stroke="#25e3ee" stroke-width="1.6" filter="url(#glow-p)"/></g>
+    <path d="M4 130 L44 130 L44 134 L4 134 Z M10 134 V150 M38 134 V150" fill="#140e2a" stroke="#ffd23f" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-p)"/>
+    <line x1="96" y1="112" x2="96" y2="16" stroke="#ffd23f" stroke-width="2"/>
+    <path d="M80 30 Q96 36 112 30 L114 80 Q96 86 78 80 Z" fill="rgba(242,240,234,0.08)" stroke="#f2f0ea" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-p)"/>
+    <g class="jolly"><path d="M96 17 L114 20 L114 30 L96 28 Z" fill="#07080f" stroke="#f2f0ea" stroke-width="1"/><circle cx="105" cy="22.6" r="2.2" fill="#f2f0ea"/><path d="M102 26.4 L108 27.2 M102 27.2 L108 26.4" stroke="#f2f0ea" stroke-width="0.8"/></g>
+    <path d="M56 112 L150 112 C148 126 140 138 128 142 L76 142 C66 138 58 126 56 112 Z" fill="#140e2a" stroke="#ff4fd8" stroke-width="2" stroke-linejoin="round" filter="url(#glow-p)"/>
+    <path d="M56 108 L150 108 M64 108 V112 M80 108 V112 M112 108 V112 M128 108 V112 M144 108 V112" stroke="#ff4fd8" stroke-width="1.2" opacity="0.8"/>
+    <g fill="none" stroke="#25e3ee" stroke-width="1.4" filter="url(#glow-p)"><circle cx="78" cy="124" r="3"/><circle cx="98" cy="125" r="3"/><circle cx="118" cy="124" r="3"/></g>
+    <path d="M44 130 L66 112" stroke="#ffd23f" stroke-width="2.4" stroke-linecap="round" filter="url(#glow-p)"/>
+    <g class="puff" fill="rgba(242,240,234,0.25)" stroke="#f2f0ea" stroke-width="1"><circle cx="139" cy="86" r="6"/><circle cx="145" cy="80" r="5"/><circle cx="134" cy="81" r="4"/></g>
+    <circle class="flash" cx="136" cy="91" r="5" fill="#ffd23f" filter="url(#glow-p)"/>
+    <g transform="rotate(-40 120 106)"><g class="barrel"><rect x="108" y="101" width="30" height="9" rx="3" fill="#140e2a" stroke="#25e3ee" stroke-width="1.6" filter="url(#glow-p)"/><rect x="134" y="100" width="4" height="11" rx="1.5" fill="#25e3ee"/></g></g>
+    <circle cx="117" cy="109" r="3.4" fill="#140e2a" stroke="#ffd23f" stroke-width="1.4"/>
+    <path d="M158 126 L176 126 L176 136 L188 136 L188 126 L198 126 L198 146 L158 146 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-p)"/>
+    <rect x="176.8" y="126.8" width="10.4" height="8.4" fill="#000"/>
+    <path d="M194 126 C196 114 194 102 188 92" fill="none" stroke="#ffa53d" stroke-width="2.4" stroke-linecap="round" filter="url(#glow-p)"/>
+    <path d="M188 92 C180 86 172 88 166 94 M188 92 C186 82 178 78 172 80 M188 92 C196 84 204 86 206 92 M188 92 C194 80 202 78 206 82" fill="none" stroke="#39ff88" stroke-width="2" stroke-linecap="round" filter="url(#glow-p)"/>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-p)"/></g>
+    <g class="pin" style="transform-origin: 182px 136px"><line x1="182" y1="136" x2="182" y2="100" stroke="#f2f0ea" stroke-width="1.6"/><path d="M182 100 L168 105 L182 110 Z" fill="#ff4fd8" filter="url(#glow-p)"/></g>
+  </svg>
+</template>
+<template id="art-dino">
+  <!-- side on: between the T-rex's legs, past the stomp, to the cup under
+       its nose -->
+  <svg class="hole-art dino" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-d" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <path d="M4 140 L174 140 L174 150 L186 150 L186 140 L198 140 L198 154 L4 154 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-d)"/>
+    <rect x="174.8" y="140.8" width="10.4" height="8.4" fill="#000"/>
+    <g opacity="0.55"><path d="M98 96 C110 100 113 114 106 122 L112 134 L122 140 L100 140 L100 134 L94 120 C88 110 89 100 98 96 Z" fill="#0e0a1e" stroke="#ff4fd8" stroke-width="1.6" stroke-linejoin="round"/></g>
+    <path class="jaw" d="M168 54 L192 56 L188 63 C180 66 172 65 166 61 Z" fill="#140e2a" stroke="#ff4fd8" stroke-width="1.8" stroke-linejoin="round" filter="url(#glow-d)"/>
+    <path d="M18 96 C40 90 66 76 88 70 C106 64 122 62 134 58 C140 50 142 44 146 40 C156 33 176 33 190 40 L194 49 L168 52 C162 62 152 70 148 80 C146 90 140 98 130 102 C118 108 104 108 96 106 C70 102 40 100 18 96 Z" fill="#140e2a" stroke="#ff4fd8" stroke-width="2" stroke-linejoin="round" filter="url(#glow-d)"/>
+    <path d="M174 52 l2 3 l2 -3 M180 51.6 l2 3 l2 -3 M186 51.2 l2 3 l2 -3" fill="none" stroke="#f2f0ea" stroke-width="1" stroke-linejoin="round"/>
+    <circle class="eye" cx="168" cy="42" r="3" fill="#25e3ee" filter="url(#glow-d)"/>
+    <path d="M140 86 L151 92 L153 87" fill="none" stroke="#ff4fd8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M60 86 l6 -6 l4 6 M80 78 l6 -7 l4 6 M100 70 l6 -6 l4 5" fill="none" stroke="#a77bff" stroke-width="1.4" stroke-linejoin="round" opacity="0.8"/>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-d)"/></g>
+    <g class="leg-near"><path d="M84 96 C96 100 99 114 92 122 L98 134 L108 140 L86 140 L86 134 L80 120 C74 110 75 100 84 96 Z" fill="#140e2a" stroke="#ff4fd8" stroke-width="2" stroke-linejoin="round" filter="url(#glow-d)"/></g>
+    <g class="pin" style="transform-origin: 180px 150px"><line x1="180" y1="150" x2="180" y2="116" stroke="#f2f0ea" stroke-width="1.6"/><path d="M180 116 L166 121 L180 126 Z" fill="#ff4fd8" filter="url(#glow-d)"/></g>
+  </svg>
+</template>
 <template id="flag-tpl">
   <svg viewBox="0 0 26 40" aria-hidden="true"><line x1="3" y1="2" x2="3" y2="39" stroke="#f2f0ea" stroke-width="2.2" stroke-linecap="round"/><path d="M3 3 L24 10 L3 17 Z" fill="#ff4fd8" style="filter:drop-shadow(0 0 4px #ff4fd8)"/></svg>
 </template>
@@ -816,6 +920,10 @@
     thud: () => { tone(90, 0, 0.18, "sine", 0.22); tone(140, 0, 0.06, "triangle", 0.08); },
     honk: () => { tone(330, 0.05, 0.11, "square", 0.06); tone(262, 0.18, 0.16, "square", 0.06); },
     clang: () => { tone(160, 0, 0.3, "square", 0.04); tone(1250, 0, 0.2, "triangle", 0.09); tone(1870, 0.01, 0.14, "triangle", 0.05); },
+    boom: () => { tone(55, 0, 0.5, "sawtooth", 0.12); tone(110, 0, 0.2, "square", 0.07); tone(2400, 0, 0.05, "triangle", 0.05); },
+    roar: () => { tone(110, 0.05, 0.7, "sawtooth", 0.08); tone(147, 0.05, 0.6, "sawtooth", 0.06); tone(73, 0.1, 0.7, "sawtooth", 0.07); },
+    horn: () => { tone(98, 0.05, 0.8, "square", 0.04); tone(147, 0.05, 0.8, "sine", 0.07); },
+    bell: () => { tone(1568, 0.05, 0.7, "sine", 0.09); tone(2093, 0.05, 0.5, "sine", 0.05); },
     rumble: () => { tone(55, 0, 0.8, "sawtooth", 0.07); tone(82, 0.05, 0.6, "sawtooth", 0.05); [0.12, 0.25, 0.34, 0.5].forEach((d, i) => tone(900 + i * 260, d, 0.03, "triangle", 0.05)); },
   };
   const buzz = (ms) => { if (navigator.vibrate) navigator.vibrate(ms); };
@@ -1165,6 +1273,34 @@
       side: false, g: 0, cup: [150, 24], hole: [150, 24], e: 0.72,
       mu: () => 200,
     },
+    // front on: a putt that curls round the rock to the cup by the lighthouse
+    lighthouse: {
+      legs: ["M46 166 C70 162 100 158 104 146 C107 137 114 132 122 130 L130 128"],
+      side: false, g: 0, cup: [122, 130], hole: [122, 131], persp: [166, 1.25, 130, 0.72],
+      mu: () => 90, sound: "horn",
+    },
+    // side on: up the gangplank, into the cannon, BOOM, over the sea to the island
+    pirate: {
+      legs: ["M8 130 L38 130 C42 130 44 128.6 46 127 L62 114.4 C64 112.8 66 112 70 112 L112 112", "M158 126 L198 126"],
+      side: true, g: 700, cup: [178, 121], hole: [182, 131], aim: { at: [110, 107], v: 35 },
+      cannon: { wait: 0.28, at: [133.5, 94], dir: [0.766, -0.643] }, bounce: [0.3, 0.55],
+      mu: (x) => (x > 150 ? 320 : 170), sound: "bell",
+      frame: (svg, t, A) => { if (A.fire != null && t >= A.fire && !A.boom) { A.boom = true; svg.classList.add("fired"); sfx.boom(); } },
+    },
+    // side on: between a T-rex's legs; it lifts a foot for the ball and
+    // stomps down behind it, then roars when it drops
+    dino: {
+      legs: ["M8 140 L196 140"],
+      side: true, g: 700, cup: [176, 135], hole: [180, 145],
+      mu: () => 120, sound: "roar",
+      frame: (svg, t, A) => {
+        if (A.up == null) { A.up = A.timeAtX(72); A.down = A.timeAtX(112); }
+        const lift = Math.max(0, Math.min(1, (t - (A.up - 0.3)) / 0.3)), drop = Math.max(0, Math.min(1, (t - A.down) / 0.12));
+        const a = -42 * (lift < 1 ? 1 - (1 - lift) * (1 - lift) : 1 - drop * drop);
+        $(".leg-near", svg).setAttribute("transform", "rotate(" + a.toFixed(2) + " 84 98)");
+        if (drop >= 1 && !A.stomped) { A.stomped = true; sfx.thud(); svg.classList.add("stomp"); }
+      },
+    },
     // front on, like the windmill: straight up the felt and into the mouth,
     // which won't stay open (it's open again just as the ball gets there)
     clown: {
@@ -1230,10 +1366,11 @@
       tx: (g.xs[hi] - g.xs[lo]) / span, ty: (g.ys[hi] - g.ys[lo]) / span };
   };
   // cupS: stop there (the run to play). aimS: note the speed passing it.
-  const simulate = (c, legs, v0, cupS, aimS) => {
+  // power: how hard the cannon fires (if there is one).
+  const simulate = (c, legs, v0, cupS, aimS, power) => {
     const dt = 1 / HZ, out = [], ev = [];
-    let li = 0, s = 0, v = v0, fly = null, x = legs[0].xs[0], y = legs[0].ys[0], aimV = null;
-    const done = (more) => Object.assign({ out, ev, li, s, aimV }, more);
+    let li = 0, s = 0, v = v0, fly = null, x = legs[0].xs[0], y = legs[0].ys[0], aimV = null, fire = null;
+    const done = (more) => Object.assign({ out, ev, li, s, aimV, fire }, more);
     for (let k = 0; k < 60000; k++) {
       if (fly) {
         fly.vy += c.g * dt; x += fly.vx * dt; y += fly.vy * dt;
@@ -1258,7 +1395,11 @@
         s = Math.max(0, s2);
         if (cupS != null && li === legs.length - 1 && s >= cupS) { out.push({ x, y }); return done({ cupV: v }); }
         if (s >= g.L) {
-          if (li < legs.length - 1) { const E = at(g, g.L); fly = { vx: v * E.tx, vy: v * E.ty }; x = E.x; y = E.y; }
+          if (li < legs.length - 1 && c.cannon) {   // in it goes; a moment's pause; BOOM
+            for (let w = 0; w < c.cannon.wait * HZ; w++) out.push({ x, y, h: 1 });
+            fire = out.length; x = c.cannon.at[0]; y = c.cannon.at[1];
+            fly = { vx: power * c.cannon.dir[0], vy: power * c.cannon.dir[1] };
+          } else if (li < legs.length - 1) { const E = at(g, g.L); fly = { vx: v * E.tx, vy: v * E.ty }; x = E.x; y = E.y; }
           else { s = g.L; v = 0; }
         }
       }
@@ -1285,7 +1426,12 @@
     }
     const short = (r) => (c.aim ? r.aimV == null || r.aimV < c.aim.v : reach(r) < target);
     let lo = 20, hi = 3000;
-    for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (short(simulate(c, legs, m, null, aimS))) lo = m; else hi = m; }
+    for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (short(simulate(c, legs, m, null, aimS, 0))) lo = m; else hi = m; }
+    if (c.cannon) {   // putted just into the cannon; now, how much powder, to land it by the cup
+      const v0 = hi; let a = 10, b = 2000;
+      for (let k = 0; k < 40; k++) { const m = (a + b) / 2; if (reach(simulate(c, legs, v0, null, null, m)) < target) a = m; else b = m; }
+      return (PLANS[name] = Object.assign(simulate(c, legs, v0, cupS, null, b), { v0 }));
+    }
     return (PLANS[name] = Object.assign(simulate(c, legs, hi, cupS), { v0: hi }));
   };
   let rollRaf = 0;
@@ -1293,7 +1439,8 @@
     const c = COURSES[name], P = plan(name), f = P.out, n = f.length;
     const ball = $(".roll-ball", svg), pin = $(".pin", svg);
     const RUN = Math.max(1.15, Math.min(1.5, n / HZ)), STRIKE = 1.8 - RUN, DROP = 0.15, t0 = performance.now();
-    const A = { strike: STRIKE, arrive: STRIKE + RUN };
+    const A = { strike: STRIKE, arrive: STRIKE + RUN, fire: P.fire != null ? STRIKE + P.fire / n * RUN : null,
+      timeAtX: (x) => { const i = f.findIndex((q) => q.x >= x); return STRIKE + (i < 0 ? n : i) / n * RUN; } };
     // front on, the ball shrinks as it rolls away
     const depth = (y) => (c.persp ? c.persp[1] + (y - c.persp[0]) * (c.persp[3] - c.persp[1]) / (c.persp[2] - c.persp[0]) : 1);
     let e = 0, struck = false, dropped = false;
@@ -1307,7 +1454,7 @@
         if (!struck) { struck = true; sfx.putt(); }
         const i = Math.min(n - 1, Math.floor((t - STRIKE) / RUN * n));
         while (e < P.ev.length && P.ev[e] <= i) { sfx.tick(); e++; }
-        x = f[i].x; y = f[i].y;
+        x = f[i].x; y = f[i].y; if (f[i].h) o = 0;   // out of sight (in the cannon)
       } else {
         const p = Math.min(1, (t - STRIKE - RUN) / DROP), end = f[n - 1];
         if (!dropped) {
@@ -1326,7 +1473,7 @@
   };
   // the overlay: a random obstacle (never the same twice running), the ball
   // through it and into the cup, then the next hole's number
-  const ARTS = ["windmill", "loop", "water", "zigzag", "volcano", "castle", "clown"];
+  const ARTS = ["windmill", "loop", "water", "zigzag", "volcano", "castle", "clown", "lighthouse", "pirate", "dino"];
   const ART_PICK = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get("art");   // for testing
   let millT = 0, lastArt = "";
   const millShow = (n) => {
