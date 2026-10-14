@@ -824,8 +824,9 @@
     const key = pi + ":" + S.i;
     if (!(S.s[pi][S.i] > 0)) S.s[pi][S.i] = 1;   // straight in from the tee
     holed.add(key); r.classList.add("holed");
-    save(); paintRow(pi, r);
     const n = S.s[pi][S.i];
+    holedOut(pi, n);
+    save(); paintRow(pi, r);
     if (n === 1) ace(); else { sfx.cup(); buzz(25); toast(nameOf(S.p[pi], pi) + " · " + verdict(n)); }
   };
 
@@ -846,7 +847,7 @@
       b.textContent = n;
       b.setAttribute("aria-label", n + (n === 1 ? " — hole in one" : " shots"));
       b.addEventListener("click", () => {
-        S.s[pi][S.i] = n; holed.add(pi + ":" + S.i); save(); closeSheets(); paintHole();
+        S.s[pi][S.i] = n; holed.add(pi + ":" + S.i); holedOut(pi, n); save(); closeSheets(); paintHole();
         if (n === 1) ace(); else { sfx.cup(); toast(nameOf(pl, pi) + " · " + verdict(n)); }
       });
       tray.appendChild(b);
@@ -1266,10 +1267,17 @@
       stop: () => { stopped = true; clearTimeout(t); document.removeEventListener("visibilitychange", wake); removeEventListener("online", wake); drop(); },
     };
   };
-  const paintPill = (el, st) => { el.classList.toggle("off", st !== "on"); el.lastChild.textContent = st === "on" ? "LIVE" : st === "connecting" ? "…" : "OFFLINE"; };
+  const paintPill = (el, st) => { el.classList.toggle("off", st !== "on"); el.lastChild.textContent = st === "on" ? "LIVE" : st === "connecting" ? "…" : st === "off" ? "OFFLINE" : st; };
 
   // -- the scorer's side
-  let host = null, hostKey = null, hostState = "off", watchers = 0, pubT = 0;
+  let host = null, hostKey = null, hostState = "off", watchers = 0, pubT = 0, beat = 0, outs = [];
+  // A tapped shot isn't a result — only a ball in the cup is. Hole-outs go
+  // along with the card (the last few, time-stamped) so watchers can cheer
+  // the right moment: an ace, or "Paul · Tidy".
+  function holedOut(pi, n) {
+    if (!host) return;
+    outs = outs.concat({ q: Date.now(), p: pi, n }).slice(-6);
+  }
   const watchUrl = () => location.href.split("#")[0] + "#w=" + S.L.r + "." + S.L.k;
   function publish() {
     if (!host) return;
@@ -1277,6 +1285,7 @@
     pubT = setTimeout(async () => {
       const { L, ...card } = S;
       card.at = Date.now();
+      card.e = outs;
       try { host.send({ t: "s", v: await seal(await hostKey, card) }); } catch (_) {}
     }, 120);
   }
@@ -1287,10 +1296,13 @@
       if (m.t === "open" || m.t === "hi") publish();   // someone new: send them the card
       else if (m.t === "n") { watchers = Math.max(0, (m.n | 0) - 1); paintLive(); }
     }, (st) => { hostState = st; if (st !== "on") watchers = 0; paintLive(); });
+    // "still here": lets watchers tell a scorer between holes from one who's gone
+    beat = setInterval(() => host && host.send({ t: "h" }), 20000);
   };
   function stopLive() {
-    if (host) host.stop();
-    host = null; watchers = 0; hostState = "off";
+    if (host) { host.send({ t: "bye" }); host.stop(); }   // tell watchers it's over
+    clearInterval(beat);
+    host = null; watchers = 0; hostState = "off"; outs = [];
     if (S.L) { delete S.L; save(); }
     paintLive();
   }
@@ -1345,14 +1357,23 @@
     show("watch");
     let key;
     try { key = await importKey(k); } catch (_) { $("#w-wait-msg").textContent = "That link doesn't look right"; return; }
-    let last = 0, first = true;
+    // LIVE only while the scorer is actually broadcasting: heard from in
+    // the last 50s (the card, or the scorer's 20s "still here"); PAUSED if
+    // their phone has gone quiet (locked, say); ENDED once they stop.
+    let last = 0, first = true, sock = "connecting", heardHost = 0, ended = false, lastOut = 0;
+    const pill = () => paintPill($("#w-pill"),
+      sock !== "on" ? sock : ended ? "ENDED" : Date.now() - heardHost < 50000 ? "on" : heardHost ? "PAUSED" : "connecting");
+    setInterval(pill, 5000);
     const link = Link(room, async (m) => {
       if (m.t === "open") link.send({ t: "hi" });
+      else if (m.t === "h") { heardHost = Date.now(); ended = false; pill(); }
+      else if (m.t === "bye") { ended = true; pill(); }
       else if (m.t === "s" && typeof m.v === "string") {
         let o;
         try { o = await unseal(key, m.v); } catch (_) { return; }   // not for us
         if (!o || !Array.isArray(o.p) || !o.p.length || !Array.isArray(o.s) || (+o.at || 0) < last) return;
         last = +o.at || 0;
+        heardHost = Date.now(); ended = false; pill();
         const was = first ? null : JSON.parse(JSON.stringify(S));
         S = {
           c: String(o.c || "").slice(0, 60), h: clampH(o.h), i: 0, d: o.d ? 1 : 0, dt: typeof o.dt === "string" ? o.dt.slice(0, 10) : "",
@@ -1361,12 +1382,15 @@
         };
         S.i = Math.max(0, Math.min(S.h - 1, o.i | 0));
         S.s = S.p.map((_, pi) => Array.from({ length: S.h }, (_, j) => Math.max(0, Math.min(MAX, (o.s[pi] && o.s[pi][j]) | 0))));
+        // hole-outs since the last card (none to cheer on the first one: that's history)
+        const outs = (Array.isArray(o.e) ? o.e : []).filter((e) => e && +e.q > lastOut && S.p[e.p | 0]).sort((a, b) => a.q - b.q);
+        if (outs.length) lastOut = +outs[outs.length - 1].q;
         first = false;
-        paintWatch(was);
+        paintWatch(was, was ? outs : []);
       }
-    }, (st) => paintPill($("#w-pill"), st));
+    }, (st) => { sock = st; pill(); });
   };
-  const paintWatch = (was) => {
+  const paintWatch = (was, outs) => {
     $("#w-wait").hidden = true; $("#w-game").hidden = false;
     $("#w-course").textContent = S.c || "Mini golf";
     $("#w-hole").textContent = S.i + 1; $("#w-of").textContent = "/" + S.h;
@@ -1388,7 +1412,10 @@
         const l = $('#w-board .line[data-pi="' + pi + '"]');
         if (l) { l.classList.remove("bump"); void l.offsetWidth; l.classList.add("bump"); }
       }
-      if (now.filter((v) => v === 1).length > before.filter((v) => v === 1).length) { ace(); toast(nameOf(pl, pi) + " · ACE!"); }
+    });
+    outs.forEach((e) => {
+      const n = e.n | 0, who = nameOf(S.p[e.p | 0], e.p | 0);
+      if (n === 1) { ace(); toast(who + " · ACE!"); } else if (n > 1) { sfx.cup(); toast(who + " · " + verdict(n)); }
     });
     if (S.d && !was.d) { sfx.ace(); confetti(); }
     else if (!S.d && S.i === was.i + 1 && !reduced) millShow(S.i + 1);
