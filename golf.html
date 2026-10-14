@@ -328,6 +328,28 @@
   .hole-art .pin { transform-box: view-box; }
   .hole-art .pin.twitch { animation: twitch 0.7s ease-out; }
   @keyframes twitch { 25% { transform: rotate(-5deg); } 60% { transform: rotate(3deg); } }
+  /* the volcano: smoking, glowing, and erupting once the ball's in */
+  .volcano .lava { animation: lava 1.4s ease-in-out infinite; }
+  @keyframes lava { 50% { opacity: 0.55; } }
+  .volcano .smoke circle { transform-box: fill-box; transform-origin: center; animation: smoke 2.4s ease-out infinite; opacity: 0; }
+  .volcano .smoke circle + circle { animation-delay: -1.2s; }
+  @keyframes smoke { 0% { transform: translateY(6px) scale(0.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-16px) scale(1.4); opacity: 0; } }
+  .volcano .sparks circle { opacity: 0; }
+  .volcano.holed .sparks circle { animation: spark 1s cubic-bezier(0.2, 0.7, 0.4, 1) forwards; }
+  @keyframes spark { 0% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translate(var(--x), var(--y)); } }
+  .volcano.holed .lava { animation: flare 0.8s ease-out; }
+  @keyframes flare { 30% { opacity: 1; transform: scale(1.8); } }
+  .volcano .lava { transform-box: fill-box; transform-origin: center; }
+  /* the castle: the portcullis drops behind the ball */
+  .castle .portcullis { transform: translateY(-38px); transition: transform 0.16s cubic-bezier(0.5, 0, 1, 1); }
+  .castle.holed .portcullis { transform: none; }
+  /* the clown: happy eyes and a honk of the nose once it's swallowed one */
+  .clown .eyes-happy { opacity: 0; }
+  .clown.holed .eyes-open { opacity: 0; }
+  .clown.holed .eyes-happy { opacity: 1; }
+  .clown .nose { transform-box: fill-box; transform-origin: center; }
+  .clown.holed .nose { animation: honk 0.45s ease-out 0.05s; }
+  @keyframes honk { 30% { transform: scale(1.35, 0.8); } 60% { transform: scale(0.9, 1.15); } }
 
   /* hole in one */
   .ace-flash {
@@ -555,6 +577,61 @@
   </svg>
 </template>
 
+<template id="art-volcano">
+  <!-- side on: a putt that only just makes the rim, down into the crater,
+       and up it goes -->
+  <svg class="hole-art volcano" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-v" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g class="smoke" fill="rgba(242,240,234,0.06)" stroke="rgba(242,240,234,0.3)" stroke-width="1"><circle cx="123" cy="40" r="6"/><circle cx="133" cy="32" r="8"/></g>
+    <path d="M4 140 L198 140 L198 150 L4 150 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-v)"/>
+    <path d="M50 140 C78 140 96 100 106 64 C108 57 114 55 117 59 C121 66 124 71 127 71 C130 71 133 66 137 59 C140 55 146 57 148 64 C158 100 176 140 198 140 Z" fill="#140e2a" stroke="#ff4fd8" stroke-width="2" stroke-linejoin="round" filter="url(#glow-v)"/>
+    <path d="M110 76 C106 92 100 104 92 114 M145 76 C149 92 155 104 163 116 M121 76 C120 88 117 98 113 106" fill="none" stroke="#ffa53d" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="5 4" filter="url(#glow-v)"/>
+    <ellipse class="lava" cx="127" cy="69.5" rx="8" ry="2.8" fill="#ffa53d" filter="url(#glow-v)"/>
+    <ellipse cx="127" cy="71" rx="5.4" ry="1.8" fill="#000"/>
+    <g class="sparks" filter="url(#glow-v)"><circle cx="127" cy="66" r="2" fill="#ffa53d" style="--x:-26px;--y:-46px;animation-delay:0s"/><circle cx="127" cy="66" r="1.6" fill="#ffd23f" style="--x:-12px;--y:-62px;animation-delay:0.04s"/><circle cx="127" cy="66" r="2.2" fill="#ff5a5a" style="--x:4px;--y:-70px;animation-delay:0.02s"/><circle cx="127" cy="66" r="1.6" fill="#ffa53d" style="--x:18px;--y:-56px;animation-delay:0.08s"/><circle cx="127" cy="66" r="2" fill="#ffd23f" style="--x:30px;--y:-40px;animation-delay:0.03s"/><circle cx="127" cy="66" r="1.4" fill="#ff4fd8" style="--x:-36px;--y:-28px;animation-delay:0.1s"/><circle cx="127" cy="66" r="1.4" fill="#ff4fd8" style="--x:38px;--y:-24px;animation-delay:0.12s"/><circle cx="127" cy="66" r="1.4" fill="#ffd23f" style="--x:-6px;--y:-40px;animation-delay:0.15s"/><circle cx="127" cy="66" r="1.6" fill="#ffa53d" style="--x:10px;--y:-34px;animation-delay:0.18s"/></g>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-v)"/></g>
+  </svg>
+</template>
+<template id="art-castle">
+  <!-- side on: down comes the drawbridge, over the moat, in at the gate,
+       and the portcullis drops behind it -->
+  <svg class="hole-art castle" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-k" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <clipPath id="moat-k"><rect x="70" y="136" width="50" height="14"/></clipPath>
+    <clipPath id="gate-k"><path d="M120 136 L120 113 A13 13 0 0 1 146 113 L146 136 Z"/></clipPath>
+    <rect x="70" y="143" width="50" height="7" fill="rgba(37,227,238,0.14)"/>
+    <g clip-path="url(#moat-k)"><path class="waves" d="M53 143 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0 q4.25 -2.6 8.5 0 t8.5 0" fill="none" stroke="#25e3ee" stroke-width="1.6" filter="url(#glow-k)"/></g>
+    <path d="M4 136 L70 136 L70 150 L4 150 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-k)"/>
+    <path d="M118 150 L118 48 L123 48 L123 42 L128 42 L128 48 L132 48 L132 42 L137 42 L137 48 L142 48 L142 70 L147 70 L147 64 L152 64 L152 70 L157 70 L157 64 L162 64 L162 70 L167 70 L167 64 L172 64 L172 36 L177 36 L177 30 L182 30 L182 36 L187 36 L187 30 L192 30 L192 36 L198 36 L198 150 Z" fill="#140e2a" stroke="#ff4fd8" stroke-width="2" stroke-linejoin="round" filter="url(#glow-k)"/>
+    <g fill="#25e3ee" filter="url(#glow-k)"><rect x="128.5" y="58" width="3" height="9" rx="1.5"/><rect x="183.5" y="48" width="3" height="9" rx="1.5"/><rect x="155.5" y="80" width="3" height="9" rx="1.5"/></g>
+    <path d="M120 136 L120 113 A13 13 0 0 1 146 113 L146 136 Z" fill="#000" stroke="#ffd23f" stroke-width="1.6" filter="url(#glow-k)"/>
+    <g clip-path="url(#gate-k)"><g class="portcullis" stroke="#25e3ee" stroke-width="1.6"><line x1="123" y1="96" x2="123" y2="137"/><line x1="128" y1="96" x2="128" y2="137"/><line x1="133" y1="96" x2="133" y2="137"/><line x1="138" y1="96" x2="138" y2="137"/><line x1="143" y1="96" x2="143" y2="137"/><line x1="118" y1="112" x2="148" y2="112"/><line x1="118" y1="124" x2="148" y2="124"/></g></g>
+    <path class="chain" d="M120 88 L121 94" fill="none" stroke="#c9ccd8" stroke-width="1" stroke-dasharray="1.6 1.2"/>
+    <g class="bridge" transform="rotate(90 120 136)"><rect x="72" y="136" width="48" height="4" fill="#140e2a" stroke="#ffd23f" stroke-width="1.4" filter="url(#glow-k)"/><path d="M84 136.6 v2.8 M96 136.6 v2.8 M108 136.6 v2.8" stroke="#ffd23f" stroke-width="0.8" opacity="0.6"/></g>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-k)"/></g>
+    <g class="pin" style="transform-origin: 185px 36px"><line x1="185" y1="36" x2="185" y2="2" stroke="#f2f0ea" stroke-width="1.6"/><path d="M185 2 L199 7 L185 12 Z" fill="#ff4fd8" filter="url(#glow-k)"/></g>
+  </svg>
+</template>
+<template id="art-clown">
+  <!-- front on: straight up the felt into the clown's mouth, which keeps
+       chomping; get it in while it's open -->
+  <svg class="hole-art clown" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-c" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <path d="M30 172 L170 172 L124 134 L76 134 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-c)"/>
+    <g fill="none" stroke="#25e3ee" stroke-width="2" filter="url(#glow-c)"><circle cx="50" cy="62" r="9"/><circle cx="43" cy="78" r="9"/><circle cx="50" cy="94" r="9"/><circle cx="150" cy="62" r="9"/><circle cx="157" cy="78" r="9"/><circle cx="150" cy="94" r="9"/></g>
+    <circle cx="100" cy="82" r="52" fill="#140e2a" stroke="#ff4fd8" stroke-width="2.2" filter="url(#glow-c)"/>
+    <path d="M74 38 L100 -11 L126 38 Z" fill="#140e2a" stroke="#ffd23f" stroke-width="2" stroke-linejoin="round" filter="url(#glow-c)"/>
+    <path d="M88 12 L112 12 M81 26 L119 26" stroke="#ffd23f" stroke-width="1.2" opacity="0.55"/>
+    <circle cx="100" cy="-14" r="6" fill="#ff4fd8" filter="url(#glow-c)"/>
+    <circle cx="69" cy="94" r="7" fill="rgba(255,79,216,0.28)"/><circle cx="131" cy="94" r="7" fill="rgba(255,79,216,0.28)"/>
+    <g class="eyes-open"><ellipse cx="82" cy="62" rx="9" ry="11" fill="#f2f0ea"/><ellipse cx="118" cy="62" rx="9" ry="11" fill="#f2f0ea"/><g class="pupils"><circle cx="82" cy="64" r="4.2" fill="#07080f"/><circle cx="118" cy="64" r="4.2" fill="#07080f"/></g></g>
+    <path class="eyes-happy" d="M73 66 Q82 54 91 66 M109 66 Q118 54 127 66" fill="none" stroke="#25e3ee" stroke-width="2.4" stroke-linecap="round" filter="url(#glow-c)"/>
+    <path class="mouth" d="M72 104 Q100 112 128 104 C128 125 116 134 100 134 C84 134 72 125 72 104 Z" fill="#000" stroke="#ff4fd8" stroke-width="2.6" stroke-linejoin="round" filter="url(#glow-c)"/>
+    <g class="teeth" fill="#f2f0ea"><rect x="93.5" y="106" width="6" height="7" rx="1"/><rect x="100.5" y="106" width="6" height="7" rx="1"/></g>
+    <g class="nose"><circle cx="100" cy="86" r="9" fill="#ff5a5a" filter="url(#glow-c)"/><circle cx="97" cy="83" r="2.2" fill="rgba(255,255,255,0.7)"/></g>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-c)"/></g>
+  </svg>
+</template>
 <template id="flag-tpl">
   <svg viewBox="0 0 26 40" aria-hidden="true"><line x1="3" y1="2" x2="3" y2="39" stroke="#f2f0ea" stroke-width="2.2" stroke-linecap="round"/><path d="M3 3 L24 10 L3 17 Z" fill="#ff4fd8" style="filter:drop-shadow(0 0 4px #ff4fd8)"/></svg>
 </template>
@@ -736,6 +813,10 @@
     ace: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.22, "triangle", 0.16)),
     whoosh: () => { tone(220, 0, 0.5, "sawtooth", 0.03); tone(330, 0.15, 0.4, "sawtooth", 0.025); },
     tick: () => tone(1100, 0, 0.04, "triangle", 0.12),
+    thud: () => { tone(90, 0, 0.18, "sine", 0.22); tone(140, 0, 0.06, "triangle", 0.08); },
+    honk: () => { tone(330, 0.05, 0.11, "square", 0.06); tone(262, 0.18, 0.16, "square", 0.06); },
+    clang: () => { tone(160, 0, 0.3, "square", 0.04); tone(1250, 0, 0.2, "triangle", 0.09); tone(1870, 0.01, 0.14, "triangle", 0.05); },
+    rumble: () => { tone(55, 0, 0.8, "sawtooth", 0.07); tone(82, 0.05, 0.6, "sawtooth", 0.05); [0.12, 0.25, 0.34, 0.5].forEach((d, i) => tone(900 + i * 260, d, 0.03, "triangle", 0.05)); },
   };
   const buzz = (ms) => { if (navigator.vibrate) navigator.vibrate(ms); };
 
@@ -1059,11 +1140,46 @@
       side: true, g: 700, cup: [176, 123], hole: [180, 132], bounce: [0.3, 0.6],   // a dead bounce on landing
       mu: (x) => (x > 138 ? 300 : 170),
     },
+    // putted just hard enough to crawl over the rim, then down into the crater
+    volcano: {
+      legs: ["M8 140 L50 140 C78 140 96 100 106 64 C108 57 114 55 117 59 C121 66 124 71 127 71 C130 71 133 66 137 59"],
+      side: true, g: 700, cup: [127, 66], hole: [127, 73], aim: { at: [112, 51], v: 45 },
+      mu: () => 170, sound: "rumble",
+    },
+    // the drawbridge comes down, then the putt: over the moat, in at the gate
+    castle: {
+      legs: ["M8 136 L156 136"],
+      side: true, g: 700, cup: [133, 131], hole: [136, 131], sink: 0.5,
+      mu: () => 120, sound: "clang",
+      frame: (svg, t, A) => {
+        const p = Math.max(0, Math.min(1, (t - 0.05) / (A.strike - 0.1))), a = 90 * (1 - p * p);   // falls, gathering pace
+        $(".bridge", svg).setAttribute("transform", "rotate(" + a.toFixed(2) + " 120 136)");
+        const r = a * Math.PI / 180;
+        $(".chain", svg).setAttribute("d", "M" + (120 - 48 * Math.cos(r)).toFixed(2) + " " + (136 - 48 * Math.sin(r)).toFixed(2) + " L121 94");
+        if (p >= 1 && !A.thud) { A.thud = true; sfx.thud(); }
+      },
+    },
     // from above: the path is the ball's centre, corners are wall bounces
     zigzag: {
       legs: ["M28 150 L180 118.5 L20 70.2 L150 24 L158 21.2"],
       side: false, g: 0, cup: [150, 24], hole: [150, 24], e: 0.72,
       mu: () => 200,
+    },
+    // front on, like the windmill: straight up the felt and into the mouth,
+    // which won't stay open (it's open again just as the ball gets there)
+    clown: {
+      legs: ["M100 168 L100 116"],
+      side: false, g: 0, cup: [100, 126], hole: [100, 129], persp: [168, 1.35, 126, 0.72],
+      mu: () => 30, sound: "honk",
+      frame: (svg, t, A, x, y) => {
+        const o = t < A.arrive ? 0.5 + 0.5 * Math.cos(2 * Math.PI * (t - A.arrive) / 1.3) : Math.max(0, 1 - (t - A.arrive) / 0.12);
+        const b = 108 + 26 * o, y1 = 104 + (b - 104) * 0.7;
+        $(".mouth", svg).setAttribute("d", "M72 104 Q100 112 128 104 C128 " + y1.toFixed(1) + " 116 " + b.toFixed(1) + " 100 " + b.toFixed(1) + " C84 " + b.toFixed(1) + " 72 " + y1.toFixed(1) + " 72 104 Z");
+        $(".teeth", svg).setAttribute("opacity", o.toFixed(2));
+        // eyes on the ball
+        const dx = Math.max(-2.5, Math.min(2.5, (x - 100) * 0.05)), dy = Math.max(-3, Math.min(3, (y - 64) * 0.04));
+        $(".pupils", svg).setAttribute("transform", "translate(" + dx.toFixed(2) + " " + dy.toFixed(2) + ")");
+      },
     },
   };
   const R = 5, HZ = 1200;   // ball radius; simulation steps a second
@@ -1113,14 +1229,16 @@
     return { x: g.xs[lo] + (g.xs[hi] - g.xs[lo]) * f, y: g.ys[lo] + (g.ys[hi] - g.ys[lo]) * f, slope: (g.ys[hi] - g.ys[lo]) / span,
       tx: (g.xs[hi] - g.xs[lo]) / span, ty: (g.ys[hi] - g.ys[lo]) / span };
   };
-  const simulate = (c, legs, v0, cupS) => {
+  // cupS: stop there (the run to play). aimS: note the speed passing it.
+  const simulate = (c, legs, v0, cupS, aimS) => {
     const dt = 1 / HZ, out = [], ev = [];
-    let li = 0, s = 0, v = v0, fly = null, x = legs[0].xs[0], y = legs[0].ys[0], slow = Infinity;
+    let li = 0, s = 0, v = v0, fly = null, x = legs[0].xs[0], y = legs[0].ys[0], aimV = null;
+    const done = (more) => Object.assign({ out, ev, li, s, aimV }, more);
     for (let k = 0; k < 60000; k++) {
       if (fly) {
         fly.vy += c.g * dt; x += fly.vx * dt; y += fly.vy * dt;
         const nl = legs[li + 1];
-        if (y > 175) return { out, ev, fell: true };
+        if (y > 175) return done({ fell: true });
         if (x >= nl.xs[0] && y >= nl.ys[0]) {
           y = nl.ys[0];
           if (fly.vy > 30) { fly.vy *= -c.bounce[0]; fly.vx *= c.bounce[1]; ev.push(out.length); }   // a bounce
@@ -1129,16 +1247,16 @@
       } else {
         const g = legs[li], P = at(g, s), grav = c.g * P.slope, mu = c.mu(P.x, P.y);
         x = P.x; y = P.y;
-        if (P.y < 70 && c.side) slow = Math.min(slow, v * v / (c.g * 39));   // over the top of the loop
-        if (Math.abs(v) < 0.5 && Math.abs(grav) <= mu) return { out, ev, li, s, slow };
+        if (Math.abs(v) < 0.5 && Math.abs(grav) <= mu) return done();
         const dir = v ? Math.sign(v) : Math.sign(grav);
         const nv = v + (grav - mu * dir) * dt;
         v = v && Math.sign(nv) !== Math.sign(v) && Math.abs(grav) <= mu ? 0 : nv;
-        if (v < 0) return { out, ev, li, s, slow };   // didn't make it (the loop, the ramp): not this putt
+        if (v < 0) return done();   // didn't make it (the loop, the ramp, the volcano): not this putt
         const s2 = s + v * dt;
-        for (const cs of g.corners) if (s < cs && s2 >= cs) { v *= c.e || 1; ev.push(out.length); }
+        if (aimS != null && aimV == null && li === 0 && s < aimS && s2 >= aimS) aimV = v;
+        if (c.e) for (const cs of g.corners) if (s < cs && s2 >= cs) { v *= c.e; ev.push(out.length); }   // off a wall
         s = Math.max(0, s2);
-        if (cupS != null && li === legs.length - 1 && s >= cupS) { out.push({ x, y }); return { out, ev, li, s, slow, cupV: v }; }
+        if (cupS != null && li === legs.length - 1 && s >= cupS) { out.push({ x, y }); return done({ cupV: v }); }
         if (s >= g.L) {
           if (li < legs.length - 1) { const E = at(g, g.L); fly = { vx: v * E.tx, vy: v * E.ty }; x = E.x; y = E.y; }
           else { s = g.L; v = 0; }
@@ -1146,7 +1264,7 @@
       }
       out.push({ x, y });
     }
-    return { out, ev, li, s, timeout: true };
+    return done({ timeout: true });
   };
   const PLANS = {};
   const plan = (name) => {
@@ -1157,8 +1275,17 @@
     last.xs.forEach((x, i) => { const d = Math.hypot(x - c.cup[0], last.ys[i] - c.cup[1]); if (d < best) { best = d; ci = i; } });
     const cupS = last.cum[ci], before = legs.slice(0, -1).reduce((a, g) => a + g.L, 0), target = before + cupS + 5;
     const reach = (r) => (r.fell ? -1 : legs.slice(0, r.li).reduce((a, g) => a + g.L, 0) + r.s);
-    let lo = 20, hi = 3000;   // how hard to putt it: just enough to die in the hole
-    for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (reach(simulate(c, legs, m)) < target) lo = m; else hi = m; }
+    // How hard to putt it: just enough to die in the hole — or, with an
+    // aim, to pass that point at that speed (the volcano: just over the rim).
+    let aimS = null;
+    if (c.aim) {
+      let ai = 0, bd = Infinity;
+      legs[0].xs.forEach((x, i) => { const d = Math.hypot(x - c.aim.at[0], legs[0].ys[i] - c.aim.at[1]); if (d < bd) { bd = d; ai = i; } });
+      aimS = legs[0].cum[ai];
+    }
+    const short = (r) => (c.aim ? r.aimV == null || r.aimV < c.aim.v : reach(r) < target);
+    let lo = 20, hi = 3000;
+    for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (short(simulate(c, legs, m, null, aimS))) lo = m; else hi = m; }
     return (PLANS[name] = Object.assign(simulate(c, legs, hi, cupS), { v0: hi }));
   };
   let rollRaf = 0;
@@ -1166,30 +1293,40 @@
     const c = COURSES[name], P = plan(name), f = P.out, n = f.length;
     const ball = $(".roll-ball", svg), pin = $(".pin", svg);
     const RUN = Math.max(1.15, Math.min(1.5, n / HZ)), STRIKE = 1.8 - RUN, DROP = 0.15, t0 = performance.now();
+    const A = { strike: STRIKE, arrive: STRIKE + RUN };
+    // front on, the ball shrinks as it rolls away
+    const depth = (y) => (c.persp ? c.persp[1] + (y - c.persp[0]) * (c.persp[3] - c.persp[1]) / (c.persp[2] - c.persp[0]) : 1);
     let e = 0, struck = false, dropped = false;
     const put = (x, y, k, o) => { ball.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ") scale(" + k.toFixed(3) + ")"); ball.setAttribute("opacity", o.toFixed(3)); };
     cancelAnimationFrame(rollRaf);
     const tick = (now) => {
       const t = (now - t0) / 1000;
-      if (t < STRIKE) put(f[0].x, f[0].y, 1, Math.min(1, t / 0.1));
+      let x = f[0].x, y = f[0].y, k = 1, o = 1;
+      if (t < STRIKE) o = Math.min(1, t / 0.1);
       else if (t < STRIKE + RUN) {
         if (!struck) { struck = true; sfx.putt(); }
         const i = Math.min(n - 1, Math.floor((t - STRIKE) / RUN * n));
         while (e < P.ev.length && P.ev[e] <= i) { sfx.tick(); e++; }
-        put(f[i].x, f[i].y, 1, 1);
+        x = f[i].x; y = f[i].y;
       } else {
         const p = Math.min(1, (t - STRIKE - RUN) / DROP), end = f[n - 1];
-        if (!dropped) { dropped = true; sfx.cup(); pin.classList.add("twitch"); }
-        put(end.x + (c.hole[0] - end.x) * p, end.y + (c.hole[1] - end.y) * p, c.side ? 1 - 0.25 * p : 1 - 0.7 * p, 1 - p * p);
-        if (p >= 1) return;
+        if (!dropped) {
+          dropped = true; sfx.cup(); if (c.sound) sfx[c.sound]();
+          if (pin) pin.classList.add("twitch");
+          svg.classList.add("holed");   // the scenery's reaction, in CSS
+        }
+        x = end.x + (c.hole[0] - end.x) * p; y = end.y + (c.hole[1] - end.y) * p;
+        k = 1 - (c.sink != null ? c.sink : c.side ? 0.25 : 0.7) * p; o = 1 - p * p;
       }
-      rollRaf = requestAnimationFrame(tick);
+      put(x, y, k * depth(y), o);
+      if (c.frame) c.frame(svg, t, A, x, y);
+      if (t < 2.7) rollRaf = requestAnimationFrame(tick);
     };
     rollRaf = requestAnimationFrame(tick);
   };
   // the overlay: a random obstacle (never the same twice running), the ball
   // through it and into the cup, then the next hole's number
-  const ARTS = ["windmill", "loop", "water", "zigzag"];
+  const ARTS = ["windmill", "loop", "water", "zigzag", "volcano", "castle", "clown"];
   const ART_PICK = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get("art");   // for testing
   let millT = 0, lastArt = "";
   const millShow = (n) => {
