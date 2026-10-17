@@ -1826,17 +1826,24 @@
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   };
-  // the overlay: a random obstacle (never the same twice running), the ball
-  // through it and into the cup, then the next hole's number
+  // The order's settled once, when the page loads: the windmill on the first
+  // hole, as ever, then the rest shuffled. Hole n gets the nth obstacle (so
+  // a hole keeps its obstacle however you move about, and 18 holes see all
+  // 18; longer rounds go round again), and the home screen plays them in
+  // the same order: a preview of the course.
   const ARTS = ["windmill", "loop", "water", "zigzag", "volcano", "castle", "clown", "lighthouse", "pirate", "dino", "funnel", "humps", "pendulum", "rocket", "haunted", "train", "seesaw", "ufo"];
   const ART_PICK = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get("art");   // for testing
+  const ORDER = ARTS.slice(1);
+  for (let i = ORDER.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [ORDER[i], ORDER[j]] = [ORDER[j], ORDER[i]]; }
+  ORDER.unshift("windmill");
+  const artFor = (hole) => ORDER[(hole - 1) % ORDER.length];
   const scene = (art) => $(art === "windmill" ? "#windmill-tpl" : "#art-" + art).content.cloneNode(true);
-  let millT = 0, lastArt = "", millStop = null;
+  // the overlay: this hole's obstacle, the ball through it and into the
+  // cup, then the hole's number
+  let millT = 0, millStop = null;
   const millShow = (n) => {
     const b = $("#between"), stage = $("#between-stage");
-    const pool = ARTS.filter((a) => a !== lastArt);
-    const art = ARTS.includes(ART_PICK) ? ART_PICK : pool[(Math.random() * pool.length) | 0];
-    lastArt = art;
+    const art = ARTS.includes(ART_PICK) ? ART_PICK : artFor(n);
     if (millStop) millStop();
     stage.innerHTML = "";
     stage.appendChild(scene(art));
@@ -1850,18 +1857,13 @@
   };
 
   // ---- the home screen: every obstacle in turn ----------------------------
-  // The windmill first, as ever, then the rest in a shuffled order (no
-  // repeats until they've all had a go), each run once and crossfaded into
-  // the next. Silent, and only while the home screen is showing.
-  let reelT = 0, reelStop = null, reelOn = false, reelBag = [], reelLast = "";
+  // The course's order, from the windmill, each run once and crossfaded
+  // into the next, round and round. Silent, and only while the home screen
+  // is showing.
+  let reelT = 0, reelStop = null, reelOn = false, reelAt = 0;
   const reelNext = () => {
     if (!reelOn) return;
-    if (!reelBag.length) {
-      reelBag = ARTS.filter((a) => a !== "windmill").sort(() => Math.random() - 0.5).concat("windmill");
-      if (reelBag[0] === reelLast) reelBag.push(reelBag.shift());
-    }
-    const art = reelBag.shift(), box = $("#reel");
-    reelLast = art;
+    const art = ORDER[reelAt++ % ORDER.length], box = $("#reel");
     box.classList.add("fade");
     reelT = setTimeout(() => {
       if (reelStop) reelStop();
@@ -1879,7 +1881,7 @@
     const box = $("#reel");
     box.innerHTML = "";
     if (!on) return;
-    reelBag = ["windmill"]; reelLast = "";
+    reelAt = 0;
     if (reduced) { box.appendChild(scene("windmill")); return; }   // still, and just the windmill
     reelNext();
   };
@@ -1899,6 +1901,7 @@
       ensureScores(); S.d = 0; S.t = 1;
       if (!S.dt) S.dt = new Date().toISOString().slice(0, 10);
       save(); show("play"); paintHole();
+      if (!reduced) millShow(S.i + 1);   // the hole's obstacle, as every hole gets
     } else if ($("#play").classList.contains("on")) {
       if (S.i < S.h - 1) { group(S.i + 1, 0); goHole(S.i + 1, true); } else { group(S.i, 1); finish(); }
     }
@@ -1949,7 +1952,7 @@
     show("done");
     if (st[0] && st[0].thru && !quiet) { sfx.ace(); confetti(); }
   };
-  $("#again").addEventListener("click", () => { restartRound(); show("play"); paintHole(); });
+  $("#again").addEventListener("click", () => { restartRound(); show("play"); paintHole(); if (!reduced) millShow(1); });
   $("#fresh").addEventListener("click", () => { newGame(); paintSetup(); show("setup"); });
   $("#share").addEventListener("click", async () => {
     const { L, V, sv, g, ...card } = S;   // the card, never the live keys
