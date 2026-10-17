@@ -418,6 +418,12 @@
   @keyframes wigwag { 50% { opacity: 0.12; } }
   .train .puffs circle { transform-box: fill-box; transform-origin: center; animation: smoke 0.9s ease-out infinite; opacity: 0; }
   .train .puffs circle + circle { animation-delay: -0.45s; }
+  /* the UFO: its lights chase round the rim; the cow looks up at the end */
+  .ufo .rim circle { animation: wigwag 0.45s steps(1) infinite; }
+  .ufo .rim circle:nth-child(2n) { animation-delay: -0.22s; }
+  .ufo .beam { transition: opacity 0.12s; }
+  .ufo .cow-head { transform-box: fill-box; transform-origin: 80% 80%; transition: transform 0.3s; }
+  .ufo.holed .cow-head { transform: rotate(-24deg); }
   /* the clown: happy eyes and a honk of the nose once it's swallowed one */
   .clown .eyes-happy { opacity: 0; }
   .clown.holed .eyes-open { opacity: 0; }
@@ -920,6 +926,31 @@
     <g class="pin" style="transform-origin: 182px 146px"><line x1="182" y1="146" x2="182" y2="104" stroke="#f2f0ea" stroke-width="1.6"/><path d="M182 104 L198 109 L182 114 Z" fill="#ff4fd8" filter="url(#glow-s)"/></g>
   </svg>
 </template>
+<template id="art-ufo">
+  <!-- side on, under the stars: beamed up, carried over the cow, dropped in -->
+  <svg class="hole-art ufo" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-o" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <linearGradient id="beam-o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#39ff88" stop-opacity="0.55"/><stop offset="1" stop-color="#39ff88" stop-opacity="0.08"/></linearGradient>
+    <g class="stars" fill="#f2f0ea"><circle cx="14" cy="-18" r="1.1"/><circle cx="40" cy="20" r="0.9"/><circle cx="96" cy="-22" r="1.2"/><circle cx="128" cy="4" r="0.9"/><circle cx="160" cy="-12" r="1.3"/><circle cx="188" cy="30" r="0.9"/><circle cx="110" cy="40" r="0.8"/><circle cx="22" cy="70" r="0.8"/><circle cx="176" cy="72" r="0.9"/></g>
+    <path d="M4 136 L166 136 L166 146 L178 146 L178 136 L198 136 L198 152 L4 152 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-o)"/>
+    <rect x="166.8" y="136.8" width="10.4" height="8.4" fill="#000"/>
+    <g class="cow" stroke="#f2f0ea" stroke-width="1.3" stroke-linejoin="round" fill="#140e2a">
+      <path d="M112 122 h22 a3 3 0 0 1 3 3 v5 a3 3 0 0 1 -3 3 h-22 a3 3 0 0 1 -3 -3 v-5 a3 3 0 0 1 3 -3 Z"/>
+      <path d="M113 133 v3 M118 133 v3 M128 133 v3 M133 133 v3" fill="none"/>
+      <path d="M110 125 q-4 1 -4 6" fill="none"/>
+      <circle cx="119" cy="126" r="2.2" fill="#ff4fd8" stroke="none"/><circle cx="128" cy="129" r="1.8" fill="#ff4fd8" stroke="none"/>
+      <g class="cow-head"><path d="M136 118 h7 a3 3 0 0 1 3 3 v4 a3 3 0 0 1 -3 3 h-4 l-3 -3 Z"/><circle cx="141.5" cy="121.2" r="0.9" fill="#f2f0ea" stroke="none"/><path d="M137 117 l-1.6 -2.4 M141 117 l1.2 -2.6" fill="none"/></g>
+    </g>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-o)"/></g>
+    <g class="pin" style="transform-origin: 172px 146px"><line x1="172" y1="146" x2="172" y2="104" stroke="#f2f0ea" stroke-width="1.6"/><path d="M172 104 L188 109 L172 114 Z" fill="#ff4fd8" filter="url(#glow-o)"/></g>
+    <g class="saucer" transform="translate(-104 -50)">
+      <path class="beam" d="M57 58 L71 58 L84 136 L44 136 Z" fill="url(#beam-o)" opacity="0"/>
+      <path d="M54 52 C54 40 74 40 74 52 Z" fill="rgba(37,227,238,0.25)" stroke="#25e3ee" stroke-width="1.6" filter="url(#glow-o)"/>
+      <ellipse cx="64" cy="56" rx="22" ry="6" fill="#140e2a" stroke="#ff4fd8" stroke-width="1.8" filter="url(#glow-o)"/>
+      <g class="rim" filter="url(#glow-o)"><circle cx="48" cy="57.5" r="1.4" fill="#ffd23f"/><circle cx="56" cy="57.5" r="1.4" fill="#ff4fd8"/><circle cx="64" cy="57.5" r="1.4" fill="#ffd23f"/><circle cx="72" cy="57.5" r="1.4" fill="#ff4fd8"/><circle cx="80" cy="57.5" r="1.4" fill="#ffd23f"/></g>
+    </g>
+  </svg>
+</template>
 <template id="flag-tpl">
   <svg viewBox="0 0 26 40" aria-hidden="true"><line x1="3" y1="2" x2="3" y2="39" stroke="#f2f0ea" stroke-width="2.2" stroke-linecap="round"/><path d="M3 3 L24 10 L3 17 Z" fill="#ff4fd8" style="filter:drop-shadow(0 0 4px #ff4fd8)"/></svg>
 </template>
@@ -1110,6 +1141,8 @@
     swish: () => tone(260, 0, 0.3, "sawtooth", 0.015),
     ooh: () => { tone(330, 0, 1.0, "sine", 0.06); tone(349, 0, 1.0, "sine", 0.05); },
     whistle: () => { tone(880, 0, 0.25, "square", 0.025); tone(740, 0.3, 0.4, "square", 0.025); },
+    beam: () => { tone(520, 0, 0.6, "sine", 0.05); tone(780, 0.08, 0.5, "sine", 0.04); tone(1040, 0.16, 0.4, "sine", 0.03); },
+    moo: () => { tone(150, 0.25, 0.25, "sawtooth", 0.05); tone(120, 0.48, 0.35, "sawtooth", 0.05); },
     thud: () => { tone(90, 0, 0.18, "sine", 0.22); tone(140, 0, 0.06, "triangle", 0.08); },
     honk: () => { tone(330, 0.05, 0.11, "square", 0.06); tone(262, 0.18, 0.16, "square", 0.06); },
     clang: () => { tone(160, 0, 0.3, "square", 0.04); tone(1250, 0, 0.2, "triangle", 0.09); tone(1870, 0.01, 0.14, "triangle", 0.05); },
@@ -1594,6 +1627,24 @@
         if (p >= 1 && !A.thunk) { A.thunk = true; A.sfx("thud"); }
       },
     },
+    // side on, under the stars: a flying saucer swoops in, beams the ball up,
+    // carries it over the cow and drops it in the cup
+    ufo: {
+      legs: ["M8 136 L64 136", "M150 136 L198 136"],
+      side: true, g: 700, cup: [172, 131], hole: [172, 141], aim: { at: [62, 131], v: 30 },
+      carry: { up: 0.34, lift: 66, move: 0.4, over: 172.5 }, bounce: [0, 0],
+      mu: () => 170, sound: "moo",
+      frame: (svg, t, A, x) => {
+        const [t0, , t2] = A.carry, cl = (v) => Math.max(0, Math.min(1, v)), sm = (u) => u * u * (3 - 2 * u);
+        let ux, uy, beam = 0;
+        if (t < t0) { const e = sm(cl((t - (t0 - 0.7)) / 0.7)); ux = -40 + 104 * e; uy = 6 + 50 * e; }   // swooping in
+        else if (t < t2 + 0.1) { ux = x; uy = 56; beam = 1; }                                                // beaming
+        else { const u = cl((t - t2 - 0.1) / 0.6); ux = 172.5 + 90 * u * u; uy = 56 - 110 * u * u; }       // and away
+        $(".saucer", svg).setAttribute("transform", "translate(" + (ux - 64).toFixed(2) + " " + (uy - 56).toFixed(2) + ")");
+        $(".beam", svg).setAttribute("opacity", beam);
+        if (beam && !A.zap) { A.zap = true; A.sfx("beam"); }
+      },
+    },
     clown: {
       legs: ["M100 168 L100 116"],
       side: false, g: 0, cup: [100, 126], hole: [100, 129], persp: [168, 1.35, 126, 0.72],
@@ -1662,8 +1713,8 @@
   // power: how hard the cannon fires (if there is one).
   const simulate = (c, legs, v0, cupS, aimS, power) => {
     const dt = 1 / HZ, out = [], ev = [];
-    let li = 0, s = 0, v = v0, fly = null, x = legs[0].xs[0], y = legs[0].ys[0], aimV = null, fire = null;
-    const done = (more) => Object.assign({ out, ev, li, s, aimV, fire }, more);
+    let li = 0, s = 0, v = v0, fly = null, x = legs[0].xs[0], y = legs[0].ys[0], aimV = null, fire = null, carry = null;
+    const done = (more) => Object.assign({ out, ev, li, s, aimV, fire, carry }, more);
     for (let k = 0; k < 60000; k++) {
       if (fly) {
         fly.vy += c.g * dt; x += fly.vx * dt; y += fly.vy * dt;
@@ -1677,6 +1728,7 @@
       } else {
         const g = legs[li], P = at(g, s), grav = c.g * P.slope, mu = c.mu(P.x, P.y);
         x = P.x; y = P.y;
+        if (cupS != null && li === legs.length - 1 && s >= cupS) { out.push({ x, y }); return done({ cupV: v }); }
         if (Math.abs(v) < 0.5 && Math.abs(grav) <= mu) return done();
         const dir = v ? Math.sign(v) : Math.sign(grav);
         const nv = v + (grav - mu * dir) * dt;
@@ -1688,7 +1740,13 @@
         s = Math.max(0, s2);
         if (cupS != null && li === legs.length - 1 && s >= cupS) { out.push({ x, y }); return done({ cupV: v }); }
         if (s >= g.L) {
-          if (li < legs.length - 1 && c.cannon) {   // in it goes; a moment's pause; BOOM
+          if (li < legs.length - 1 && c.carry) {   // up the beam, across, and let go
+            const { up, lift, move, over } = c.carry, x0 = x, y0 = y, k0 = out.length, sm = (u) => u * u * (3 - 2 * u);
+            for (let w = 1; w <= up * HZ; w++) out.push({ x: x0, y: y0 + (lift - y0) * sm(w / (up * HZ)) });
+            const k1 = out.length;
+            for (let w = 1; w <= move * HZ; w++) out.push({ x: x0 + (over - x0) * sm(w / (move * HZ)), y: lift });
+            carry = [k0, k1, out.length]; x = over; y = lift; fly = { vx: 0, vy: 0 };
+          } else if (li < legs.length - 1 && c.cannon) {   // in it goes; a moment's pause; BOOM
             for (let w = 0; w < c.cannon.wait * HZ; w++) out.push({ x, y, h: 1 });
             fire = out.length; x = c.cannon.at[0]; y = c.cannon.at[1];
             fly = { vx: power * c.cannon.dir[0], vy: power * c.cannon.dir[1] };
@@ -1734,6 +1792,7 @@
     const RUN = Math.max(1.15, Math.min(1.5, n / HZ)), STRIKE = 1.8 - RUN, DROP = 0.15, t0 = performance.now();
     const play = (k) => { if (!quiet) sfx[k](); };
     const A = { strike: STRIKE, arrive: STRIKE + RUN, fire: P.fire != null ? STRIKE + P.fire / n * RUN : null, sfx: play,
+      carry: P.carry ? P.carry.map((k) => STRIKE + k / n * RUN) : null,
       timeAtX: (x) => { const i = f.findIndex((q) => q.x >= x); return STRIKE + (i < 0 ? n : i) / n * RUN; },
       timeAtY: (y) => { const i = f.findIndex((q) => q.y <= y); return STRIKE + (i < 0 ? n : i) / n * RUN; } };
     // front on, the ball shrinks as it rolls away
@@ -1769,7 +1828,7 @@
   };
   // the overlay: a random obstacle (never the same twice running), the ball
   // through it and into the cup, then the next hole's number
-  const ARTS = ["windmill", "loop", "water", "zigzag", "volcano", "castle", "clown", "lighthouse", "pirate", "dino", "funnel", "humps", "pendulum", "rocket", "haunted", "train", "seesaw"];
+  const ARTS = ["windmill", "loop", "water", "zigzag", "volcano", "castle", "clown", "lighthouse", "pirate", "dino", "funnel", "humps", "pendulum", "rocket", "haunted", "train", "seesaw", "ufo"];
   const ART_PICK = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get("art");   // for testing
   const scene = (art) => $(art === "windmill" ? "#windmill-tpl" : "#art-" + art).content.cloneNode(true);
   let millT = 0, lastArt = "", millStop = null;
