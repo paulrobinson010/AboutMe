@@ -391,6 +391,33 @@
   .humps .g-happy { opacity: 0; }
   .humps.holed .g-open { opacity: 0; }
   .humps.holed .g-happy { opacity: 1; }
+  /* the rocket: lift-off, flame and smoke; the stars twinkle */
+  .rocket .ship { transform-box: view-box; transition: transform 1.2s cubic-bezier(0.55, 0, 0.9, 0.55); }
+  .rocket.fired .ship { transform: translateY(-300px); }
+  .rocket .flame { opacity: 0; transform-box: fill-box; transform-origin: 50% 0; }
+  .rocket.fired .flame { opacity: 1; animation: flick 0.08s ease-in-out infinite alternate; }
+  @keyframes flick { to { transform: scaleY(1.3); } }
+  .rocket .exhaust circle { opacity: 0; transform-box: fill-box; transform-origin: center; }
+  .rocket.fired .exhaust circle { animation: puff 1.2s ease-out forwards; }
+  .rocket.fired .exhaust circle:nth-child(2) { animation-delay: 0.08s; }
+  .rocket.fired .exhaust circle:nth-child(3) { animation-delay: 0.16s; }
+  .stars circle { animation: twinkle 1.6s ease-in-out infinite; }
+  .stars circle:nth-child(2n) { animation-delay: -0.8s; }
+  .stars circle:nth-child(3n) { animation-delay: -0.4s; }
+  @keyframes twinkle { 50% { opacity: 0.2; } }
+  /* the haunted house: windows that won't stay lit, bats */
+  .haunted .win { animation: flicker 2.2s infinite; }
+  .haunted .win + .win { animation-delay: -1.1s; }
+  @keyframes flicker { 0%, 44%, 100% { opacity: 1; } 46% { opacity: 0.25; } 48% { opacity: 1; } 50% { opacity: 0.4; } 52% { opacity: 1; } }
+  .haunted .bat { transform-box: fill-box; transform-origin: center; animation: flap 0.28s ease-in-out infinite alternate; }
+  .haunted .bat + .bat { animation-delay: -0.14s; }
+  @keyframes flap { to { transform: scaleY(0.35); } }
+  /* the level crossing: lights flash, the engine puffs */
+  .train .lamp { animation: wigwag 0.6s steps(1) infinite; }
+  .train .lamp.b { animation-delay: -0.3s; }
+  @keyframes wigwag { 50% { opacity: 0.12; } }
+  .train .puffs circle { transform-box: fill-box; transform-origin: center; animation: smoke 0.9s ease-out infinite; opacity: 0; }
+  .train .puffs circle + circle { animation-delay: -0.45s; }
   /* the clown: happy eyes and a honk of the nose once it's swallowed one */
   .clown .eyes-happy { opacity: 0; }
   .clown.holed .eyes-open { opacity: 0; }
@@ -812,6 +839,87 @@
     <g class="pin" style="transform-origin: 166px 146px"><line x1="166" y1="146" x2="166" y2="106" stroke="#f2f0ea" stroke-width="1.6"/><path d="M166 106 L181 111 L166 116 Z" fill="#ff4fd8" filter="url(#glow-n)"/></g>
   </svg>
 </template>
+<template id="art-rocket">
+  <!-- side on: under the rocket, which lifts off; back down out of the
+       sky comes the ball -->
+  <svg class="hole-art rocket" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-r" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g class="stars" fill="#f2f0ea"><circle cx="18" cy="-14" r="1.2"/><circle cx="44" cy="6" r="0.9"/><circle cx="70" cy="-20" r="1"/><circle cx="122" cy="-6" r="1.3"/><circle cx="150" cy="18" r="0.9"/><circle cx="176" cy="-16" r="1.1"/><circle cx="190" cy="40" r="0.8"/><circle cx="28" cy="52" r="0.8"/><circle cx="136" cy="46" r="0.9"/></g>
+    <path d="M4 136 L166 136 L166 146 L178 146 L178 136 L198 136 L198 152 L4 152 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-r)"/>
+    <rect x="166.8" y="136.8" width="10.4" height="8.4" fill="#000"/>
+    <path d="M58 138 h44 M62 141 h36" stroke="#ffd23f" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.8"/>
+    <path d="M106 136 V64 M116 136 V64 M106 64 h10 M106 80 l10 12 M116 80 l-10 12 M106 104 l10 12 M116 104 l-10 12 M106 92 h-14" fill="none" stroke="#a77bff" stroke-width="1.4" opacity="0.8"/>
+    <g class="exhaust" fill="rgba(242,240,234,0.22)" stroke="#f2f0ea" stroke-width="1"><circle cx="68" cy="130" r="8"/><circle cx="92" cy="130" r="8"/><circle cx="80" cy="128" r="10"/></g>
+    <g class="ship">
+      <path class="flame" d="M73 128 Q80 158 87 128 Z" fill="#ffa53d" filter="url(#glow-r)"/>
+      <path d="M70 108 L60 136 L70 130 Z M90 108 L100 136 L90 130 Z" fill="#140e2a" stroke="#25e3ee" stroke-width="1.6" stroke-linejoin="round" filter="url(#glow-r)"/>
+      <path d="M70 128 L70 74 C70 64 76 58 80 54 C84 58 90 64 90 74 L90 128 Z" fill="#140e2a" stroke="#f2f0ea" stroke-width="1.8" stroke-linejoin="round" filter="url(#glow-r)"/>
+      <path d="M70 100 H90 M70 106 H90" stroke="#ff4fd8" stroke-width="2"/>
+      <circle cx="80" cy="84" r="5" fill="rgba(37,227,238,0.25)" stroke="#25e3ee" stroke-width="1.6" filter="url(#glow-r)"/>
+    </g>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-r)"/></g>
+    <g class="pin" style="transform-origin: 172px 146px"><line x1="172" y1="146" x2="172" y2="104" stroke="#f2f0ea" stroke-width="1.6"/><path d="M172 104 L188 109 L172 114 Z" fill="#ff4fd8" filter="url(#glow-r)"/></g>
+  </svg>
+</template>
+<template id="art-haunted">
+  <!-- side on: in at one door, out of the other; something stirs upstairs -->
+  <svg class="hole-art haunted" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-u" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <path d="M30 -10 A16 16 0 1 0 46 14 A12 12 0 1 1 30 -10 Z" fill="#ffd23f" filter="url(#glow-u)"/>
+    <g fill="#a77bff"><path class="bat" d="M150 8 q4 -5 7 -1 q2 -3 3 0 q1 -3 3 0 q3 -4 7 1 q-5 0 -6.5 3 q-2 -2 -3.5 0 q-1.5 -2 -3.5 0 q-1.5 -3 -6.5 -3 Z"/><path class="bat" d="M168 26 q3 -4 5.5 -1 q1.5 -2.4 2.4 0 q0.8 -2.4 2.4 0 q2.4 -3 5.5 1 q-4 0 -5.2 2.4 q-1.6 -1.6 -2.7 0 q-1.2 -1.6 -2.7 0 q-1.2 -2.4 -5.2 -2.4 Z"/></g>
+    <path d="M4 136 L176 136 L176 146 L188 146 L188 136 L198 136 L198 152 L4 152 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-u)"/>
+    <rect x="176.8" y="136.8" width="10.4" height="8.4" fill="#000"/>
+    <rect x="72" y="76" width="66" height="60" fill="#040408"/>
+    <g class="ghost" transform="translate(0 30)">
+      <path d="M96 40 C96 24 116 24 116 40 L116 56 L112 52.5 L108 56 L104 52.5 L100 56 L96 52.5 Z" fill="#f2f0ea" filter="url(#glow-u)"/>
+      <ellipse cx="102.5" cy="39" rx="1.8" ry="2.6" fill="#07080f"/><ellipse cx="109.5" cy="39" rx="1.8" ry="2.6" fill="#07080f"/><ellipse cx="106" cy="46" rx="2.2" ry="1.6" fill="#07080f"/>
+    </g>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-u)"/></g>
+    <rect x="122" y="50" width="8" height="18" fill="#140e2a" stroke="#a77bff" stroke-width="1.6"/>
+    <path fill-rule="evenodd" d="M70 136 L70 76 L105 44 L140 76 L140 136 Z M76 136 L76 121 A6 6 0 0 1 88 121 L88 136 Z M122 136 L122 121 A6 6 0 0 1 134 121 L134 136 Z" fill="#140e2a" stroke="#a77bff" stroke-width="2" stroke-linejoin="round" filter="url(#glow-u)"/>
+    <g fill="rgba(255,210,63,0.75)" stroke="#ffd23f" stroke-width="1" filter="url(#glow-u)"><rect class="win" x="80" y="86" width="12" height="12"/><rect class="win" x="118" y="86" width="12" height="12"/></g>
+    <path d="M86 86 v12 M80 92 h12 M124 86 v12 M118 92 h12" stroke="#140e2a" stroke-width="1.2"/>
+    <circle cx="105" cy="64" r="4" fill="none" stroke="#ff4fd8" stroke-width="1.4" filter="url(#glow-u)"/>
+    <g class="pin" style="transform-origin: 182px 146px"><line x1="182" y1="146" x2="182" y2="104" stroke="#f2f0ea" stroke-width="1.6"/><path d="M182 104 L198 109 L182 114 Z" fill="#ff4fd8" filter="url(#glow-u)"/></g>
+  </svg>
+</template>
+<template id="art-train">
+  <!-- from above: up the lane, over the railway; mind the train -->
+  <svg class="hole-art train" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-t" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <path d="M84 172 L84 14 A16 16 0 0 1 116 14 L116 172 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-t)"/>
+    <g stroke="#5a4a78" stroke-width="2.4"><line x1="-2" y1="76" x2="-2" y2="96"/><line x1="6" y1="76" x2="6" y2="96"/><line x1="14" y1="76" x2="14" y2="96"/><line x1="22" y1="76" x2="22" y2="96"/><line x1="30" y1="76" x2="30" y2="96"/><line x1="38" y1="76" x2="38" y2="96"/><line x1="46" y1="76" x2="46" y2="96"/><line x1="54" y1="76" x2="54" y2="96"/><line x1="62" y1="76" x2="62" y2="96"/><line x1="70" y1="76" x2="70" y2="96"/><line x1="78" y1="76" x2="78" y2="96"/><line x1="86" y1="76" x2="86" y2="96"/><line x1="94" y1="76" x2="94" y2="96"/><line x1="102" y1="76" x2="102" y2="96"/><line x1="110" y1="76" x2="110" y2="96"/><line x1="118" y1="76" x2="118" y2="96"/><line x1="126" y1="76" x2="126" y2="96"/><line x1="134" y1="76" x2="134" y2="96"/><line x1="142" y1="76" x2="142" y2="96"/><line x1="150" y1="76" x2="150" y2="96"/><line x1="158" y1="76" x2="158" y2="96"/><line x1="166" y1="76" x2="166" y2="96"/><line x1="174" y1="76" x2="174" y2="96"/><line x1="182" y1="76" x2="182" y2="96"/><line x1="190" y1="76" x2="190" y2="96"/><line x1="198" y1="76" x2="198" y2="96"/></g>
+    <g stroke="#c9ccd8" stroke-width="1.4"><line x1="0" y1="80" x2="200" y2="80"/><line x1="0" y1="92" x2="200" y2="92"/></g>
+    <g filter="url(#glow-t)"><circle class="lamp" cx="76" cy="102" r="2.6" fill="#ff5a5a"/><circle class="lamp b" cx="124" cy="70" r="2.6" fill="#ff5a5a"/></g>
+    <path d="M94 160 l-3 3 M106 160 l3 3" stroke="#ffd23f" stroke-width="1.6" stroke-linecap="round"/>
+    <ellipse cx="100" cy="14" rx="6" ry="5" fill="#000" stroke="rgba(255,255,255,0.12)"/>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-t)"/></g>
+    <g class="loco" transform="translate(-300 0)">
+      <g fill="#140e2a" stroke="#25e3ee" stroke-width="1.6" filter="url(#glow-t)"><rect x="0" y="79" width="28" height="14" rx="2.5"/><rect x="32" y="79" width="28" height="14" rx="2.5"/><rect x="64" y="79" width="28" height="14" rx="2.5"/></g>
+      <g fill="rgba(255,210,63,0.7)"><rect x="4" y="83" width="5" height="6" rx="1"/><rect x="11" y="83" width="5" height="6" rx="1"/><rect x="19" y="83" width="5" height="6" rx="1"/><rect x="36" y="83" width="5" height="6" rx="1"/><rect x="43" y="83" width="5" height="6" rx="1"/><rect x="51" y="83" width="5" height="6" rx="1"/><rect x="68" y="83" width="5" height="6" rx="1"/><rect x="75" y="83" width="5" height="6" rx="1"/><rect x="83" y="83" width="5" height="6" rx="1"/></g>
+      <path d="M28 86 h4 M60 86 h4 M92 86 h4" stroke="#c9ccd8" stroke-width="1.6"/>
+      <path d="M96 79 h26 a6 7 0 0 1 0 14 h-26 Z" fill="#140e2a" stroke="#ff4fd8" stroke-width="1.8" filter="url(#glow-t)"/>
+      <rect x="96" y="80.5" width="9" height="11" fill="#ff4fd8" opacity="0.55"/>
+      <circle cx="116" cy="86" r="3" fill="#07080f" stroke="#f2f0ea" stroke-width="1"/>
+      <circle cx="128.5" cy="86" r="1.8" fill="#ffd23f" filter="url(#glow-t)"/>
+      <g class="puffs" fill="rgba(242,240,234,0.2)" stroke="rgba(242,240,234,0.5)" stroke-width="0.8"><circle cx="112" cy="80" r="5"/><circle cx="106" cy="76" r="6"/></g>
+    </g>
+    <g class="pin" style="transform-origin: 100px 14px"><line x1="100" y1="14" x2="100" y2="-20" stroke="#f2f0ea" stroke-width="1.6"/><path d="M100 -20 L116 -15 L100 -10 Z" fill="#ff4fd8" filter="url(#glow-t)"/></g>
+  </svg>
+</template>
+<template id="art-seesaw">
+  <!-- side on: up the seesaw, a wobble at the top, and it tips -->
+  <svg class="hole-art seesaw" viewBox="0 -28 200 200" aria-hidden="true">
+    <defs><filter id="glow-s" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <path d="M4 136 L176 136 L176 146 L188 146 L188 136 L198 136 L198 152 L4 152 Z" fill="#0b4a2a" stroke="#39ff88" stroke-width="1.5" stroke-linejoin="round" filter="url(#glow-s)"/>
+    <rect x="176.8" y="136.8" width="10.4" height="8.4" fill="#000"/>
+    <path d="M90 136 L100 124 L110 136 Z" fill="#140e2a" stroke="#ffd23f" stroke-width="1.8" stroke-linejoin="round" filter="url(#glow-s)"/>
+    <g class="plank" transform="rotate(-13.9 100 124)"><rect x="50" y="124" width="100" height="4.5" rx="1.5" fill="#140e2a" stroke="#ff4fd8" stroke-width="1.8" filter="url(#glow-s)"/><path d="M62 125 v2.5 M76 125 v2.5 M124 125 v2.5 M138 125 v2.5" stroke="#ff4fd8" stroke-width="0.8" opacity="0.6"/></g>
+    <circle cx="100" cy="126" r="1.6" fill="#ffd23f"/>
+    <g class="roll-ball" opacity="0"><circle r="5" fill="#fff" filter="url(#glow-s)"/></g>
+    <g class="pin" style="transform-origin: 182px 146px"><line x1="182" y1="146" x2="182" y2="104" stroke="#f2f0ea" stroke-width="1.6"/><path d="M182 104 L198 109 L182 114 Z" fill="#ff4fd8" filter="url(#glow-s)"/></g>
+  </svg>
+</template>
 <template id="flag-tpl">
   <svg viewBox="0 0 26 40" aria-hidden="true"><line x1="3" y1="2" x2="3" y2="39" stroke="#f2f0ea" stroke-width="2.2" stroke-linecap="round"/><path d="M3 3 L24 10 L3 17 Z" fill="#ff4fd8" style="filter:drop-shadow(0 0 4px #ff4fd8)"/></svg>
 </template>
@@ -1000,6 +1108,8 @@
     squeak: () => { tone(1700, 0, 0.05, "square", 0.03); tone(2300, 0.05, 0.06, "square", 0.025); },
     boing: () => { tone(420, 0, 0.08, "triangle", 0.1); tone(640, 0.06, 0.12, "triangle", 0.08); },
     swish: () => tone(260, 0, 0.3, "sawtooth", 0.015),
+    ooh: () => { tone(330, 0, 1.0, "sine", 0.06); tone(349, 0, 1.0, "sine", 0.05); },
+    whistle: () => { tone(880, 0, 0.25, "square", 0.025); tone(740, 0.3, 0.4, "square", 0.025); },
     thud: () => { tone(90, 0, 0.18, "sine", 0.22); tone(140, 0, 0.06, "triangle", 0.08); },
     honk: () => { tone(330, 0.05, 0.11, "square", 0.06); tone(262, 0.18, 0.16, "square", 0.06); },
     clang: () => { tone(160, 0, 0.3, "square", 0.04); tone(1250, 0, 0.2, "triangle", 0.09); tone(1870, 0.01, 0.14, "triangle", 0.05); },
@@ -1434,6 +1544,56 @@
         A.last = a;
       },
     },
+    // side on: under the rocket, which blasts off; back down out of the sky
+    // comes the ball, into the cup
+    rocket: {
+      legs: ["M36 136 L72 136", "M118 136 L198 136"],
+      side: true, g: 700, cup: [168, 131], hole: [172, 141], aim: { at: [70, 131], v: 40 },
+      cannon: { wait: 0.25, at: [80, 58], dir: [0.225, -0.974] }, bounce: [0.28, 0.55],
+      mu: (x) => (x > 110 ? 300 : 170), sound: "bell",
+      frame: (svg, t, A) => { if (A.fire != null && t >= A.fire && !A.lift) { A.lift = true; svg.classList.add("fired"); A.sfx("rumble"); } },
+    },
+    // side on: in at one door, out of the other; a ghost rises over the roof
+    // while it's inside
+    haunted: {
+      legs: ["M8 136 L196 136"],
+      side: true, g: 700, cup: [178, 131], hole: [182, 141],
+      mu: () => 120,
+      frame: (svg, t, A) => {
+        if (A.inT == null) A.inT = A.timeAtX(88);
+        const cl = (v) => Math.max(0, Math.min(1, v));
+        const up = cl((t - A.inT) / 0.3) * (1 - cl((t - A.arrive - 0.15) / 0.4));
+        $(".ghost", svg).setAttribute("transform", "translate(" + (Math.sin(t * 6) * 2).toFixed(2) + " " + (30 - 42 * up).toFixed(2) + ")");
+        if (!A.boo && t > A.inT) { A.boo = true; A.sfx("ooh"); }
+      },
+    },
+    // from above: up the lane over the railway; the train's last carriage
+    // clears the lane just before the ball reaches the rails
+    train: {
+      legs: ["M100 166 L100 2"],
+      side: false, g: 0, cup: [100, 14], hole: [100, 14],
+      mu: () => 80,
+      frame: (svg, t, A) => {
+        if (A.cross == null) A.cross = A.timeAtY(102);
+        const x = 118 - 240 * (A.cross - t);   // the tail just past the lane as the ball reaches the rails
+        $(".loco", svg).setAttribute("transform", "translate(" + x.toFixed(2) + " 0)");
+        if (!A.toot && x + 128 > 0) { A.toot = true; A.sfx("whistle"); }
+      },
+    },
+    // side on: up the seesaw, a teeter at the top, it tips (thunk) and down
+    // the other side
+    seesaw: {
+      legs: ["M8 136 L44 136 C47 136 48 135.6 50.5 135 L97 124.7 C99 124.3 101 124.3 103 124.7 L149.5 135 C152 135.6 153 136 156 136 L196 136"],
+      side: true, g: 700, cup: [178, 131], hole: [182, 141],
+      aim: { at: [100, 119.5], v: 45 },   // only just over the top: a wobble before it tips
+      mu: (x) => (x > 150 ? 195 : x > 50 ? 60 : 150),   // a slick plank
+      frame: (svg, t, A) => {
+        if (A.tip == null) A.tip = A.timeAtX(100);
+        const p = Math.max(0, Math.min(1, (t - A.tip) / 0.16)), a = -13.9 + 27.8 * p * p;
+        $(".plank", svg).setAttribute("transform", "rotate(" + a.toFixed(2) + " 100 124)");
+        if (p >= 1 && !A.thunk) { A.thunk = true; A.sfx("thud"); }
+      },
+    },
     clown: {
       legs: ["M100 168 L100 116"],
       side: false, g: 0, cup: [100, 126], hole: [100, 129], persp: [168, 1.35, 126, 0.72],
@@ -1574,7 +1734,8 @@
     const RUN = Math.max(1.15, Math.min(1.5, n / HZ)), STRIKE = 1.8 - RUN, DROP = 0.15, t0 = performance.now();
     const play = (k) => { if (!quiet) sfx[k](); };
     const A = { strike: STRIKE, arrive: STRIKE + RUN, fire: P.fire != null ? STRIKE + P.fire / n * RUN : null, sfx: play,
-      timeAtX: (x) => { const i = f.findIndex((q) => q.x >= x); return STRIKE + (i < 0 ? n : i) / n * RUN; } };
+      timeAtX: (x) => { const i = f.findIndex((q) => q.x >= x); return STRIKE + (i < 0 ? n : i) / n * RUN; },
+      timeAtY: (y) => { const i = f.findIndex((q) => q.y <= y); return STRIKE + (i < 0 ? n : i) / n * RUN; } };
     // front on, the ball shrinks as it rolls away
     const depth = (y) => (c.persp ? c.persp[1] + (y - c.persp[0]) * (c.persp[3] - c.persp[1]) / (c.persp[2] - c.persp[0]) : 1);
     let e = 0, struck = false, dropped = false;
@@ -1608,7 +1769,7 @@
   };
   // the overlay: a random obstacle (never the same twice running), the ball
   // through it and into the cup, then the next hole's number
-  const ARTS = ["windmill", "loop", "water", "zigzag", "volcano", "castle", "clown", "lighthouse", "pirate", "dino", "funnel", "humps", "pendulum"];
+  const ARTS = ["windmill", "loop", "water", "zigzag", "volcano", "castle", "clown", "lighthouse", "pirate", "dino", "funnel", "humps", "pendulum", "rocket", "haunted", "train", "seesaw"];
   const ART_PICK = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).get("art");   // for testing
   const scene = (art) => $(art === "windmill" ? "#windmill-tpl" : "#art-" + art).content.cloneNode(true);
   let millT = 0, lastArt = "", millStop = null;
