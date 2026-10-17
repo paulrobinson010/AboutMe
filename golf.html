@@ -189,6 +189,10 @@
     z-index: 20;
   }
   .cta:active { transform: translateX(-50%) scale(0.97); }
+  /* waiting for everyone's score on this hole */
+  .cta.wait { background: #1c3a2a; color: rgba(242, 240, 234, 0.45); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); }
+  .row.nudge { animation: nudge 0.5s ease-out; border-color: var(--pink); box-shadow: 0 0 16px rgba(255, 79, 216, 0.35); }
+  @keyframes nudge { 15% { transform: translateX(-7px); } 35% { transform: translateX(6px); } 55% { transform: translateX(-4px); } 75% { transform: translateX(2px); } }
   .cta svg { width: 26px; height: 26px; }
 
   /* ---------- a hole ---------- */
@@ -1184,6 +1188,7 @@
   const show = (id) => {
     document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === id));
     const cta = $("#cta");
+    cta.classList.remove("wait");
     if (id === "setup") { cta.innerHTML = teeIcon + "Tee off"; cta.style.display = ""; }
     else if (id === "play") { cta.style.display = ""; paintCta(); }
     else cta.style.display = "none";
@@ -1441,10 +1446,23 @@
   twoTap($("#restart"), () => { restartRound(); goHole(0, false); toast("Fresh card"); });
   twoTap($("#newgame"), () => { newGame(); paintSetup(); show("setup"); });
 
+  // No moving on until everyone has a score for this hole: Next hole (and
+  // Finish, and the › arrow) wait, and a tap shows who's missing.
+  const unscored = () => S.p.map((_, pi) => pi).filter((pi) => !(S.s[pi] && S.s[pi][S.i] > 0));
+  const nudge = () => {
+    const miss = unscored();
+    document.querySelectorAll("#rows .row").forEach((r, pi) => {
+      if (miss.includes(pi)) { r.classList.remove("nudge"); void r.offsetWidth; r.classList.add("nudge"); }
+    });
+    buzz([20, 40, 20]);
+    toast("Score everyone first");
+  };
   const paintCta = () => {
     if (!$("#play").classList.contains("on")) return;
-    const last = S.i === S.h - 1;
+    const last = S.i === S.h - 1, waiting = unscored().length > 0;
     $("#cta").innerHTML = last ? trophyIcon + "Finish" : millIcon + "Next hole";
+    $("#cta").classList.toggle("wait", waiting);
+    $("#next-arrow").disabled = waiting;
   };
   const goHole = (j, withMill) => {
     j = Math.max(0, Math.min(S.h - 1, j));
@@ -1887,7 +1905,7 @@
   };
   $("#between").addEventListener("click", () => $("#between").classList.remove("on"));
   $("#prev").addEventListener("click", () => goHole(S.i - 1, false));
-  $("#next-arrow").addEventListener("click", () => { if (S.i < S.h - 1) goHole(S.i + 1, false); else { group(S.i, 1); finish(); } });
+  $("#next-arrow").addEventListener("click", () => { if (unscored().length) return nudge(); if (S.i < S.h - 1) goHole(S.i + 1, false); else { group(S.i, 1); finish(); } });
   $("#to-setup").addEventListener("click", () => { S.t = 0; save(); paintSetup(); show("setup"); });
   $("#sound").addEventListener("click", (e) => {
     sound = !sound;
@@ -1903,6 +1921,7 @@
       save(); show("play"); paintHole();
       if (!reduced) millShow(S.i + 1);   // the hole's obstacle, as every hole gets
     } else if ($("#play").classList.contains("on")) {
+      if (unscored().length) return nudge();
       if (S.i < S.h - 1) { group(S.i + 1, 0); goHole(S.i + 1, true); } else { group(S.i, 1); finish(); }
     }
   });
