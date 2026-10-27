@@ -163,6 +163,12 @@
   /* groups: a big party split into groups, each on its own phone(s) */
   .groups { justify-content: space-between; }
   .split { width: 100%; text-align: left; color: var(--muted); }
+  .me-field { justify-content: space-between; }
+  .field .me-seg { margin: 0; width: auto; flex: 0 1 auto; }
+  .field .me-seg button { padding: 7px 13px; }
+  .me-field .grp-label { white-space: nowrap; }
+  .setup-qr { border-style: solid; border-color: rgba(255, 79, 216, 0.45); color: var(--ink); font-weight: 700; box-shadow: 0 0 14px rgba(255, 79, 216, 0.18); }
+  .setup-qr svg { color: var(--pink); }
   .split svg { width: 30px; height: 18px; }
   .split span { flex: 1; }
   .split .knob { position: relative; width: 44px; height: 26px; border-radius: 13px; background: rgba(255, 255, 255, 0.12); transition: background 0.2s; }
@@ -1024,6 +1030,11 @@
       <span class="num" id="groups-n" aria-live="polite">1</span>
       <button class="step" id="groups-up" aria-label="More groups">+</button>
     </div>
+    <div class="field me-field" id="me-field" hidden>
+      <span class="grp-label">This phone scores</span>
+      <div class="seg me-seg" id="me-seg" role="group" aria-label="The group this phone scores"></div>
+    </div>
+    <button class="add setup-qr" id="setup-qr" hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2M20 14v2"/></svg>QR codes for each group</button>
     <div class="players" id="players"></div>
     <button class="add" id="add-player" aria-label="Add a player"><span class="ball" style="--b:#8a8fa3"></span>+</button>
   </section>
@@ -1296,6 +1307,18 @@
     $("#groups-n").textContent = G;
     $("#split").classList.toggle("on", G > 1); $("#split").setAttribute("aria-checked", G > 1);
     $("#groups-field").hidden = G === 1;
+    $("#split").hidden = G === 1 && S.p.length < 5;   // only worth it for a bigger party (always there to turn off)
+    $("#me-field").hidden = $("#setup-qr").hidden = G === 1;
+    if (G > 1) {   // which group this phone scores: any of them, not just A
+      const seg = $("#me-seg"); seg.innerHTML = "";
+      for (let g = 0; g < G; g++) {
+        const b = document.createElement("button");
+        b.textContent = GL(g); b.classList.toggle("on", g === myGr());
+        b.setAttribute("aria-label", "This phone scores group " + GL(g));
+        b.addEventListener("click", () => { S.me = g; save(); paintSetup(); });
+        seg.appendChild(b);
+      }
+    }
     const box = $("#players"); box.innerHTML = "";
     const field = (pl, i) => {
       const f = document.createElement("label");
@@ -2585,15 +2608,20 @@
     paintQR();
   }));
   const newKey = async () => b64u(await crypto.subtle.exportKey("raw", await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])));
-  $("#go-live").addEventListener("click", async () => {
+  const openLive = async (m) => {
     if (!S.L) {
       if (!(window.crypto && crypto.subtle)) return toast("This browser can't go live");
       S.L = { r: b64u(crypto.getRandomValues(new Uint8Array(16))), k: await newKey(), p: await newKey() };
       keepUrl();
     }
+    if (m) mode = m;
+    if (mode === "j" && gn() > 1 && qrGroup === myGr()) qrGroup = (myGr() + 1) % gn();   // likely another group, not this phone's
     startHost(); paintLive(); paintQR();
     openSheet("#live-sheet");
-  });
+  };
+  $("#go-live").addEventListener("click", () => openLive());
+  // before tee off: every group's QR code, so the scorers can join while you set up
+  $("#setup-qr").addEventListener("click", () => openLive("j"));
   $("#live-share").addEventListener("click", async () => {
     if (!S.L) return;
     if (mode === "j" && !S.L.p) await keyP;
@@ -2620,7 +2648,8 @@
     ensureScores(); snapShadow(); keepUrl();
     $("#w-wait-msg").textContent = "Waiting for the scorer…";
     toast(gn() > 1 ? "You're in · group " + GL(myGr()) : "You're in. Score away");
-    if (S.d) finish(true); else { show("play"); paintHole(); }
+    if (S.d) finish(true);
+    else { show("play"); paintHole(); if (!reduced) millShow(S.i + 1); }   // the hole's obstacle, by way of welcome
     paintLive();
   }
 
