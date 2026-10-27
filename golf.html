@@ -1530,6 +1530,40 @@
   const openSheet = (id) => { $("#scrim").classList.add("on"); $(id).classList.add("on"); };
   const closeSheets = () => { $("#scrim").classList.remove("on"); document.querySelectorAll(".sheet").forEach((s) => s.classList.remove("on")); };
   $("#scrim").addEventListener("click", closeSheets);
+  // Swipe a sheet down to put it away, as its handle suggests: from the
+  // handle, or from anywhere once its content's scrolled to the top. Let go
+  // past a short way (or flick it) and it goes; otherwise it springs back.
+  document.querySelectorAll(".sheet").forEach((sh) => {
+    let y0 = null, dy = 0, drag = false, v = 0, py = 0, pt = 0;   // v: speed (px/ms) as it's let go
+    sh.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) { y0 = null; return; }
+      y0 = py = e.touches[0].clientY; pt = performance.now(); dy = 0; v = 0; drag = false;
+    }, { passive: true });
+    sh.addEventListener("touchmove", (e) => {
+      if (y0 == null) return;
+      const y = e.touches[0].clientY, now = performance.now();
+      if (now > pt) v = 0.6 * ((y - py) / (now - pt)) + 0.4 * v;
+      py = y; pt = now; dy = y - y0;
+      if (!drag) {
+        if (dy > 6 && sh.scrollTop <= 0) drag = true;
+        else { if (dy < -6 || sh.scrollTop > 0) y0 = null; return; }   // a scroll, not a swipe
+      }
+      e.preventDefault();
+      sh.style.transition = "none";
+      sh.style.transform = "translate(-50%, " + Math.max(0, dy).toFixed(1) + "px)";
+    }, { passive: false });
+    const end = () => {
+      if (y0 == null) return;
+      y0 = null;
+      if (!drag) return;
+      const flick = v > 0.45 && performance.now() - pt < 120;   // still moving fast when let go
+      sh.style.transition = "";
+      if (dy > 100 || (dy > 30 && flick)) closeSheets();   // slides the rest of the way from where it is
+      sh.style.transform = "";
+    };
+    sh.addEventListener("touchend", end);
+    sh.addEventListener("touchcancel", end);
+  });
   addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheets(); });
 
   // The scorecard grid: players down, holes across, Σ at the end. Mid-round
