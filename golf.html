@@ -160,6 +160,29 @@
     color: var(--muted);
   }
   .add:active { transform: scale(0.98); }
+  /* groups: a big party split into groups, each on its own phone(s) */
+  .groups { justify-content: space-between; }
+  .grp-label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.85rem; letter-spacing: 0.06em; }
+  .grp-label svg { width: 30px; height: 18px; }
+  .groups .num { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 2rem; min-width: 2.2ch; text-align: center; color: var(--turf); text-shadow: 0 0 12px rgba(57, 255, 136, 0.6); }
+  .gtag {
+    --g: #8a8fa3;
+    display: inline-grid; place-items: center; flex: none;
+    width: 24px; height: 24px; border-radius: 8px;
+    background: var(--g); color: #07080f; font-weight: 700; font-size: 0.8rem; line-height: 1;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--g) 45%, transparent);
+  }
+  .grp-head { display: flex; align-items: center; gap: 10px; margin: 10px 4px -2px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .grp-head .gtag { width: 30px; height: 30px; font-size: 1rem; }
+  .grp-head .grp-add { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; border: 1.5px dashed rgba(242, 240, 234, 0.3); color: var(--muted); font-size: 1.2rem; }
+  .player-field .gtag { width: 30px; height: 30px; font-size: 0.95rem; }
+  .grp-chip { font-weight: 700; font-size: 1.05rem; color: var(--g); border-color: color-mix(in srgb, var(--g) 60%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--g) 30%, transparent); }
+  .board .gtag, #card .gtag, #mid-card .gtag, #w-card .gtag { width: 20px; height: 20px; font-size: 0.7rem; border-radius: 6px; margin-right: 8px; vertical-align: middle; position: relative; top: -2px; }
+  .still { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin-top: 12px; color: var(--muted); font-size: 0.85rem; }
+  .still button { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border-radius: 100px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-variant-numeric: tabular-nums; }
+  .w-groups { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+  .w-groups span { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 6px; border-radius: 100px; border: 1px solid var(--line); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .grp-seg button { padding: 7px 0; }
 
   /* a neon golf ball, dimples and all */
   .ball {
@@ -979,6 +1002,12 @@
       <button class="step" id="holes-up" aria-label="More holes">+</button>
     </div>
 
+    <div class="field groups">
+      <button class="step" id="groups-down" aria-label="Fewer groups">&minus;</button>
+      <span class="grp-label"><svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="7" cy="11" r="5" fill="#ff4fd8"/><circle cx="15" cy="7" r="5" fill="#25e3ee"/><circle cx="23" cy="11" r="5" fill="#39ff88"/></svg><span id="groups-word">group</span></span>
+      <span class="num" id="groups-n" aria-live="polite">1</span>
+      <button class="step" id="groups-up" aria-label="More groups">+</button>
+    </div>
     <div class="players" id="players"></div>
     <button class="add" id="add-player" aria-label="Add a player"><span class="ball" style="--b:#8a8fa3"></span>+</button>
   </section>
@@ -987,6 +1016,7 @@
   <section class="screen" id="play">
     <div class="bar">
       <button class="icon-btn" id="to-setup" aria-label="Back to setup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <button class="icon-btn grp-chip" id="my-group" hidden aria-label="Scoring this group: tap to switch"></button>
       <span class="course" id="course-label"></span>
       <button class="icon-btn" id="sound" aria-label="Sound on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
       <button class="icon-btn" id="go-live" aria-label="Let others watch live"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg><span class="badge"></span></button>
@@ -1005,6 +1035,7 @@
   <section class="screen" id="done">
     <div class="done-mill"><div data-windmill></div></div>
     <h1 id="done-course" style="font-size:clamp(1.8rem,9vw,2.6rem);margin-top:10px"></h1>
+    <div class="still" id="done-still" hidden></div>
     <div class="podium" id="podium"></div>
     <div class="awards" id="awards"></div>
     <div class="card-scroll"><table id="card"></table></div>
@@ -1022,6 +1053,7 @@
     <div class="bar"><span class="live-pill off" id="w-pill"><i></i>LIVE</span><span class="course" id="w-course"></span></div>
     <div class="w-wait" id="w-wait"><div data-windmill></div><p id="w-wait-msg">Waiting for the scorer…</p></div>
     <div id="w-game" hidden>
+      <div class="w-groups" id="w-groups" hidden></div>
       <div class="w-head" id="w-hole-head"><div class="hole-num"><span data-flag></span><b id="w-hole">1</b><small id="w-of">/18</small></div></div>
       <div class="w-champ" id="w-champ" hidden></div>
       <div class="flags" id="w-flags"></div>
@@ -1056,6 +1088,7 @@
   <div class="grab"></div>
   <div class="live-head"><span class="live-pill off" id="live-pill"><i></i>LIVE</span><span class="eyes" id="live-eyes" aria-label="People watching"></span></div>
   <div class="seg" id="live-mode" role="group" aria-label="Link for"><button class="on" data-m="w">&#128064; Watch</button><button data-m="j">&#9971; Play</button></div>
+  <div class="seg grp-seg" id="live-groups" role="group" aria-label="Group to score" hidden></div>
   <div class="qr" id="live-qr"></div>
   <div class="again">
     <button id="live-share" aria-label="Share the watch link"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share</button>
@@ -1078,7 +1111,13 @@
    "live" below). */
 (() => {
   const $ = (s, r) => (r || document).querySelector(s);
-  const COLOURS = ["#ff4fd8", "#25e3ee", "#39ff88", "#ffa53d", "#a77bff", "#ffd23f", "#ff5a5a", "#f2f0ea", "#4d8bff", "#ff8fb1"];
+  const COLOURS = ["#ff4fd8", "#25e3ee", "#39ff88", "#ffa53d", "#a77bff", "#ffd23f", "#ff5a5a", "#f2f0ea", "#4d8bff", "#ff8fb1",
+    "#7dffb0", "#ffb3f0", "#9ad7ff", "#ffe08a", "#c3a6ff", "#ff9e7a"];
+  // Groups, for a big party: A, B, C… Each phone scores one group (S.me,
+  // this phone's own), each group goes round at its own pace, and the
+  // standings take in everyone.
+  const GCOL = ["#ff4fd8", "#25e3ee", "#39ff88", "#ffa53d", "#a77bff", "#ffd23f", "#ff5a5a", "#4d8bff"];
+  const GL = (g) => String.fromCharCode(65 + g);
   const MAX = 20;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1086,8 +1125,8 @@
   let S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 };
   // a watch link (#w=<room>.<key>) opens a read-only, live copy of someone's card
   const WATCH = location.hash.match(/^#w=([A-Za-z0-9_-]{16,64})\.([A-Za-z0-9_-]{43})$/);
-  // a play link (#j=<room>.<key>.<play key>) joins in as another scorer
-  const JOIN = location.hash.match(/^#j=([A-Za-z0-9_-]{16,64})\.([A-Za-z0-9_-]{43})\.([A-Za-z0-9_-]{43})$/);
+  // a play link (#j=<room>.<key>.<play key>[.<group>]) joins in as another scorer
+  const JOIN = location.hash.match(/^#j=([A-Za-z0-9_-]{16,64})\.([A-Za-z0-9_-]{43})\.([A-Za-z0-9_-]{43})(?:\.(\d))?$/);
   const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const dec = (t) => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/")))));
   const save = () => {
@@ -1103,6 +1142,7 @@
       if (!o || !Array.isArray(o.p) || !o.p.length) return false;
       S = Object.assign(S, o);
       S.h = clampH(S.h);
+      if (S.g && !S.gs) { S.gs = { 0: S.g }; delete S.g; }   // from before groups
       S.s = (S.s || []).map((r) => Array.from({ length: S.h }, (_, j) => (r && r[j]) | 0));
       return true;
     } catch (_) { return false; }
@@ -1112,6 +1152,16 @@
   const nameOf = (pl, i) => (pl.n || "").trim() || "P" + (i + 1);
   const total = (pi) => (S.s[pi] || []).reduce((a, b) => a + (b || 0), 0);
   const played = (pi) => (S.s[pi] || []).filter((v) => v > 0).length;
+  const gn = () => Math.max(1, Math.min(8, S.gn | 0 || 1));
+  const grOf = (pi) => Math.max(0, Math.min(gn() - 1, (S.p[pi] && S.p[pi].gr) | 0));
+  const myGr = () => Math.max(0, Math.min(gn() - 1, S.me | 0));
+  const mine = () => S.p.map((_, pi) => pi).filter((pi) => grOf(pi) === myGr());   // this phone's players
+  const byGroup = () => S.p.map((_, pi) => pi).sort((a, b) => grOf(a) - grOf(b) || a - b);
+  const gpos = (g) => (S.gs && S.gs[g]) || null;   // where group g has got to: { i, d, v }
+  // every group round? (until then the standings are "so far")
+  const allIn = () => gn() === 1 || Array.from({ length: gn() }, (_, g) => gpos(g)).every((x) => x && x.d);
+  const perHole = (st) => (st.t / st.thru).toFixed(1);
+  const gtag = (g) => { const t = document.createElement("span"); t.className = "gtag"; t.textContent = GL(g); t.style.setProperty("--g", GCOL[g]); return t; };
   const ensureScores = () => {
     S.s = S.p.map((_, pi) => Array.from({ length: S.h }, (_, j) => (S.s[pi] && S.s[pi][j]) | 0));
   };
@@ -1204,34 +1254,76 @@
     $("#course").value = S.c;
     $("#holes-n").textContent = S.h;
     document.querySelectorAll("#hole-chips .chip").forEach((c) => c.classList.toggle("on", +c.dataset.h === S.h));
+    const G = gn();
+    $("#groups-n").textContent = G; $("#groups-word").textContent = G === 1 ? "group" : "groups";
     const box = $("#players"); box.innerHTML = "";
-    S.p.forEach((pl, i) => {
+    const field = (pl, i) => {
       const f = document.createElement("label");
-      f.className = "field player-field";
+      f.className = "field player-field"; f.dataset.i = i;
       f.innerHTML = '<span class="ball"></span><input maxlength="20" autocomplete="off"><button class="x" aria-label="Remove player">&times;</button>';
       $(".ball", f).style.setProperty("--b", colour(pl));
       const inp = $("input", f);
       inp.value = pl.n; inp.placeholder = "Player " + (i + 1); inp.setAttribute("aria-label", "Player " + (i + 1) + " name");
       inp.addEventListener("input", () => { pl.n = inp.value; save(); });
-      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); const n = f.nextElementSibling; n ? $("input", n).focus() : inp.blur(); } });
+      inp.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        const all = [...document.querySelectorAll("#players input")], n = all[all.indexOf(inp) + 1];
+        n ? n.focus() : inp.blur();
+      });
+      if (G > 1) {   // its group: tap to move it on to the next
+        const mv = document.createElement("button");
+        mv.className = "gtag"; mv.textContent = GL(grOf(i)); mv.style.setProperty("--g", GCOL[grOf(i)]);
+        mv.setAttribute("aria-label", "In group " + GL(grOf(i)) + ": tap to move to the next group");
+        mv.addEventListener("click", (e) => { e.preventDefault(); pl.gr = (grOf(i) + 1) % G; save(); paintSetup(); });
+        f.insertBefore(mv, $(".x", f));
+      }
       const x = $(".x", f);
       x.style.visibility = S.p.length > 1 ? "" : "hidden";
       x.addEventListener("click", (e) => { e.preventDefault(); S.p.splice(i, 1); S.s.splice(i, 1); save(); paintSetup(); });
-      box.appendChild(f);
-    });
+      return f;
+    };
+    if (G === 1) S.p.forEach((pl, i) => box.appendChild(field(pl, i)));
+    else for (let g = 0; g < G; g++) {
+      const ids = S.p.map((_, i) => i).filter((i) => grOf(i) === g);
+      const head = document.createElement("div");
+      head.className = "grp-head";
+      head.appendChild(gtag(g));
+      head.insertAdjacentHTML("beforeend", '<span class="ballcount"></span><button class="grp-add" aria-label="Add a player to group ' + GL(g) + '">+</button>');
+      $(".ballcount", head).textContent = ids.length;
+      $(".grp-add", head).addEventListener("click", () => addPlayer(g));
+      box.appendChild(head);
+      ids.forEach((i) => box.appendChild(field(S.p[i], i)));
+    }
+    $("#add-player").hidden = G > 1;
+  };
+  // Split the players evenly, in order, into n groups (fine-tune after by
+  // tapping a player's letter).
+  const setGroups = (n) => {
+    n = Math.max(1, Math.min(8, n | 0));
+    const P = S.p.length, base = Math.floor(P / n), extra = P % n;
+    let g = 0, left = base + (extra > 0 ? 1 : 0);
+    S.p.forEach((pl) => { while (left <= 0 && g < n - 1) { g++; left = base + (g < extra ? 1 : 0); } pl.gr = g; left--; });
+    S.gn = n; S.me = Math.min(S.me | 0, n - 1);
+    save(); paintSetup();
+  };
+  // a new player in group g, in the colour least used there (then overall)
+  const addPlayer = (g) => {
+    const used = (only) => COLOURS.map((_, c) => S.p.filter((pl, i) => only(i) && pl.k % COLOURS.length === c).length);
+    const inG = used((i) => grOf(i) === g), all = used(() => true);
+    let k = 0;
+    COLOURS.forEach((_, c) => { if (inG[c] * 100 + all[c] < inG[k] * 100 + all[k]) k = c; });
+    S.p.push({ n: "", k, gr: g }); ensureScores(); save(); paintSetup();
+    const f = $('#players .player-field[data-i="' + (S.p.length - 1) + '"] input'); if (f) f.focus();
   };
   const setHoles = (n) => { S.h = clampH(n); ensureScores(); if (S.i >= S.h) S.i = S.h - 1; save(); paintSetup(); };
   $("#course").addEventListener("input", (e) => { S.c = e.target.value; save(); });
   $("#holes-down").addEventListener("click", () => setHoles(S.h - 1));
   $("#holes-up").addEventListener("click", () => setHoles(S.h + 1));
   document.querySelectorAll("#hole-chips .chip").forEach((c) => c.addEventListener("click", () => setHoles(+c.dataset.h)));
-  $("#add-player").addEventListener("click", () => {
-    const used = new Set(S.p.map((p) => p.k % COLOURS.length));
-    let k = 0; while (used.has(k % COLOURS.length) && k < COLOURS.length) k++;
-    if (k >= COLOURS.length) k = S.p.length;
-    S.p.push({ n: "", k }); ensureScores(); save(); paintSetup();
-    const inputs = document.querySelectorAll("#players input"); inputs[inputs.length - 1].focus();
-  });
+  $("#add-player").addEventListener("click", () => addPlayer(0));
+  $("#groups-down").addEventListener("click", () => setGroups(gn() - 1));
+  $("#groups-up").addEventListener("click", () => setGroups(gn() + 1));
 
   // ---- a hole --------------------------------------------------------------
   const ballLeft = (n) => {   // each shot rolls the ball a bit closer to the cup, but never in
@@ -1242,7 +1334,7 @@
     fl.innerHTML = "";
     for (let j = 0; j < S.h; j++) {
       const i = document.createElement("i");
-      if (j === S.i) i.className = "now"; else if (S.s.every((r) => r[j] > 0)) i.className = "done";
+      if (j === S.i) i.className = "now"; else if (mine().every((pi) => S.s[pi][j] > 0)) i.className = "done";
       fl.appendChild(i);
     }
   };
@@ -1253,10 +1345,14 @@
     $("#hole-of").textContent = "/" + S.h;
     $("#prev").disabled = S.i === 0;
     paintFlags($("#flags"));
+    const chip = $("#my-group");   // which group this phone's scoring; tap to switch
+    chip.hidden = gn() === 1;
+    chip.textContent = GL(myGr()); chip.style.setProperty("--g", GCOL[myGr()]);
     const rows = $("#rows"); rows.innerHTML = "";
-    S.p.forEach((pl, pi) => {
-      const n = S.s[pi][S.i] | 0;
+    mine().forEach((pi) => {
+      const pl = S.p[pi], n = S.s[pi][S.i] | 0;
       const r = document.createElement("div");
+      r.dataset.pi = pi;
       r.className = "row" + (n === 0 ? " fresh" : "") + (holed.has(pi + ":" + S.i) || (n > 0 && S.d) ? " holed" : "");
       r.style.setProperty("--b", colour(pl));
       r.innerHTML =
@@ -1372,9 +1468,11 @@
     }
     const sig = document.createElement("th"); sig.textContent = "Σ"; head.appendChild(sig);
     t.appendChild(head);
-    S.p.forEach((pl, pi) => {
-      const tr = document.createElement("tr");
-      const nm = document.createElement("td"); nm.textContent = nameOf(pl, pi); nm.style.color = colour(pl); tr.appendChild(nm);
+    byGroup().forEach((pi) => {
+      const pl = S.p[pi], tr = document.createElement("tr");
+      const nm = document.createElement("td"); nm.style.color = colour(pl); tr.appendChild(nm);
+      if (gn() > 1) nm.appendChild(gtag(grOf(pi)));
+      nm.appendChild(document.createTextNode(nameOf(pl, pi)));
       S.s[pi].forEach((v, j) => {
         const td = document.createElement("td"); td.textContent = v || "–";
         td.className = (v === 1 ? "ace" : "") + ((live || mark) && j === S.i ? " cur" : "");
@@ -1410,6 +1508,7 @@
       $(".pos", l).textContent = (s.tied ? "=" : "") + s.pos;
       $(".ball", l).style.setProperty("--b", colour(s.pl));
       $(".name", l).textContent = nameOf(s.pl, s.pi);
+      if (gn() > 1) $(".name", l).prepend(gtag(grOf(s.pi)));
       $(".thru", l).textContent = s.thru ? "thru " + s.thru : "";
       $(".sc", l).textContent = s.thru ? s.t : "–";
       box.appendChild(l);
@@ -1426,7 +1525,19 @@
   });
 
   // ---- resets, each needing a second tap within 3s
-  const restartRound = () => { S.s = []; ensureScores(); S.i = 0; S.d = 0; S.dt = new Date().toISOString().slice(0, 10); holed.clear(); group(0, 0); save(); };
+  const restartRound = () => {
+    S.s = []; ensureScores(); S.i = 0; S.d = 0; S.dt = new Date().toISOString().slice(0, 10); holed.clear();
+    S.gs = {}; for (let g = 0; g < gn(); g++) S.gs[g] = { i: 0, d: 0, v: stamp() };   // every group back to the first
+    save();
+  };
+  // score another group from this phone: to wherever they've got to
+  const switchGroup = (g) => {
+    S.me = g; const x = gpos(g);
+    S.i = x ? x.i : 0; S.d = 0; holed.clear(); save();
+    if (x && x.d) return finish(true);
+    show("play"); paintHole();
+  };
+  $("#my-group").addEventListener("click", () => switchGroup((myGr() + 1) % gn()));
   const newGame = () => { stopLive(); S = { c: "", h: 18, p: [{ n: "", k: 0 }, { n: "", k: 1 }], s: [], i: 0, d: 0 }; holed.clear(); history.replaceState(null, "", location.pathname + location.search); };
   let armT = 0;
   const disarm = () => {
@@ -1448,11 +1559,11 @@
 
   // No moving on until everyone has a score for this hole: Next hole (and
   // Finish, and the › arrow) wait, and a tap shows who's missing.
-  const unscored = () => S.p.map((_, pi) => pi).filter((pi) => !(S.s[pi] && S.s[pi][S.i] > 0));
+  const unscored = () => mine().filter((pi) => !(S.s[pi] && S.s[pi][S.i] > 0));
   const nudge = () => {
     const miss = unscored();
-    document.querySelectorAll("#rows .row").forEach((r, pi) => {
-      if (miss.includes(pi)) { r.classList.remove("nudge"); void r.offsetWidth; r.classList.add("nudge"); }
+    document.querySelectorAll("#rows .row").forEach((r) => {
+      if (miss.includes(+r.dataset.pi)) { r.classList.remove("nudge"); void r.offsetWidth; r.classList.add("nudge"); }
     });
     buzz([20, 40, 20]);
     toast("Score everyone first");
@@ -1927,9 +2038,25 @@
   });
 
   // ---- the 19th hole -------------------------------------------------------
+  let celebrated = false;
   const finish = (quiet) => {
     S.d = 1; save();
     $("#done-course").textContent = S.c || "Putt.";
+    // other groups still going round: the standings so far, and where they
+    // are (tap one to score it from this phone)
+    const out = gn() > 1 ? Array.from({ length: gn() }, (_, g) => g).filter((g) => !(gpos(g) && gpos(g).d)) : [];
+    const still = $("#done-still"); still.innerHTML = ""; still.hidden = !out.length;
+    if (out.length) {
+      still.append("Still out on the course");
+      out.forEach((g) => {
+        const b = document.createElement("button");
+        b.appendChild(gtag(g)); b.append("hole " + ((gpos(g) ? gpos(g).i : 0) + 1));
+        b.setAttribute("aria-label", "Score group " + GL(g));
+        b.addEventListener("click", () => switchGroup(g));
+        still.appendChild(b);
+      });
+    }
+    $("#again").hidden = gn() > 1;   // one tap would wipe everyone's card
     const st = standings();
     const pod = $("#podium"); pod.innerHTML = "";
     // the first three distinct places, each a step that holds everyone on it
@@ -1943,7 +2070,7 @@
       c.innerHTML = (k === 0 ? (g.who.length > 1 ? '<span class="tie">Tie!</span>' : "") + '<span class="crown">🏆</span>' : "") + '<span class="balls"></span><span class="nm"></span><div class="blk"></div>';
       g.who.forEach((s) => { const b = document.createElement("span"); b.className = "ball"; b.style.setProperty("--b", colour(s.pl)); $(".balls", c).appendChild(b); });
       $(".nm", c).textContent = g.who.map((s) => nameOf(s.pl, s.pi)).join(" & ");
-      $(".blk", c).textContent = lead.thru ? lead.t : "–";
+      $(".blk", c).textContent = !lead.thru ? "–" : allIn() ? lead.t : perHole(lead);   // so far: strokes a hole
       pod.appendChild(c);
     });
     // awards: aces, the cleanest card, and the hole that got away
@@ -1967,9 +2094,11 @@
       if (cool.length < S.p.length) add("🧊", "Cool head · never over " + low, cool.map((x) => nameOf(x.pl, x.pi)).join(", "));
     }
     buildCard($("#card"));
-    if (quiet && $("#done").classList.contains("on")) return;   // just the card changing under it
+    const party = allIn() && st[0] && st[0].thru && !celebrated;   // the last group's in: everyone celebrates
+    if (party) celebrated = true;
+    if (quiet && $("#done").classList.contains("on")) { if (party) { sfx.ace(); confetti(); } return; }   // just the card changing under it
     show("done");
-    if (st[0] && st[0].thru && !quiet) { sfx.ace(); confetti(); }
+    if (party) { sfx.ace(); confetti(); }
   };
   $("#again").addEventListener("click", () => { restartRound(); show("play"); paintHole(); if (!reduced) millShow(1); });
   $("#fresh").addEventListener("click", () => { newGame(); paintSetup(); show("setup"); });
@@ -2054,13 +2183,14 @@
     const wins = winners(st);
     if (wins.length) {
       const wy = 268 + EXTRA;
-      const label = wins.length > 1 ? "JOINT WINNERS" : "WINNER";
+      const label = !allIn() ? "LEADING" : wins.length > 1 ? "JOINT WINNERS" : "WINNER";
       x.font = SG(700, 30); x.fillStyle = "#ffd23f"; glow("#ffd23f", 14); x.fillText(label, PAD, wy); noGlow();
       let bx = PAD + x.measureText(label).width + 40;
       wins.forEach((w, k) => ball(bx + k * 22, wy - 10, 15, colour(w.pl)));
       bx += (wins.length - 1) * 22 + 28;
       x.font = SG(700, 38); x.fillStyle = "#f2f0ea";
-      x.fillText(fit(wins.map((w) => nameOf(w.pl, w.pi)).join(" & "), W - PAD - bx - 90) + "  ·  " + wins[0].t, bx, wy + 2);
+      const sc = allIn() ? String(wins[0].t) : perHole(wins[0]) + " a hole";
+      x.fillText(fit(wins.map((w) => nameOf(w.pl, w.pi)).join(" & "), W - PAD - bx - 90 - (allIn() ? 0 : 120)) + "  ·  " + sc, bx, wy + 2);
     }
 
     // the card, nine holes to a block
@@ -2073,9 +2203,13 @@
       x.textAlign = "left";
       x.strokeStyle = "rgba(242,240,234,0.14)"; x.lineWidth = 1.5;
       x.beginPath(); x.moveTo(PAD, y + HEAD - 6); x.lineTo(W - PAD, y + HEAD - 6); x.stroke();
-      S.p.forEach((pl, pi) => {
-        const ry = y + HEAD + pi * ROW, mid = ry + ROW / 2;
-        if (pi % 2 === 0) { x.fillStyle = "rgba(255,255,255,0.03)"; x.fillRect(PAD, ry, W - PAD * 2, ROW); }
+      byGroup().forEach((pi, ri) => {
+        const pl = S.p[pi], ry = y + HEAD + ri * ROW, mid = ry + ROW / 2;
+        if (ri % 2 === 0) { x.fillStyle = "rgba(255,255,255,0.03)"; x.fillRect(PAD, ry, W - PAD * 2, ROW); }
+        if (gn() > 1) {   // the group's letter in the margin
+          x.font = SG(700, 20); x.fillStyle = GCOL[grOf(pi)]; x.textBaseline = "middle"; x.textAlign = "center";
+          x.fillText(GL(grOf(pi)), PAD - 22, mid + 1); x.textAlign = "left"; x.textBaseline = "alphabetic";
+        }
         ball(PAD + 16, mid, 11, colour(pl));
         x.font = SG(700, 28); x.fillStyle = colour(pl); x.textBaseline = "middle";
         x.fillText(fit(nameOf(pl, pi), NAME_W - 48), PAD + 40, mid + 1);
@@ -2207,7 +2341,7 @@
   let clock = 0, shadow = null, joining = false;
   const stamp = () => [(clock = Math.max(clock + 1, Date.now())), DEV];
   const newer = (a, b) => !!a && (!b || a[0] > b[0] || (a[0] === b[0] && a[1] > b[1]));
-  const shape = () => JSON.stringify([S.c, S.h, S.p, S.dt]);
+  const shape = () => JSON.stringify([S.c, S.h, S.p, S.dt, gn()]);
   const snapShadow = () => { shadow = { shape: shape(), n: S.p.length, h: S.h, s: S.s.map((r) => r.slice()) }; };
   function stampChanges() {   // from save(): stamp whatever's changed here since last time
     if (!shadow) return snapShadow();
@@ -2221,31 +2355,36 @@
     }));
     snapShadow();
   }
-  const group = (i, d) => { if (S.L) S.g = { i, d, v: stamp() }; };
+  const group = (i, d) => { S.gs = S.gs || {}; S.gs[myGr()] = { i, d, v: stamp() }; };   // this phone's group moves on
   const okStamp = (v) => (Array.isArray(v) && Number.isFinite(+v[0]) && typeof v[1] === "string" ? [+v[0], v[1].slice(0, 8)] : null);
   const clean = (o) => {   // anything off the wire is checked and trimmed
     if (!o || !Array.isArray(o.p) || !o.p.length || !Array.isArray(o.s)) return null;
     const h = clampH(o.h);
-    const p = o.p.slice(0, 64).map((pl) => ({ n: String((pl && pl.n) || "").slice(0, 20), k: Math.abs((pl && pl.k) | 0) }));
+    const gnum = Math.max(1, Math.min(8, o.gn | 0 || 1));
+    const p = o.p.slice(0, 64).map((pl) => ({ n: String((pl && pl.n) || "").slice(0, 20), k: Math.abs((pl && pl.k) | 0), gr: Math.max(0, Math.min(gnum - 1, (pl && pl.gr) | 0)) }));
     const s = p.map((_, pi) => Array.from({ length: h }, (_, j) => Math.max(0, Math.min(MAX, (o.s[pi] && o.s[pi][j]) | 0))));
     const V = {};
     if (o.V && typeof o.V === "object") for (const key in o.V) {
       const m = /^(\d+)\.(\d+)$/.exec(key), st = okStamp(o.V[key]);
       if (m && st && +m[1] < p.length && +m[2] < h) V[key] = st;
     }
-    const g = o.g && okStamp(o.g.v) ? { i: Math.max(0, Math.min(h - 1, o.g.i | 0)), d: o.g.d ? 1 : 0, v: okStamp(o.g.v) } : null;
-    return { c: String(o.c || "").slice(0, 60), h, p, s, V, g, sv: okStamp(o.sv), dt: typeof o.dt === "string" ? o.dt.slice(0, 10) : "",
+    const gs = {};
+    if (o.gs && typeof o.gs === "object") for (let g = 0; g < gnum; g++) {
+      const x = o.gs[g];
+      if (x && okStamp(x.v)) gs[g] = { i: Math.max(0, Math.min(h - 1, x.i | 0)), d: x.d ? 1 : 0, v: okStamp(x.v) };
+    }
+    return { c: String(o.c || "").slice(0, 60), h, p, s, V, gs, gn: gnum, sv: okStamp(o.sv), dt: typeof o.dt === "string" ? o.dt.slice(0, 10) : "",
       e: (Array.isArray(o.e) ? o.e : []).slice(-8), from: String(o.from || "").slice(0, 8) };
   };
   // Fold another phone's card into ours. Returns what happened: whether
   // ours changed, whether theirs is missing something of ours, and where
   // the group was before.
   const merge = (o) => {
-    const r = { changed: false, behind: false, was: S.g ? { ...S.g } : null };
-    [o.sv, o.g && o.g.v, ...Object.values(o.V)].forEach((st) => { if (st) clock = Math.max(clock, st[0]); });
+    const r = { changed: false, behind: false, was: gpos(myGr()) ? { ...gpos(myGr()) } : null };
+    [o.sv, ...Object.values(o.gs).map((x) => x.v), ...Object.values(o.V)].forEach((st) => { if (st) clock = Math.max(clock, st[0]); });
     const fresh = !S.sv, same = o.p.length === S.p.length && o.h === S.h;
     if (fresh || newer(o.sv, S.sv)) {
-      S.c = o.c; S.h = o.h; S.p = o.p; S.dt = o.dt; S.sv = o.sv; r.changed = true;
+      S.c = o.c; S.h = o.h; S.p = o.p; S.dt = o.dt; S.gn = o.gn; S.sv = o.sv; r.changed = true;
       if (fresh || !same) { S.s = o.s.map((row) => row.slice()); S.V = { ...o.V }; }
     } else if (newer(S.sv, o.sv)) r.behind = true;
     if (!fresh && same) {
@@ -2256,8 +2395,12 @@
         else if (newer(S.V[key], o.V[key])) r.behind = true;
       });
     }
-    if (o.g && (!S.g || newer(o.g.v, S.g.v))) { S.g = o.g; r.changed = true; }
-    else if (S.g && (!o.g || newer(S.g.v, o.g.v))) r.behind = true;
+    S.gs = S.gs || {};   // each group's place, newer wins
+    for (const g in o.gs) {
+      if (!S.gs[g] || newer(o.gs[g].v, S.gs[g].v)) { S.gs[g] = o.gs[g]; r.changed = true; }
+      else if (newer(S.gs[g].v, o.gs[g].v)) r.behind = true;
+    }
+    for (const g in S.gs) if (!o.gs[g]) r.behind = true;
     return r;
   };
   // hole-outs from other phones, to cheer (their first card is history)
@@ -2285,8 +2428,9 @@
   }
   const base = () => location.href.split("#")[0];
   const watchUrl = () => base() + "#w=" + S.L.r + "." + S.L.k;
-  const playUrl = () => base() + "#j=" + S.L.r + "." + S.L.k + "." + S.L.p;
-  const snapshot = () => ({ c: S.c, h: S.h, p: S.p, dt: S.dt, s: S.s, sv: S.sv, V: S.V || {}, g: S.g, e: outs, from: DEV, at: Date.now() });
+  let qrGroup = 0;   // with groups, whose play link the QR code is
+  const playUrl = () => base() + "#j=" + S.L.r + "." + S.L.k + "." + S.L.p + (gn() > 1 ? "." + qrGroup : "");
+  const snapshot = () => ({ c: S.c, h: S.h, p: S.p, dt: S.dt, gn: gn(), s: S.s, sv: S.sv, V: S.V || {}, gs: S.gs || {}, e: outs, from: DEV, at: Date.now() });
   function publish() {
     if (!host || joining || !S.sv) return;
     clearTimeout(pubT);
@@ -2310,8 +2454,8 @@
     S.p.forEach((_, pi) => { if (!S.s[pi]) S.s[pi] = Array(S.h).fill(0); });
     snapShadow(); keepUrl();
     cheers.forEach((e) => { if ((e.j | 0) === S.i) holed.add(e.p + ":" + e.j); cheer(e); });
-    // follow the group if this phone was where the group was
-    const g = S.g, on = (id) => $("#" + id).classList.contains("on");
+    // follow this phone's group if it was where the group was
+    const g = gpos(myGr()), on = (id) => $("#" + id).classList.contains("on");
     const withGroup = !r.was || S.i === r.was.i;
     if (g && g.d && !(r.was && r.was.d) && on("play") && (withGroup || S.i === S.h - 1)) return finish();
     if (g && !g.d && on("done")) { S.d = 0; S.i = g.i; save(); show("play"); return paintHole(); }   // they went again
@@ -2325,7 +2469,7 @@
     keyW = importKey(S.L.k);
     keyP = S.L.p ? importKey(S.L.p) : crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])
       .then(async (k) => { S.L.p = b64u(await crypto.subtle.exportKey("raw", k)); keepUrl(); return k; });   // live from before play links
-    if (!joining && !S.sv) { S.sv = stamp(); S.V = S.V || {}; S.g = S.g || { i: S.i, d: S.d, v: stamp() }; }
+    if (!joining && !S.sv) { S.sv = stamp(); S.V = S.V || {}; S.gs = S.gs || {}; if (!S.gs[myGr()]) S.gs[myGr()] = { i: S.i, d: S.d, v: stamp() }; }
     if (!joining) snapShadow();
     host = Link(S.L.r, async (m) => {
       if (m.t === "open") { host.send({ t: "h", d: DEV }); host.send({ t: "hi" }); publish(); }   // here; catch me up; here's mine
@@ -2346,7 +2490,7 @@
     if (host) { host.send({ t: "bye", d: DEV }); host.stop(); }   // tell the others this phone's out
     clearInterval(beat);
     host = null; inRoom = 0; hostState = "off"; outs = []; shadow = null; scorers.clear();
-    if (S.L) { delete S.L; delete S.V; delete S.sv; delete S.g; save(); }
+    if (S.L) { delete S.L; delete S.V; delete S.sv; save(); }
     paintLive();
   }
   const paintLive = () => {
@@ -2367,7 +2511,19 @@
     if (mode === "j" && !S.L.p) await keyP;
     const url = mode === "j" ? playUrl() : watchUrl();
     document.querySelectorAll("#live-mode button").forEach((b) => b.classList.toggle("on", b.dataset.m === mode));
-    $("#live-note").textContent = mode === "j" ? "Whoever scans this can score too." : "Scrambled on this phone. Only people with the link can watch.";
+    const gs = $("#live-groups"), G = gn();
+    gs.hidden = mode !== "j" || G === 1;
+    if (!gs.hidden) {
+      gs.innerHTML = "";
+      for (let g = 0; g < G; g++) {
+        const b = document.createElement("button");
+        b.textContent = GL(g); b.classList.toggle("on", g === qrGroup);
+        b.setAttribute("aria-label", "Play link for group " + GL(g));
+        b.addEventListener("click", () => { qrGroup = g; paintQR(); });
+        gs.appendChild(b);
+      }
+    }
+    $("#live-note").textContent = mode === "j" ? (G > 1 ? "Whoever scans this scores group " + GL(qrGroup) + "." : "Whoever scans this can score too.") : "Scrambled on this phone. Only people with the link can watch.";
     if (box.dataset.url === url) return;
     box.innerHTML = ""; box.dataset.url = url;
     try {
@@ -2378,7 +2534,11 @@
       box.innerHTML = '<svg viewBox="-2 -2 ' + (n + 4) + " " + (n + 4) + '" shape-rendering="crispEdges" role="img" aria-label="QR code for the ' + (mode === "j" ? "play" : "watch") + ' link"><path fill="#07080f" d="' + d + '"/></svg>';
     } catch (_) { box.dataset.url = ""; }
   };
-  document.querySelectorAll("#live-mode button").forEach((b) => b.addEventListener("click", () => { mode = b.dataset.m; paintQR(); }));
+  document.querySelectorAll("#live-mode button").forEach((b) => b.addEventListener("click", () => {
+    mode = b.dataset.m;
+    if (mode === "j" && gn() > 1 && qrGroup === myGr()) qrGroup = (myGr() + 1) % gn();   // likely the next group, not this one
+    paintQR();
+  }));
   const newKey = async () => b64u(await crypto.subtle.exportKey("raw", await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])));
   $("#go-live").addEventListener("click", async () => {
     if (!S.L) {
@@ -2394,26 +2554,27 @@
     if (mode === "j" && !S.L.p) await keyP;
     const url = mode === "j" ? playUrl() : watchUrl();
     try {
-      if (navigator.share) await navigator.share({ title: (S.c || "Mini golf") + (mode === "j" ? " — score with us" : " — live"), url });
+      if (navigator.share) await navigator.share({ title: (S.c || "Mini golf") + (mode === "j" ? " — score with us" + (gn() > 1 ? " · group " + GL(qrGroup) : "") : " — live"), url });
       else { await navigator.clipboard.writeText(url); toast("Link copied"); }
     } catch (_) {}
   });
   $("#live-stop").addEventListener("click", () => { stopLive(); closeSheets(); toast("No longer live"); });
 
   // -- joining with a play link: wait for a scorer's card, then play on it
-  const startJoin = ([, r, k, p]) => {
+  const startJoin = ([, r, k, p, g]) => {
     joining = true;
-    S = { c: "", h: 18, p: [], s: [], i: 0, d: 0, t: 1, L: { r, k, p } };
+    S = { c: "", h: 18, p: [], s: [], i: 0, d: 0, t: 1, me: g | 0, L: { r, k, p } };
     show("watch");
     $("#w-wait-msg").textContent = "Joining the game…";
     startHost();
   };
   function joined() {
     joining = false;
-    S.t = 1; S.i = S.g ? S.g.i : 0; S.d = S.g ? S.g.d : 0;
+    const x = gpos(myGr());
+    S.t = 1; S.i = x ? x.i : 0; S.d = x ? x.d : 0;
     ensureScores(); snapShadow(); keepUrl();
     $("#w-wait-msg").textContent = "Waiting for the scorer…";
-    toast("You're in. Score away");
+    toast(gn() > 1 ? "You're in · group " + GL(myGr()) : "You're in. Score away");
     if (S.d) finish(true); else { show("play"); paintHole(); }
     paintLive();
   }
@@ -2447,7 +2608,9 @@
         const was = first ? null : JSON.parse(JSON.stringify(S));
         const cheers = freshOuts(o), r = merge(o);
         if (!r.changed && !cheers.length && !first) return;
-        S.i = S.g ? S.g.i : 0; S.d = S.g ? S.g.d : 0;
+        const g0 = gpos(0);
+        S.i = g0 ? g0.i : 0; S.d = g0 ? g0.d : 0;
+        if (gn() > 1) S.d = Array.from({ length: gn() }, (_, g) => gpos(g)).every((x) => x && x.d) ? 1 : 0;   // over when every group's in
         first = false;
         paintWatch(was, was ? cheers : []);
       }
@@ -2457,14 +2620,21 @@
     $("#w-wait").hidden = true; $("#w-game").hidden = false;
     $("#w-course").textContent = S.c || "Mini golf";
     $("#w-hole").textContent = S.i + 1; $("#w-of").textContent = "/" + S.h;
-    $("#w-hole-head").hidden = !!S.d;
+    const G = gn(), wg = $("#w-groups");
+    $("#w-hole-head").hidden = !!S.d || G > 1;
+    wg.hidden = !!S.d || G === 1; wg.innerHTML = "";
+    if (G > 1) for (let g = 0; g < G; g++) {   // each group and the hole it's on
+      const x = gpos(g), c = document.createElement("span");
+      c.appendChild(gtag(g)); c.append(x && x.d ? "✓" : "hole " + ((x ? x.i : 0) + 1));
+      wg.appendChild(c);
+    }
     const champ = $("#w-champ"), wins = winners(standings());
     champ.hidden = !S.d;
     champ.textContent = S.d && wins.length ? "🏆 " + wins.map((w) => nameOf(w.pl, w.pi)).join(" & ") : "";
     $("#w-save").hidden = !S.d;
-    paintFlags($("#w-flags")); $("#w-flags").hidden = !!S.d;
+    paintFlags($("#w-flags")); $("#w-flags").hidden = !!S.d || G > 1;
     paintBoard($("#w-board"));
-    buildCard($("#w-card"), false, !S.d);
+    buildCard($("#w-card"), false, !S.d && G === 1);
     const wrap = $("#w-card").parentNode, cur = $("#w-card th.cur");
     if (cur) wrap.scrollLeft = Math.max(0, cur.offsetLeft - wrap.clientWidth / 2 + cur.offsetWidth / 2);
     if (!was) return;
@@ -2478,7 +2648,7 @@
     });
     outs.forEach(cheer);
     if (S.d && !was.d) { sfx.ace(); confetti(); }
-    else if (!S.d && S.i === was.i + 1 && !reduced) millShow(S.i + 1);
+    else if (!S.d && G === 1 && S.i === was.i + 1 && !reduced) millShow(S.i + 1);
   };
 
   // ---- go --------------------------------------------------------------
