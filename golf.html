@@ -142,6 +142,7 @@
   .field input::placeholder { color: rgba(242, 240, 234, 0.35); }
   .holes { justify-content: space-between; }
   .holes .num { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 2rem; min-width: 2.2ch; text-align: center; color: var(--turf); text-shadow: 0 0 12px rgba(57, 255, 136, 0.6); }
+  .step:disabled { opacity: 0.3; }
   .step {
     width: 44px; height: 44px; border-radius: 50%;
     border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05);
@@ -1020,6 +1021,12 @@
       <button class="step" id="holes-up" aria-label="More holes">+</button>
     </div>
 
+    <div class="field holes" id="count-field">
+      <button class="step" id="players-down" aria-label="Fewer players">&minus;</button>
+      <span class="grp-label"><svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="#ff4fd8"/><circle cx="21" cy="9" r="6" fill="#25e3ee"/></svg>players</span>
+      <span class="num" id="players-n" aria-live="polite">2</span>
+      <button class="step" id="players-up" aria-label="More players">+</button>
+    </div>
     <button class="field split" id="split" role="switch" aria-checked="false">
       <svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="7" cy="11" r="5" fill="#ff4fd8"/><circle cx="15" cy="7" r="5" fill="#25e3ee"/><circle cx="23" cy="11" r="5" fill="#39ff88"/></svg>
       <span>Split into groups</span><i class="knob"></i>
@@ -1036,7 +1043,6 @@
     </div>
     <button class="add setup-qr" id="setup-qr" hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2M20 14v2"/></svg>QR codes for each group</button>
     <div class="players" id="players"></div>
-    <button class="add" id="add-player" aria-label="Add a player"><span class="ball" style="--b:#8a8fa3"></span>+</button>
   </section>
 
   <!-- ===== a hole ===== -->
@@ -1303,10 +1309,14 @@
     $("#course").value = S.c;
     $("#holes-n").textContent = S.h;
     document.querySelectorAll("#hole-chips .chip").forEach((c) => c.classList.toggle("on", +c.dataset.h === S.h));
-    const G = gn();
+    const G = gn(), size = (g) => S.p.filter((_, i) => grOf(i) === g).length;
     $("#groups-n").textContent = G;
     $("#split").classList.toggle("on", G > 1); $("#split").setAttribute("aria-checked", G > 1);
     $("#groups-field").hidden = G === 1;
+    $("#players-n").textContent = S.p.length;
+    $("#count-field").hidden = G > 1;   // split: each group has its own + instead
+    $("#players-down").disabled = S.p.length <= 1; $("#players-up").disabled = S.p.length >= 64;
+    $("#groups-up").disabled = G >= Math.min(8, S.p.length);   // every group needs someone
     $("#split").hidden = G === 1 && S.p.length < 5;   // only worth it for a bigger party (always there to turn off)
     $("#me-field").hidden = $("#setup-qr").hidden = G === 1;
     if (G > 1) {   // which group this phone scores: any of them, not just A
@@ -1338,11 +1348,15 @@
         const mv = document.createElement("button");
         mv.className = "gtag"; mv.textContent = GL(grOf(i)); mv.style.setProperty("--g", GCOL[grOf(i)]);
         mv.setAttribute("aria-label", "In group " + GL(grOf(i)) + ": tap to move to the next group");
-        mv.addEventListener("click", (e) => { e.preventDefault(); pl.gr = (grOf(i) + 1) % G; save(); paintSetup(); });
+        mv.addEventListener("click", (e) => {
+          e.preventDefault();
+          if (size(grOf(i)) < 2) { buzz(20); return toast("Every group needs someone"); }
+          pl.gr = (grOf(i) + 1) % G; save(); paintSetup();
+        });
         f.insertBefore(mv, $(".x", f));
       }
       const x = $(".x", f);
-      x.style.visibility = S.p.length > 1 ? "" : "hidden";
+      x.style.visibility = S.p.length > 1 && (G === 1 || size(grOf(i)) > 1) ? "" : "hidden";
       x.addEventListener("click", (e) => { e.preventDefault(); S.p.splice(i, 1); S.s.splice(i, 1); save(); paintSetup(); });
       return f;
     };
@@ -1354,37 +1368,46 @@
       head.appendChild(gtag(g));
       head.insertAdjacentHTML("beforeend", '<span class="ballcount"></span><button class="grp-add" aria-label="Add a player to group ' + GL(g) + '">+</button>');
       $(".ballcount", head).textContent = ids.length;
-      $(".grp-add", head).addEventListener("click", () => addPlayer(g));
+      $(".grp-add", head).addEventListener("click", () => addPlayer(g, true));
       box.appendChild(head);
       ids.forEach((i) => box.appendChild(field(S.p[i], i)));
     }
-    $("#add-player").hidden = G > 1;
   };
   // Split the players evenly, in order, into n groups (fine-tune after by
   // tapping a player's letter).
+  // More groups: each new one gets a player, taken from the biggest group
+  // (so the total's the same, and no group's ever left empty). Fewer: the
+  // dropped group's players go back into group A.
   const setGroups = (n) => {
-    n = Math.max(1, Math.min(8, n | 0));
-    const P = S.p.length, base = Math.floor(P / n), extra = P % n;
-    let g = 0, left = base + (extra > 0 ? 1 : 0);
-    S.p.forEach((pl) => { while (left <= 0 && g < n - 1) { g++; left = base + (g < extra ? 1 : 0); } pl.gr = g; left--; });
+    n = Math.max(1, Math.min(8, S.p.length, n | 0));
+    let G = gn();
+    if (G === 1) S.p.forEach((pl) => { pl.gr = 0; });
+    while (G < n) {
+      const sizes = Array.from({ length: G }, (_, g) => S.p.filter((pl) => (pl.gr | 0) === g).length);
+      const big = sizes.indexOf(Math.max(...sizes));
+      let pi = S.p.length - 1; while ((S.p[pi].gr | 0) !== big) pi--;
+      S.p[pi].gr = G++;
+    }
+    while (G > n) { G--; S.p.forEach((pl) => { if ((pl.gr | 0) >= G) pl.gr = 0; }); }
     S.gn = n; S.me = Math.min(S.me | 0, n - 1);
     save(); paintSetup();
   };
   // a new player in group g, in the colour least used there (then overall)
-  const addPlayer = (g) => {
+  const addPlayer = (g, focus) => {
     const used = (only) => COLOURS.map((_, c) => S.p.filter((pl, i) => only(i) && pl.k % COLOURS.length === c).length);
     const inG = used((i) => grOf(i) === g), all = used(() => true);
     let k = 0;
     COLOURS.forEach((_, c) => { if (inG[c] * 100 + all[c] < inG[k] * 100 + all[k]) k = c; });
     S.p.push({ n: "", k, gr: g }); ensureScores(); save(); paintSetup();
-    const f = $('#players .player-field[data-i="' + (S.p.length - 1) + '"] input'); if (f) f.focus();
+    const f = focus && $('#players .player-field[data-i="' + (S.p.length - 1) + '"] input'); if (f) f.focus();
   };
   const setHoles = (n) => { S.h = clampH(n); ensureScores(); if (S.i >= S.h) S.i = S.h - 1; save(); paintSetup(); };
   $("#course").addEventListener("input", (e) => { S.c = e.target.value; save(); });
   $("#holes-down").addEventListener("click", () => setHoles(S.h - 1));
   $("#holes-up").addEventListener("click", () => setHoles(S.h + 1));
   document.querySelectorAll("#hole-chips .chip").forEach((c) => c.addEventListener("click", () => setHoles(+c.dataset.h)));
-  $("#add-player").addEventListener("click", () => addPlayer(0));
+  $("#players-up").addEventListener("click", () => addPlayer(0));
+  $("#players-down").addEventListener("click", () => { if (S.p.length < 2) return; S.p.pop(); S.s.pop(); save(); paintSetup(); });
   $("#groups-down").addEventListener("click", () => setGroups(Math.max(2, gn() - 1)));   // off is the switch's job
   $("#split").addEventListener("click", () => setGroups(gn() > 1 ? 1 : 2));
   $("#groups-up").addEventListener("click", () => setGroups(gn() + 1));
