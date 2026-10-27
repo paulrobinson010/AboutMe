@@ -162,6 +162,18 @@
   .add:active { transform: scale(0.98); }
   /* groups: a big party split into groups, each on its own phone(s) */
   .groups { justify-content: space-between; }
+  .split { width: 100%; text-align: left; color: var(--muted); }
+  .split svg { width: 30px; height: 18px; }
+  .split span { flex: 1; }
+  .split .knob { position: relative; width: 44px; height: 26px; border-radius: 13px; background: rgba(255, 255, 255, 0.12); transition: background 0.2s; }
+  .split .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); transition: transform 0.2s var(--ease); }
+  .split.on { color: var(--ink); border-color: rgba(57, 255, 136, 0.5); }
+  .split.on .knob { background: var(--turf); box-shadow: 0 0 12px rgba(57, 255, 136, 0.5); }
+  .split.on .knob::after { transform: translateX(18px); background: #04130a; }
+  /* results: everyone, or one group */
+  .gfilter { margin: 0 auto 14px; width: auto; max-width: 100%; }
+  .gfilter button { flex: 1 0 auto; padding: 7px 12px; }
+  #done .gfilter { margin-top: 18px; }
   .grp-label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.85rem; letter-spacing: 0.06em; }
   .grp-label svg { width: 30px; height: 18px; }
   .groups .num { font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 2rem; min-width: 2.2ch; text-align: center; color: var(--turf); text-shadow: 0 0 12px rgba(57, 255, 136, 0.6); }
@@ -1002,9 +1014,13 @@
       <button class="step" id="holes-up" aria-label="More holes">+</button>
     </div>
 
-    <div class="field groups">
+    <button class="field split" id="split" role="switch" aria-checked="false">
+      <svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="7" cy="11" r="5" fill="#ff4fd8"/><circle cx="15" cy="7" r="5" fill="#25e3ee"/><circle cx="23" cy="11" r="5" fill="#39ff88"/></svg>
+      <span>Split into groups</span><i class="knob"></i>
+    </button>
+    <div class="field groups" id="groups-field" hidden>
       <button class="step" id="groups-down" aria-label="Fewer groups">&minus;</button>
-      <span class="grp-label"><svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="7" cy="11" r="5" fill="#ff4fd8"/><circle cx="15" cy="7" r="5" fill="#25e3ee"/><circle cx="23" cy="11" r="5" fill="#39ff88"/></svg><span id="groups-word">group</span></span>
+      <span class="grp-label" id="groups-word">groups</span>
       <span class="num" id="groups-n" aria-live="polite">1</span>
       <button class="step" id="groups-up" aria-label="More groups">+</button>
     </div>
@@ -1036,6 +1052,7 @@
     <div class="done-mill"><div data-windmill></div></div>
     <h1 id="done-course" style="font-size:clamp(1.8rem,9vw,2.6rem);margin-top:10px"></h1>
     <div class="still" id="done-still" hidden></div>
+    <div class="seg gfilter" data-filter hidden></div>
     <div class="podium" id="podium"></div>
     <div class="awards" id="awards"></div>
     <div class="card-scroll"><table id="card"></table></div>
@@ -1057,6 +1074,7 @@
       <div class="w-head" id="w-hole-head"><div class="hole-num"><span data-flag></span><b id="w-hole">1</b><small id="w-of">/18</small></div></div>
       <div class="w-champ" id="w-champ" hidden></div>
       <div class="flags" id="w-flags"></div>
+      <div class="seg gfilter" data-filter hidden></div>
       <div class="board" id="w-board"></div>
       <div class="card-scroll mid"><table id="w-card"></table></div>
       <button class="save-card" id="w-save" hidden aria-label="Save the scorecard as an image"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Save card</button>
@@ -1076,6 +1094,7 @@
 </div>
 <div class="sheet" id="board-sheet" role="dialog" aria-label="Scorecard">
   <div class="grab"></div>
+  <div class="seg gfilter" data-filter hidden></div>
   <div class="board" id="board"></div>
   <div class="card-scroll mid"><table id="mid-card"></table></div>
   <div class="again resets">
@@ -1160,8 +1179,27 @@
   const gpos = (g) => (S.gs && S.gs[g]) || null;   // where group g has got to: { i, d, v }
   // every group round? (until then the standings are "so far")
   const allIn = () => gn() === 1 || Array.from({ length: gn() }, (_, g) => gpos(g)).every((x) => x && x.d);
+  const doneFor = () => (view >= 0 && gn() > 1 ? !!(gpos(view) && gpos(view).d) : allIn());
   const perHole = (st) => (st.t / st.thru).toFixed(1);
   const gtag = (g) => { const t = document.createElement("span"); t.className = "gtag"; t.textContent = GL(g); t.style.setProperty("--g", GCOL[g]); return t; };
+  // which players the results are showing: everyone (-1) or one group
+  let view = -1;
+  const shown = () => byGroup().filter((pi) => view < 0 || grOf(pi) === view);
+  let repaintView = () => {};
+  const paintFilters = () => {
+    if (view >= gn()) view = -1;
+    document.querySelectorAll("[data-filter]").forEach((box) => {
+      box.hidden = gn() === 1; box.innerHTML = "";
+      if (box.hidden) return;
+      for (let g = -1; g < gn(); g++) {
+        const b = document.createElement("button");
+        b.textContent = g < 0 ? "All" : GL(g); b.classList.toggle("on", g === view);
+        b.setAttribute("aria-label", g < 0 ? "Everyone" : "Just group " + GL(g));
+        b.addEventListener("click", () => { view = g; repaintView(); });
+        box.appendChild(b);
+      }
+    });
+  };
   const ensureScores = () => {
     S.s = S.p.map((_, pi) => Array.from({ length: S.h }, (_, j) => (S.s[pi] && S.s[pi][j]) | 0));
   };
@@ -1255,7 +1293,9 @@
     $("#holes-n").textContent = S.h;
     document.querySelectorAll("#hole-chips .chip").forEach((c) => c.classList.toggle("on", +c.dataset.h === S.h));
     const G = gn();
-    $("#groups-n").textContent = G; $("#groups-word").textContent = G === 1 ? "group" : "groups";
+    $("#groups-n").textContent = G;
+    $("#split").classList.toggle("on", G > 1); $("#split").setAttribute("aria-checked", G > 1);
+    $("#groups-field").hidden = G === 1;
     const box = $("#players"); box.innerHTML = "";
     const field = (pl, i) => {
       const f = document.createElement("label");
@@ -1322,7 +1362,8 @@
   $("#holes-up").addEventListener("click", () => setHoles(S.h + 1));
   document.querySelectorAll("#hole-chips .chip").forEach((c) => c.addEventListener("click", () => setHoles(+c.dataset.h)));
   $("#add-player").addEventListener("click", () => addPlayer(0));
-  $("#groups-down").addEventListener("click", () => setGroups(gn() - 1));
+  $("#groups-down").addEventListener("click", () => setGroups(Math.max(2, gn() - 1)));   // off is the switch's job
+  $("#split").addEventListener("click", () => setGroups(gn() > 1 ? 1 : 2));
   $("#groups-up").addEventListener("click", () => setGroups(gn() + 1));
 
   // ---- a hole --------------------------------------------------------------
@@ -1468,7 +1509,7 @@
     }
     const sig = document.createElement("th"); sig.textContent = "Σ"; head.appendChild(sig);
     t.appendChild(head);
-    byGroup().forEach((pi) => {
+    shown().forEach((pi) => {
       const pl = S.p[pi], tr = document.createElement("tr");
       const nm = document.createElement("td"); nm.style.color = colour(pl); tr.appendChild(nm);
       if (gn() > 1) nm.appendChild(gtag(grOf(pi)));
@@ -1489,8 +1530,8 @@
   // Level scores share a place ("=1", and the next player is 3rd), so a tie
   // is never quietly broken by the order the players were entered in.
   const rankKey = (s) => (s.thru ? s.t / s.thru : Infinity);
-  const standings = () => {
-    const list = S.p.map((pl, pi) => ({ pl, pi, t: total(pi), thru: played(pi) }))
+  const standings = (ids = shown()) => {
+    const list = ids.map((pi) => ({ pl: S.p[pi], pi, t: total(pi), thru: played(pi) }))
       .sort((a, b) => (b.thru > 0) - (a.thru > 0) || rankKey(a) - rankKey(b) || a.t - b.t || b.thru - a.thru);
     list.forEach((s, i) => {
       const prev = list[i - 1];
@@ -1514,9 +1555,10 @@
       box.appendChild(l);
     });
   };
+  const paintSheet = () => { paintFilters(); paintBoard($("#board")); buildCard($("#mid-card"), true); };
   $("#show-board").addEventListener("click", () => {
-    paintBoard($("#board"));
-    buildCard($("#mid-card"), true);
+    repaintView = paintSheet;
+    paintSheet();
     disarm();
     openSheet("#board-sheet");
     // bring the current hole's column into view on a long card
@@ -2057,7 +2099,9 @@
       });
     }
     $("#again").hidden = gn() > 1;   // one tap would wipe everyone's card
-    const st = standings();
+    repaintView = () => finish(true);
+    paintFilters();
+    const st = standings(), ids = shown();
     const pod = $("#podium"); pod.innerHTML = "";
     // the first three distinct places, each a step that holds everyone on it
     const steps = [];
@@ -2070,31 +2114,31 @@
       c.innerHTML = (k === 0 ? (g.who.length > 1 ? '<span class="tie">Tie!</span>' : "") + '<span class="crown">🏆</span>' : "") + '<span class="balls"></span><span class="nm"></span><div class="blk"></div>';
       g.who.forEach((s) => { const b = document.createElement("span"); b.className = "ball"; b.style.setProperty("--b", colour(s.pl)); $(".balls", c).appendChild(b); });
       $(".nm", c).textContent = g.who.map((s) => nameOf(s.pl, s.pi)).join(" & ");
-      $(".blk", c).textContent = !lead.thru ? "–" : allIn() ? lead.t : perHole(lead);   // so far: strokes a hole
+      $(".blk", c).textContent = !lead.thru ? "–" : doneFor() ? lead.t : perHole(lead);   // so far: strokes a hole
       pod.appendChild(c);
     });
     // awards: aces, the cleanest card, and the hole that got away
     const aw = $("#awards"); aw.innerHTML = "";
     const add = (ico, title, who) => { const a = document.createElement("div"); a.className = "award"; a.innerHTML = '<span class="ico"></span><div><b></b><span></span></div>'; $(".ico", a).textContent = ico; $("b", a).textContent = title; $("span:last-child", a).textContent = who; aw.appendChild(a); };
-    const aces = S.p.map((pl, pi) => ({ pl, pi, n: S.s[pi].filter((v) => v === 1).length })).filter((a) => a.n).sort((a, b) => b.n - a.n);
+    const aces = ids.map((pi) => ({ pl: S.p[pi], pi, n: S.s[pi].filter((v) => v === 1).length })).filter((a) => a.n).sort((a, b) => b.n - a.n);
     if (aces.length) add("⛳", "Hole in one", aces.map((a) => nameOf(a.pl, a.pi) + (a.n > 1 ? " ×" + a.n : "")).join(", "));
     // the hole that got away — everyone who matched the worst score
     let worstV = 0;
-    S.s.forEach((r) => r.forEach((v) => { if (v > worstV) worstV = v; }));
+    ids.forEach((pi) => S.s[pi].forEach((v) => { if (v > worstV) worstV = v; }));
     if (worstV >= 5) {
       const hits = [];
-      S.p.forEach((pl, pi) => S.s[pi].forEach((v, j) => { if (v === worstV) hits.push(nameOf(pl, pi) + " on " + (j + 1)); }));
+      ids.forEach((pi) => S.s[pi].forEach((v, j) => { if (v === worstV) hits.push(nameOf(S.p[pi], pi) + " on " + (j + 1)); }));
       add("🌀", "Windmilled · " + worstV, hits.join(", "));
     }
     // the steadiest card — everyone whose worst hole was the lowest
-    const maxes = S.p.map((pl, pi) => ({ pl, pi, m: Math.max(0, ...S.s[pi]) })).filter((x) => x.m > 0);
-    if (maxes.length && S.p.length > 1) {
+    const maxes = ids.map((pi) => ({ pl: S.p[pi], pi, m: Math.max(0, ...S.s[pi]) })).filter((x) => x.m > 0);
+    if (maxes.length && ids.length > 1) {
       const low = Math.min(...maxes.map((x) => x.m));
       const cool = maxes.filter((x) => x.m === low);
-      if (cool.length < S.p.length) add("🧊", "Cool head · never over " + low, cool.map((x) => nameOf(x.pl, x.pi)).join(", "));
+      if (cool.length < ids.length) add("🧊", "Cool head · never over " + low, cool.map((x) => nameOf(x.pl, x.pi)).join(", "));
     }
     buildCard($("#card"));
-    const party = allIn() && st[0] && st[0].thru && !celebrated;   // the last group's in: everyone celebrates
+    const party = allIn() && !celebrated && S.p.some((_, pi) => played(pi));   // the last group's in: everyone celebrates
     if (party) celebrated = true;
     if (quiet && $("#done").classList.contains("on")) { if (party) { sfx.ace(); confetti(); } return; }   // just the card changing under it
     show("done");
@@ -2141,7 +2185,8 @@
     }
     const EXTRA = (tLines.length - 1) * 66;
     const HEADER = 330 + EXTRA, FOOT = 110;
-    const H = HEADER + blocks * (HEAD + S.p.length * ROW + GAP) + FOOT;
+    const rowsIds = shown();
+    const H = HEADER + blocks * (HEAD + rowsIds.length * ROW + GAP) + FOOT;
     cv.width = W; cv.height = H;
     const SG = (w, px) => w + " " + px + 'px "Space Grotesk", system-ui, sans-serif';
     const fit = (txt, max) => { if (x.measureText(txt).width <= max) return txt; while (txt.length > 1 && x.measureText(txt + "…").width > max) txt = txt.slice(0, -1); return txt + "…"; };
@@ -2183,14 +2228,14 @@
     const wins = winners(st);
     if (wins.length) {
       const wy = 268 + EXTRA;
-      const label = !allIn() ? "LEADING" : wins.length > 1 ? "JOINT WINNERS" : "WINNER";
+      const label = (view >= 0 && gn() > 1 ? "GROUP " + GL(view) + " · " : "") + (!doneFor() ? "LEADING" : wins.length > 1 ? "JOINT WINNERS" : "WINNER");
       x.font = SG(700, 30); x.fillStyle = "#ffd23f"; glow("#ffd23f", 14); x.fillText(label, PAD, wy); noGlow();
       let bx = PAD + x.measureText(label).width + 40;
       wins.forEach((w, k) => ball(bx + k * 22, wy - 10, 15, colour(w.pl)));
       bx += (wins.length - 1) * 22 + 28;
       x.font = SG(700, 38); x.fillStyle = "#f2f0ea";
-      const sc = allIn() ? String(wins[0].t) : perHole(wins[0]) + " a hole";
-      x.fillText(fit(wins.map((w) => nameOf(w.pl, w.pi)).join(" & "), W - PAD - bx - 90 - (allIn() ? 0 : 120)) + "  ·  " + sc, bx, wy + 2);
+      const sc = doneFor() ? String(wins[0].t) : perHole(wins[0]) + " a hole";
+      x.fillText(fit(wins.map((w) => nameOf(w.pl, w.pi)).join(" & "), W - PAD - bx - 90 - (doneFor() ? 0 : 120)) + "  ·  " + sc, bx, wy + 2);
     }
 
     // the card, nine holes to a block
@@ -2203,7 +2248,7 @@
       x.textAlign = "left";
       x.strokeStyle = "rgba(242,240,234,0.14)"; x.lineWidth = 1.5;
       x.beginPath(); x.moveTo(PAD, y + HEAD - 6); x.lineTo(W - PAD, y + HEAD - 6); x.stroke();
-      byGroup().forEach((pi, ri) => {
+      rowsIds.forEach((pi, ri) => {
         const pl = S.p[pi], ry = y + HEAD + ri * ROW, mid = ry + ROW / 2;
         if (ri % 2 === 0) { x.fillStyle = "rgba(255,255,255,0.03)"; x.fillRect(PAD, ry, W - PAD * 2, ROW); }
         if (gn() > 1) {   // the group's letter in the margin
@@ -2225,7 +2270,7 @@
         }
         x.textAlign = "left"; x.textBaseline = "alphabetic";
       });
-      y += HEAD + S.p.length * ROW + GAP;
+      y += HEAD + rowsIds.length * ROW + GAP;
     }
 
     // a little windmill, and where it came from
@@ -2246,7 +2291,7 @@
       const cv = await drawCard();
       const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
       const slug = (S.c || "mini-golf").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "mini-golf";
-      const file = new File([blob], "putt-" + slug + (S.dt ? "-" + S.dt : "") + ".png", { type: "image/png" });
+      const file = new File([blob], "putt-" + slug + (view >= 0 && gn() > 1 ? "-group-" + GL(view).toLowerCase() : "") + (S.dt ? "-" + S.dt : "") + ".png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try { await navigator.share({ files: [file], title: (S.c || "Mini golf") + " — scorecard" }); }
         catch (err) { if (err && err.name !== "AbortError") throw err; }
@@ -2628,6 +2673,8 @@
       c.appendChild(gtag(g)); c.append(x && x.d ? "✓" : "hole " + ((x ? x.i : 0) + 1));
       wg.appendChild(c);
     }
+    repaintView = () => paintWatch(null, []);
+    paintFilters();
     const champ = $("#w-champ"), wins = winners(standings());
     champ.hidden = !S.d;
     champ.textContent = S.d && wins.length ? "🏆 " + wins.map((w) => nameOf(w.pl, w.pi)).join(" & ") : "";
