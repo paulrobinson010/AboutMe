@@ -5,8 +5,9 @@ main = "src/index.js"
 compatibility_date = "2025-09-01"
 
 # Only these pages may open a room. Comma-separated.
+# jensen.robbo-online.uk: Neon Strike multiplayer on Jensen's site uses the same relay.
 [vars]
-ALLOWED_ORIGINS = "https://aboutme.robbo-online.uk,http://localhost:8903"
+ALLOWED_ORIGINS = "https://aboutme.robbo-online.uk,http://localhost:8903,https://jensen.robbo-online.uk"
 
 [[durable_objects.bindings]]
 name = "ROOMS"
