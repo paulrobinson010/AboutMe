@@ -80,7 +80,7 @@
   .answer { min-height: 88px; margin-top: 14px; display: grid; place-items: center; text-align: center; }
   .answer b {
     font-family: "Syne", sans-serif; font-weight: 800;
-    font-size: clamp(2rem, 11vw, 3.2rem); line-height: 1; max-width: 100%; overflow-wrap: anywhere;
+    font-size: clamp(2rem, 11vw, 3.2rem); line-height: 1; width: 100%; overflow-wrap: normal;
     color: var(--a, var(--gold)); text-shadow: 0 0 12px var(--a, var(--gold)), 0 0 40px color-mix(in srgb, var(--a, var(--gold)) 50%, transparent);
   }
   .answer b.pop { animation: pop 0.6s var(--ease); }
@@ -235,6 +235,19 @@
     e.currentTarget.querySelector(".wave").style.display = sound ? "" : "none";
     e.currentTarget.setAttribute("aria-label", sound ? "Sound on" : "Sound off");
   });
+  // Big words shrink to fit their line rather than break in the middle
+  // ("Postman", not "Postma / n"); a long answer can still wrap between
+  // words. Refitted when the fonts arrive and when the screen turns.
+  const fitting = new Set();
+  const fitNow = (el) => {
+    if (!el.isConnected) return fitting.delete(el);
+    el.style.fontSize = "";
+    let s = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth + 1 && s > 12) { s -= 1; el.style.fontSize = s + "px"; }
+  };
+  const fit = (el) => { fitting.add(el); fitNow(el); };
+  addEventListener("resize", () => fitting.forEach(fitNow));
+  if (document.fonts) document.fonts.ready.then(() => fitting.forEach(fitNow));
   const buzz = (ms) => { if (navigator.vibrate && !(navigator.userActivation && !navigator.userActivation.hasBeenActive)) navigator.vibrate(ms); };
   let toastT = 0;
   const toast = (t) => { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 1600); };
@@ -321,7 +334,7 @@
     winI = Math.min(n - 1, Math.floor(a / w));
     const seg = $('#segs .seg[data-i="' + winI + '"]'); if (seg) seg.classList.add("win");
     const c = colourOf(winI), ans = $("#answer");
-    ans.innerHTML = "<b></b>"; const b = ans.firstChild; b.textContent = opts[winI]; b.style.setProperty("--a", c);
+    ans.innerHTML = "<b></b>"; const b = ans.firstChild; b.textContent = opts[winI]; b.style.setProperty("--a", c); fit(b);
     void b.offsetWidth; b.classList.add("pop");
     $("#after").hidden = false;
     sfx.ta(); buzz([20, 40, 60]); confetti(c);
@@ -336,7 +349,7 @@
     const gone = opts[winI];
     opts.splice(winI, 1); clearWin(); save(); draw(); sfx.out();
     if (opts.length === 1) {   // last one standing
-      winI = 0; const ans = $("#answer"); ans.innerHTML = "<b></b>"; ans.firstChild.textContent = opts[0]; ans.firstChild.style.setProperty("--a", colourOf(0));
+      winI = 0; const ans = $("#answer"); ans.innerHTML = "<b></b>"; ans.firstChild.textContent = opts[0]; ans.firstChild.style.setProperty("--a", colourOf(0)); fit(ans.firstChild);
       ans.firstChild.classList.add("pop"); $("#after").hidden = true; $('#segs .seg[data-i="0"]').classList.add("win");
       sfx.ta(); confetti(colourOf(0)); toast(gone + " · out");
       return;

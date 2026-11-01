@@ -102,7 +102,7 @@
     display: flex; align-items: center; justify-content: center; gap: 12px;
     padding: 18px; border-radius: 22px;
     background: var(--red); color: #1a0306;
-    font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.25rem; letter-spacing: 0.02em;
+    font-family: "Syne", sans-serif; font-weight: 800; font-size: min(1.25rem, 5.4vw); letter-spacing: 0.02em; white-space: nowrap;
     box-shadow: 0 0 22px rgba(255, 77, 94, 0.55), 0 12px 40px rgba(0, 0, 0, 0.5);
   }
   .cta:active { transform: translateX(-50%) scale(0.97); }
@@ -131,7 +131,7 @@
 
   /* ---------- the card: press and hold to see it ---------- */
   .pass-to { text-align: center; margin-top: 12vh; }
-  .pass-to b { display: block; font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(2.6rem, 14vw, 4.2rem); line-height: 1; margin-top: 10px; color: var(--c, var(--ink)); text-shadow: 0 0 18px color-mix(in srgb, var(--c, #fff) 60%, transparent); overflow-wrap: anywhere; }
+  .pass-to b { display: block; font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(2.6rem, 14vw, 4.2rem); line-height: 1; margin-top: 10px; color: var(--c, var(--ink)); text-shadow: 0 0 18px color-mix(in srgb, var(--c, #fff) 60%, transparent); overflow-wrap: normal; }
   .card {
     position: relative; width: min(86%, 330px); aspect-ratio: 3 / 4; margin: 22px auto 0;
     perspective: 1000px; cursor: pointer;
@@ -147,7 +147,7 @@
   .back b { letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.85rem; color: var(--muted); }
   .front { background: #10121c; border: 2px solid var(--cyan); box-shadow: 0 0 30px rgba(37, 227, 238, 0.35); transform: rotateY(180deg); }
   .front small { letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); font-size: 0.8rem; }
-  .front b { font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(1.9rem, 10vw, 2.7rem); line-height: 1.02; overflow-wrap: anywhere; color: var(--cyan); text-shadow: 0 0 12px rgba(37, 227, 238, 0.6); }
+  .front b { align-self: stretch; font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(1.9rem, 10vw, 2.7rem); line-height: 1.02; overflow-wrap: normal; color: var(--cyan); text-shadow: 0 0 12px rgba(37, 227, 238, 0.6); }
   .front span { color: var(--muted); font-size: 0.9rem; }
   .card.imp .front { border-color: var(--red); box-shadow: 0 0 34px rgba(255, 77, 94, 0.5); }
   .card.imp .front b { color: var(--red); text-shadow: 0 0 14px rgba(255, 77, 94, 0.7); }
@@ -180,7 +180,7 @@
   .verdict { text-align: center; margin-top: 34px; opacity: 0; }
   .verdict.on { animation: pop 0.6s var(--ease) forwards; }
   @keyframes pop { 0% { opacity: 0; transform: scale(0.5) rotate(-5deg); } 60% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
-  .verdict b { display: block; font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(2.1rem, 10vw, 3.4rem); line-height: 1; overflow-wrap: anywhere; }
+  .verdict b { display: block; font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(2.1rem, 10vw, 3.4rem); line-height: 1; overflow-wrap: normal; }
   .verdict b.caught { color: var(--turf); text-shadow: 0 0 16px rgba(57, 255, 136, 0.6); }
   .verdict b.away { color: var(--red); text-shadow: 0 0 16px rgba(255, 77, 94, 0.6); }
   .verdict p { margin-top: 14px; color: var(--muted); }
@@ -375,6 +375,19 @@
     e.currentTarget.querySelector(".wave").style.display = sound ? "" : "none";
     e.currentTarget.setAttribute("aria-label", sound ? "Sound on" : "Sound off");
   });
+  // Big words shrink to fit their line rather than break in the middle
+  // ("Postman", not "Postma / n"); a long answer can still wrap between
+  // words. Refitted when the fonts arrive and when the screen turns.
+  const fitting = new Set();
+  const fitNow = (el) => {
+    if (!el.isConnected) return fitting.delete(el);
+    el.style.fontSize = "";
+    let s = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth + 1 && s > 12) { s -= 1; el.style.fontSize = s + "px"; }
+  };
+  const fit = (el) => { fitting.add(el); fitNow(el); };
+  addEventListener("resize", () => fitting.forEach(fitNow));
+  if (document.fonts) document.fonts.ready.then(() => fitting.forEach(fitNow));
   const buzz = (ms) => { if (navigator.vibrate && !(navigator.userActivation && !navigator.userActivation.hasBeenActive)) navigator.vibrate(ms); };
   let toastT = 0;
   const toast = (t) => { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 1800); };
@@ -482,7 +495,7 @@
   const paintOne = () => {
     if (S.ph === "pass") {
       show("pass");
-      const b = $("#pass-name"); b.textContent = nameAt(S.at); b.style.setProperty("--c", colourOf(S.at));
+      const b = $("#pass-name"); b.textContent = nameAt(S.at); b.style.setProperty("--c", colourOf(S.at)); fit(b);
       cta("I'm " + nameAt(S.at), () => { S.ph = "look"; save(); paintOne(); });
     } else if (S.ph === "look") {
       show("round"); $("#round").classList.remove("net");
@@ -496,7 +509,7 @@
       }, { wait: !seen });
     } else if (S.ph === "talk") {
       show("pass");
-      const b = $("#pass-name"); b.textContent = nameAt(S.st) + " starts"; b.style.setProperty("--c", colourOf(S.st));
+      const b = $("#pass-name"); b.textContent = nameAt(S.st) + " starts"; b.style.setProperty("--c", colourOf(S.st)); fit(b);
       $("#pass").querySelector(".small").textContent = "Round " + S.r + " · " + catName(S.wc);
       cta("Reveal the imposter" + (S.im.length > 1 ? "s" : ""), () => { S.ph = "reveal"; save(); paintOne(); }, { two: true });
     } else if (S.ph === "reveal") {
@@ -515,6 +528,7 @@
     card.classList.toggle("imp", !!c.imp);
     $("#card-cat").textContent = catName(c.wc);
     $("#card-word").textContent = c.imp ? "You're the imposter" : c.w;
+    fit($("#card-word"));
     $("#card-sub").textContent = c.imp ? "Blend in. Work out the word." : "Don't give it away";
   };
   const peek = (on) => {
@@ -553,6 +567,7 @@
     } else { verdict = players.filter(isImp).map((p) => p.n).join(" & "); cls = "away"; }   // one phone: no votes, just who
     $("#verdict").classList.remove("on");
     $("#verdict-b").textContent = verdict; $("#verdict-b").className = cls; $("#verdict-w").textContent = w;
+    fit($("#verdict-b"));
     clearTimeout(revT);
     // the spotlight: quick at first, slowing, stopping on an imposter
     const target = players.findIndex(isImp);
