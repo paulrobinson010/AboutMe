@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script>
+  // iPhone Safari zooms in on a small text box and doesn't zoom back out;
+  // maximum-scale stops that (iOS still allows pinch-zoom). iOS only.
+  if (/iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1))
+    document.querySelector('meta[name="viewport"]').content += ", maximum-scale=1";
+</script>
+<meta name="theme-color" content="#07080f">
+<title>Spin. — decision wheel</title>
+<meta name="description" content="A glow-in-the-dark decision wheel. Flick it, let it decide. Nothing stored — the wheel lives in the link.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: "Syne"; font-weight: 800; font-display: swap; src: url("assets/fonts/syne-latin-800-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 500; font-display: swap; src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 700; font-display: swap; src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
+
+  /* A fairground wheel in blacklight: neon wedges, gold pegs, a flapper. */
+  :root {
+    --bg: #07080f;
+    --ink: #f2f0ea;
+    --muted: rgba(242, 240, 234, 0.55);
+    --line: rgba(242, 240, 234, 0.12);
+    --turf: #39ff88;
+    --pink: #ff4fd8;
+    --cyan: #25e3ee;
+    --gold: #ffd23f;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+  body {
+    min-height: 100svh;
+    color: var(--ink);
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 500;
+    background:
+      radial-gradient(90% 50% at 50% -10%, rgba(37, 227, 238, 0.16), transparent 70%),
+      radial-gradient(70% 40% at 0% 100%, rgba(255, 79, 216, 0.14), transparent 70%),
+      var(--bg);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overflow-x: hidden;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { background: none; border: 0; cursor: pointer; }
+  .wrap { width: min(100%, 560px); margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom)); position: relative; }
+  .home { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 16px; color: var(--muted); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.14em; }
+  .sound { position: absolute; top: max(6px, env(safe-area-inset-top)); right: 12px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+  .sound svg { width: 20px; height: 20px; }
+  h1 {
+    font-family: "Syne", sans-serif; font-weight: 800;
+    font-size: clamp(3rem, 15vw, 4.4rem); line-height: 0.9; letter-spacing: -0.02em;
+    text-align: center; margin-top: 30px;
+  }
+  .glow-cyan { color: var(--cyan); text-shadow: 0 0 8px var(--cyan), 0 0 26px rgba(37, 227, 238, 0.6); }
+
+  /* ---------- the wheel ---------- */
+  .stage { position: relative; width: min(100%, 400px); aspect-ratio: 1; margin: 22px auto 0; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .stage svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .wheel { cursor: grab; }
+  .wheel.dragging { cursor: grabbing; }
+  .seg path { stroke-width: 0.8; transition: fill-opacity 0.3s; }
+  .seg.win path.fill { animation: win 0.9s ease-in-out infinite; }
+  @keyframes win { 50% { fill-opacity: 0.75; } }
+  .seg text { font: 700 9px "Space Grotesk", system-ui, sans-serif; dominant-baseline: central; pointer-events: none; }
+  .hub { cursor: pointer; }
+  .hub text { font: 800 11px "Syne", sans-serif; letter-spacing: 0.04em; dominant-baseline: central; text-anchor: middle; pointer-events: none; }
+  .hub:active circle.face { fill: #1d1640; }
+  .flap { transform-box: view-box; transform-origin: 0px -113px; transition: transform 0.09s ease-out; }
+
+  /* ---------- the answer ---------- */
+  .answer { min-height: 88px; margin-top: 14px; display: grid; place-items: center; text-align: center; }
+  .answer b {
+    font-family: "Syne", sans-serif; font-weight: 800;
+    font-size: clamp(2rem, 11vw, 3.2rem); line-height: 1; max-width: 100%; overflow-wrap: anywhere;
+    color: var(--a, var(--gold)); text-shadow: 0 0 12px var(--a, var(--gold)), 0 0 40px color-mix(in srgb, var(--a, var(--gold)) 50%, transparent);
+  }
+  .answer b.pop { animation: pop 0.6s var(--ease); }
+  @keyframes pop { 0% { transform: scale(0.4) rotate(-6deg); opacity: 0; } 60% { transform: scale(1.08) rotate(1deg); opacity: 1; } 100% { transform: none; } }
+  .answer .hint { color: var(--muted); letter-spacing: 0.08em; font-size: 0.9rem; }
+  .after { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+  .after button { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 100px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; }
+  .after button.go { background: var(--cyan); color: #031417; border-color: transparent; box-shadow: 0 0 18px rgba(37, 227, 238, 0.5); }
+  .after button:active { transform: scale(0.96); }
+  .history { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 14px; min-height: 26px; }
+  .history span { padding: 3px 10px; border-radius: 100px; font-size: 0.78rem; color: var(--muted); border: 1px solid var(--line); }
+  .history span::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--c); margin-right: 6px; vertical-align: 1px; }
+
+  /* ---------- the options ---------- */
+  .field {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 22px; padding: 8px 8px 8px 16px;
+    border-radius: 18px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line);
+  }
+  .field:focus-within { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(37, 227, 238, 0.15); }
+  /* 18px: over the size below which phones zoom in on focus */
+  .field input { flex: 1; min-width: 0; background: none; border: 0; outline: none; font-size: max(18px, 1.1rem); padding: 8px 0; }
+  .field input::placeholder { color: rgba(242, 240, 234, 0.35); }
+  .field .plus { width: 44px; height: 44px; border-radius: 14px; background: var(--cyan); color: #031417; font-size: 1.6rem; line-height: 1; font-weight: 700; flex: none; }
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .opt { display: inline-flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-radius: 100px; border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); background: color-mix(in srgb, var(--c) 10%, transparent); max-width: 100%; }
+  .opt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .opt i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); flex: none; }
+  .opt button { width: 26px; height: 26px; border-radius: 50%; color: var(--muted); font-size: 1.05rem; flex: none; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; justify-content: center; }
+  .presets button { padding: 8px 13px; border-radius: 100px; border: 1px solid var(--line); color: var(--muted); font-size: 0.88rem; }
+  .presets button:active { transform: scale(0.96); }
+  .presets .clear.arm { border-color: #ff5a5a; color: #ff8a80; }
+  .deal { text-align: center; margin-top: 26px; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
+
+  .confetti { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+  .toast {
+    position: fixed; left: 50%; top: max(18px, env(safe-area-inset-top)); z-index: 40;
+    transform: translate(-50%, -140%); padding: 10px 18px; border-radius: 100px;
+    background: #151827; border: 1px solid var(--line); font-weight: 700; white-space: nowrap;
+    transition: transform 0.4s var(--ease);
+  }
+  .toast.on { transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="home" href="./">&larr; PR.</a>
+  <button class="sound" id="sound" aria-label="Sound on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
+  <h1>Spin<span class="glow-cyan">.</span></h1>
+
+  <div class="stage" id="stage">
+    <svg viewBox="-125 -125 250 250" aria-hidden="true">
+      <defs>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="hubg"><stop offset="0" stop-color="#2a1f55"/><stop offset="1" stop-color="#140e2a"/></radialGradient>
+      </defs>
+      <!-- the stand -->
+      <path d="M-40 118 L0 96 L40 118" fill="none" stroke="#a77bff" stroke-width="3" stroke-linecap="round" filter="url(#glow)" opacity="0.7"/>
+      <g class="wheel" id="wheel">
+        <circle r="104" fill="#0b0c18" stroke="#ff4fd8" stroke-width="3" filter="url(#glow)"/>
+        <g id="segs"></g>
+        <g id="pegs" fill="#ffd23f" filter="url(#glow)"></g>
+      </g>
+      <g class="hub" id="hub" role="button" aria-label="Spin">
+        <circle class="face" r="24" fill="url(#hubg)" stroke="#25e3ee" stroke-width="2.4" filter="url(#glow)"/>
+        <text id="hub-t" fill="#f2f0ea">SPIN</text>
+      </g>
+      <!-- the flapper at the top -->
+      <g class="flap" id="flap">
+        <path d="M-9 -122 L9 -122 L0 -96 Z" fill="#f2f0ea" stroke="#ff4fd8" stroke-width="1.6" stroke-linejoin="round" filter="url(#glow)"/>
+        <circle cx="0" cy="-116" r="2.6" fill="#ff4fd8"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="answer" id="answer" aria-live="polite"><span class="hint" id="hint">Flick it, or tap the middle</span></div>
+  <div class="after" id="after" hidden>
+    <button class="go" id="again" aria-label="Spin again"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>Again</button>
+    <button id="out" aria-label="Take it off the wheel and spin again"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Out &amp; spin</button>
+  </div>
+  <div class="history" id="history"></div>
+
+  <label class="field">
+    <input id="add" maxlength="24" placeholder="Add an option" autocomplete="off" enterkeyhint="done" aria-label="Add an option">
+    <button class="plus" id="add-btn" aria-label="Add">+</button>
+  </label>
+  <div class="opts" id="opts"></div>
+  <div class="presets" id="presets">
+    <button data-p="dinner">&#127829; Dinner</button>
+    <button data-p="yesno">&#128077; Yes / No</button>
+    <button data-p="dice">&#127922; 1–6</button>
+    <button data-p="chores">&#129529; Chores</button>
+    <button class="clear" id="clear">Clear</button>
+  </div>
+  <p class="deal">Nothing stored here. The wheel lives in the link.</p>
+</div>
+
+<canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Spin. — a decision wheel. The options live in the page's own address
+   (so the link shares the wheel); nothing is stored and nothing is sent. */
+(() => {
+  const $ = (s, r) => (r || document).querySelector(s);
+  const COLOURS = ["#ff4fd8", "#25e3ee", "#39ff88", "#ffa53d", "#a77bff", "#ffd23f", "#ff5a5a", "#4d8bff", "#ff8fb1", "#7dffb0"];
+  const PRESETS = {
+    dinner: ["Pizza", "Curry", "Chinese", "Burgers", "Tapas", "Thai", "Fish & chips", "Sushi"],
+    yesno: ["Yes", "No"],
+    dice: ["1", "2", "3", "4", "5", "6"],
+    chores: ["Washing up", "Bins", "Hoover", "Laundry", "Bathroom", "Free pass"],
+  };
+  const MAXN = 30;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const rand = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;   // fair, not Math.random
+
+  // ---- state, in the URL ---------------------------------------------------
+  let opts = [];
+  const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const dec = (t) => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/")))));
+  const save = () => { try { history.replaceState(null, "", opts.length ? "#" + enc({ o: opts }) : location.pathname); } catch (_) {} };
+  try { const o = location.hash.length > 2 && dec(location.hash.slice(1)); if (o && Array.isArray(o.o)) opts = o.o.map((x) => String(x).slice(0, 24)).filter(Boolean).slice(0, MAXN); } catch (_) {}
+  if (!opts.length) opts = PRESETS.dinner.slice();
+  // neighbours never share a colour, the last and first included
+  const colourOf = (i) => { const n = opts.length, c = COLOURS.length; return COLOURS[(n % c === 1 && i === n - 1) ? 1 : i % c]; };
+
+  // ---- sound -----------------------------------------------------------------
+  let sound = true, ac = null;
+  const audio = () => {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} }
+    if (ac && ac.state === "suspended") ac.resume().catch(() => {});
+    return ac;
+  };
+  addEventListener("pointerdown", audio, { once: true });
+  const tone = (f, t0, dur, type, vol) => {
+    const a = audio(); if (!a || !sound) return;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, a.currentTime + t0);
+    g.gain.setValueAtTime(0.0001, a.currentTime + t0);
+    g.gain.exponentialRampToValueAtTime(vol || 0.15, a.currentTime + t0 + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + t0 + dur);
+    o.connect(g).connect(a.destination); o.start(a.currentTime + t0); o.stop(a.currentTime + t0 + dur + 0.02);
+  };
+  const sfx = {
+    tick: (v) => tone(1500 + Math.min(900, v), 0, 0.025, "triangle", 0.09),
+    ta: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.07, 0.25, "triangle", 0.13)),
+    out: () => { tone(300, 0, 0.12, "square", 0.05); tone(180, 0.1, 0.2, "square", 0.05); },
+  };
+  $("#sound").addEventListener("click", (e) => {
+    sound = !sound;
+    e.currentTarget.querySelector(".wave").style.display = sound ? "" : "none";
+    e.currentTarget.setAttribute("aria-label", sound ? "Sound on" : "Sound off");
+  });
+  const buzz = (ms) => { if (navigator.vibrate && !(navigator.userActivation && !navigator.userActivation.hasBeenActive)) navigator.vibrate(ms); };
+  let toastT = 0;
+  const toast = (t) => { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 1600); };
+
+  // ---- drawing the wheel -------------------------------------------------
+  const NS = "http://www.w3.org/2000/svg", R = 100;
+  const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  const pt = (deg, r) => { const a = (deg - 90) * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; };
+  const draw = () => {
+    const segs = $("#segs"), pegs = $("#pegs"), n = Math.max(opts.length, 1);
+    segs.innerHTML = ""; pegs.innerHTML = "";
+    const w = 360 / n, fs = Math.max(5.5, Math.min(11, 150 / n + 3));
+    for (let i = 0; i < n; i++) {
+      const c = opts.length ? colourOf(i) : "#555a70", g = el("g", { class: "seg", "data-i": i });
+      const [x1, y1] = pt(i * w, R), [x2, y2] = pt((i + 1) * w, R);
+      const d = n === 1 ? `M0 ${-R} A${R} ${R} 0 1 1 0 ${R} A${R} ${R} 0 1 1 0 ${-R} Z` : `M0 0 L${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${w > 180 ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+      g.appendChild(el("path", { class: "fill", d, fill: c, "fill-opacity": 0.24, stroke: c }));
+      // the label, along the wedge's middle, reading outwards
+      // shrink a long label to fit between the hub and the rim, then trim it
+      let label = opts.length ? opts[i] : "?";
+      const lf = Math.max(Math.min(fs, 6.5), Math.min(fs, 66 / (label.length * 0.56)));
+      const room = Math.floor(66 / (lf * 0.56));
+      if (label.length > room) label = label.slice(0, room - 1) + "…";
+      const t = el("text", { transform: `rotate(${(i + 0.5) * w - 90}) translate(${R - 8} 0)`, "text-anchor": "end", fill: c, "font-size": lf.toFixed(1), filter: "url(#glow)" });
+      t.textContent = label;
+      g.appendChild(t);
+      segs.appendChild(g);
+      if (n > 1) { const [px, py] = pt(i * w, R - 3); pegs.appendChild(el("circle", { cx: px.toFixed(2), cy: py.toFixed(2), r: 2.4 })); }
+    }
+    $("#hub-t").textContent = opts.length < 2 ? "ADD" : "SPIN";
+    turn();
+    paintOpts();
+  };
+  const paintOpts = () => {
+    const box = $("#opts"); box.innerHTML = "";
+    opts.forEach((o, i) => {
+      const chip = document.createElement("span");
+      chip.className = "opt"; chip.style.setProperty("--c", colourOf(i));
+      chip.innerHTML = '<i></i><span></span><button aria-label="Remove">&times;</button>';
+      chip.querySelector("span").textContent = o;
+      chip.querySelector("button").addEventListener("click", () => { if (spinning) return; opts.splice(i, 1); clearWin(); save(); draw(); });
+      box.appendChild(chip);
+    });
+  };
+
+  // ---- spinning: friction, pegs and a flapper ------------------------------
+  let theta = 0, omega = 0, spinning = false, raf = 0, lastPeg = 0, winI = -1;
+  const wheel = $("#wheel");
+  const turn = () => wheel.setAttribute("transform", "rotate(" + theta.toFixed(3) + ")");
+  const pegIndex = () => Math.floor(theta / (360 / Math.max(2, opts.length)));
+  const flap = (v) => {   // the flapper's knocked by each peg, more when it's fast
+    const f = $("#flap");
+    f.style.transform = "rotate(" + (-Math.sign(v) * Math.min(28, 8 + Math.abs(v) / 40)) + "deg)";
+    clearTimeout(flap.t); flap.t = setTimeout(() => { f.style.transform = ""; }, 70);
+  };
+  const clearWin = () => { winI = -1; document.querySelectorAll(".seg.win").forEach((s) => s.classList.remove("win")); };
+  const go = (w0) => {
+    if (opts.length < 2) { toast("Add two or more"); $("#add").focus(); return; }
+    cancelAnimationFrame(raf);
+    clearWin();
+    $("#after").hidden = true;
+    $("#answer").innerHTML = '<span class="hint">&hellip;</span>';
+    omega = w0; spinning = true; lastPeg = pegIndex();
+    let tPrev = performance.now();
+    const step = (now) => {
+      const dt = Math.min(0.05, (now - tPrev) / 1000); tPrev = now;
+      // rolling friction plus a little drag: fast at first, a long slow end
+      const sgn = Math.sign(omega), decel = (reduced ? 900 : 70) + 0.45 * Math.abs(omega);
+      const next = omega - sgn * decel * dt;
+      omega = Math.sign(next) === sgn ? next : 0;
+      theta += omega * dt;
+      turn();
+      const p = pegIndex();
+      if (p !== lastPeg) { lastPeg = p; sfx.tick(Math.abs(omega)); flap(omega); }
+      if (omega === 0) return land();
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  };
+  const spin = () => go(900 + rand() * 700);   // 900–1600°/s: several turns, never the same
+  const land = () => {
+    spinning = false;
+    const n = opts.length, w = 360 / n, a = ((-theta % 360) + 360) % 360;   // the bit of wheel under the flapper
+    winI = Math.min(n - 1, Math.floor(a / w));
+    const seg = $('#segs .seg[data-i="' + winI + '"]'); if (seg) seg.classList.add("win");
+    const c = colourOf(winI), ans = $("#answer");
+    ans.innerHTML = "<b></b>"; const b = ans.firstChild; b.textContent = opts[winI]; b.style.setProperty("--a", c);
+    void b.offsetWidth; b.classList.add("pop");
+    $("#after").hidden = false;
+    sfx.ta(); buzz([20, 40, 60]); confetti(c);
+    const h = $("#history"), chip = document.createElement("span");
+    chip.textContent = opts[winI]; chip.style.setProperty("--c", c);
+    h.prepend(chip); while (h.children.length > 6) h.lastChild.remove();
+  };
+  $("#hub").addEventListener("click", (e) => { e.stopPropagation(); if (!spinning && !dragMoved) spin(); });
+  $("#again").addEventListener("click", spin);
+  $("#out").addEventListener("click", () => {
+    if (winI < 0) return;
+    const gone = opts[winI];
+    opts.splice(winI, 1); clearWin(); save(); draw(); sfx.out();
+    if (opts.length === 1) {   // last one standing
+      winI = 0; const ans = $("#answer"); ans.innerHTML = "<b></b>"; ans.firstChild.textContent = opts[0]; ans.firstChild.style.setProperty("--a", colourOf(0));
+      ans.firstChild.classList.add("pop"); $("#after").hidden = true; $('#segs .seg[data-i="0"]').classList.add("win");
+      sfx.ta(); confetti(colourOf(0)); toast(gone + " · out");
+      return;
+    }
+    toast(gone + " · out");
+    setTimeout(spin, 350);
+  });
+
+  // flick it: follow the finger round, and let it go with the finger's speed
+  let drag = null, dragMoved = false;
+  const stage = $("#stage");
+  const angleAt = (e) => { const r = stage.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI; };
+  stage.addEventListener("pointerdown", (e) => {
+    if (spinning) { omega *= 0.4; return; }   // a hand on a spinning wheel slows it
+    const r = stage.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    if (Math.hypot(dx, dy) < r.width * 0.11) return;   // the hub is a button
+    drag = { a: angleAt(e), t: performance.now(), v: 0 }; dragMoved = false;
+    stage.setPointerCapture(e.pointerId); wheel.classList.add("dragging");
+  });
+  stage.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const a = angleAt(e), now = performance.now();
+    let d = a - drag.a; if (d > 180) d -= 360; if (d < -180) d += 360;
+    const dt = Math.max(1, now - drag.t);
+    drag.v = 0.6 * (d / dt * 1000) + 0.4 * drag.v;
+    drag.a = a; drag.t = now; if (Math.abs(d) > 0.5) dragMoved = true;
+    theta += d; turn();
+    const p = pegIndex(); if (p !== lastPeg) { lastPeg = p; sfx.tick(Math.abs(drag.v)); flap(drag.v); }
+  });
+  const release = () => {
+    if (!drag) return;
+    wheel.classList.remove("dragging");
+    const v = performance.now() - drag.t < 120 ? drag.v : 0;
+    drag = null;
+    if (Math.abs(v) > 260) go(Math.sign(v) * Math.min(2400, Math.max(700, Math.abs(v))) * (0.85 + rand() * 0.3));   // a flick (with a little luck in it)
+    else if (dragMoved) toast("Give it a flick");
+    setTimeout(() => { dragMoved = false; }, 0);
+  };
+  stage.addEventListener("pointerup", release);
+  stage.addEventListener("pointercancel", release);
+
+  // ---- editing ---------------------------------------------------------------
+  const add = () => {
+    const inp = $("#add");
+    const parts = inp.value.split(/[,\n]/).map((s) => s.trim().slice(0, 24)).filter(Boolean);
+    if (!parts.length) return;
+    if (opts.length + parts.length > MAXN) return toast("That's plenty");
+    opts.push(...parts); inp.value = ""; clearWin(); save(); draw();
+  };
+  $("#add").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+  $("#add-btn").addEventListener("click", (e) => { e.preventDefault(); add(); $("#add").focus(); });
+  document.querySelectorAll("#presets [data-p]").forEach((b) => b.addEventListener("click", () => {
+    if (spinning) return;
+    opts = PRESETS[b.dataset.p].slice(); clearWin(); $("#history").innerHTML = ""; $("#after").hidden = true;
+    $("#answer").innerHTML = '<span class="hint">Flick it, or tap the middle</span>';
+    save(); draw();
+  }));
+  // clear needs a second tap
+  const clr = $("#clear");
+  clr.addEventListener("click", () => {
+    if (spinning) return;
+    if (!clr.classList.contains("arm")) { clr.classList.add("arm"); clr.textContent = "Sure?"; setTimeout(() => { clr.classList.remove("arm"); clr.textContent = "Clear"; }, 3000); return; }
+    clr.classList.remove("arm"); clr.textContent = "Clear";
+    opts = []; clearWin(); $("#history").innerHTML = ""; $("#after").hidden = true;
+    $("#answer").innerHTML = '<span class="hint">Add two or more</span>';
+    save(); draw(); $("#add").focus();
+  });
+
+  // ---- confetti ----------------------------------------------------------------
+  const confetti = (c) => {
+    if (reduced) return;
+    const cv = $("#confetti"), x = cv.getContext("2d");
+    const W = cv.width = innerWidth * devicePixelRatio, H = cv.height = innerHeight * devicePixelRatio;
+    const bits = Array.from({ length: 120 }, (_, i) => ({
+      x: W / 2, y: H * 0.42, vx: (Math.random() - 0.5) * W * 0.03, vy: -Math.random() * H * 0.025 - H * 0.006,
+      r: (3 + Math.random() * 5) * devicePixelRatio, c: i % 3 ? c : COLOURS[(Math.random() * 6) | 0], a: Math.random() * 6,
+    }));
+    let f = 0;
+    (function tick() {
+      x.clearRect(0, 0, W, H);
+      bits.forEach((b) => { b.vy += H * 0.0009; b.x += b.vx; b.y += b.vy; b.a += 0.2; x.fillStyle = b.c; x.save(); x.translate(b.x, b.y); x.rotate(b.a); x.fillRect(-b.r, -b.r / 2, b.r * 2, b.r); x.restore(); });
+      if (++f < 110) requestAnimationFrame(tick); else x.clearRect(0, 0, W, H);
+    })();
+  };
+
+  save(); draw();
+})();
+</script>
+</body>
+</html>

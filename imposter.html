@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script>
+  // iPhone Safari zooms in on a small text box and doesn't zoom back out;
+  // maximum-scale stops that (iOS still allows pinch-zoom). iOS only.
+  if (/iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1))
+    document.querySelector('meta[name="viewport"]').content += ", maximum-scale=1";
+</script>
+<meta name="theme-color" content="#07080f">
+<title>Imposter. — the party word game</title>
+<meta name="description" content="Everyone gets the secret word except the imposter, who has to bluff. One phone passed round, or everyone's own. Nothing stored.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: "Syne"; font-weight: 800; font-display: swap; src: url("assets/fonts/syne-latin-800-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 500; font-display: swap; src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 700; font-display: swap; src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
+
+  /* Film noir under neon: a fedora, shifty eyes, red for the imposter. */
+  :root {
+    --bg: #07080f;
+    --ink: #f2f0ea;
+    --muted: rgba(242, 240, 234, 0.55);
+    --line: rgba(242, 240, 234, 0.12);
+    --red: #ff4d5e;
+    --pink: #ff4fd8;
+    --cyan: #25e3ee;
+    --gold: #ffd23f;
+    --turf: #39ff88;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+  body {
+    min-height: 100svh;
+    color: var(--ink);
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 500;
+    background:
+      radial-gradient(90% 50% at 50% -10%, rgba(255, 77, 94, 0.16), transparent 70%),
+      radial-gradient(70% 40% at 100% 100%, rgba(167, 123, 255, 0.12), transparent 70%),
+      var(--bg);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overflow-x: hidden;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { background: none; border: 0; cursor: pointer; }
+  .wrap { width: min(100%, 560px); margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px calc(116px + env(safe-area-inset-bottom)); position: relative; }
+  .screen { display: none; }
+  .screen.on { display: block; animation: in 0.45s var(--ease); }
+  @keyframes in { from { opacity: 0; transform: translateY(10px); } }
+  .home { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 16px; color: var(--muted); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.14em; }
+  .to-setup { position: absolute; top: max(8px, env(safe-area-inset-top)); left: 12px; z-index: 5; }
+  .sound { position: absolute; top: max(6px, env(safe-area-inset-top)); right: 12px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); z-index: 5; }
+  .sound svg { width: 20px; height: 20px; }
+  h1 { font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(2.6rem, 13vw, 4rem); line-height: 0.9; letter-spacing: -0.02em; text-align: center; margin-top: 4px; }
+  .glow-red { color: var(--red); text-shadow: 0 0 8px var(--red), 0 0 26px rgba(255, 77, 94, 0.6); }
+  .small { text-align: center; color: var(--muted); letter-spacing: 0.1em; font-size: 0.85rem; text-transform: uppercase; }
+
+  /* the spy: a fedora and a pair of eyes that won't keep still */
+  .spy { display: block; width: min(64%, 220px); margin: 22px auto 0; overflow: visible; }
+  .spy .pupils { animation: shifty 3.6s ease-in-out infinite; }
+  @keyframes shifty { 0%, 18% { transform: translateX(0); } 24%, 44% { transform: translateX(-5px); } 50%, 70% { transform: translateX(5px); } 76%, 100% { transform: translateX(0); } }
+  .spy .lids { transform-box: fill-box; transform-origin: center; animation: blink 4.4s infinite; }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(0); } 97% { transform: scaleY(1); } }
+
+  /* ---------- setup ---------- */
+  .seg { display: flex; gap: 6px; padding: 5px; margin: 18px auto 0; border-radius: 100px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
+  .seg button { flex: 1; padding: 10px 0; border-radius: 100px; font-weight: 700; color: var(--muted); transition: background 0.2s, color 0.2s; }
+  .seg button.on { background: var(--ink); color: var(--bg); }
+  .cats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+  .chip { padding: 8px 12px; border-radius: 100px; border: 1px solid var(--line); font-size: 0.88rem; color: var(--muted); }
+  .chip.on { border-color: var(--red); color: var(--ink); box-shadow: 0 0 12px rgba(255, 77, 94, 0.35); background: rgba(255, 77, 94, 0.1); }
+  .field {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 12px; padding: 10px 14px;
+    border-radius: 18px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line);
+  }
+  .field:focus-within { border-color: var(--red); box-shadow: 0 0 0 3px rgba(255, 77, 94, 0.15); }
+  /* 18px: over the size below which phones zoom in on focus */
+  .field input { flex: 1; min-width: 0; background: none; border: 0; outline: none; font-size: max(18px, 1.1rem); padding: 6px 0; }
+  .field input::placeholder { color: rgba(242, 240, 234, 0.35); }
+  .stepper { justify-content: space-between; }
+  .stepper .lbl { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.88rem; letter-spacing: 0.06em; }
+  .stepper .num { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 2rem; min-width: 2.2ch; text-align: center; color: var(--red); text-shadow: 0 0 12px rgba(255, 77, 94, 0.6); }
+  .step { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); font-size: 1.4rem; line-height: 1; }
+  .step:disabled { opacity: 0.3; }
+  .dot { font-style: normal; width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 0.8rem; font-weight: 700; color: #07080f; background: var(--c); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent); }
+  .names { display: grid; gap: 8px; margin-top: 12px; }
+  .names .field { margin-top: 0; }
+
+  .cta {
+    position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 20;
+    transform: translateX(-50%); width: min(calc(100% - 32px), 528px);
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 18px; border-radius: 22px;
+    background: var(--red); color: #1a0306;
+    font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.25rem; letter-spacing: 0.02em;
+    box-shadow: 0 0 22px rgba(255, 77, 94, 0.55), 0 12px 40px rgba(0, 0, 0, 0.5);
+  }
+  .cta:active { transform: translateX(-50%) scale(0.97); }
+  .cta.wait { background: #3a1a20; color: rgba(242, 240, 234, 0.45); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); }
+  .cta.arm { background: var(--gold); color: #1a1403; box-shadow: 0 0 22px rgba(255, 210, 63, 0.55); }
+
+  /* ---------- the room ---------- */
+  .bar { display: flex; align-items: center; gap: 10px; min-height: 44px; padding-right: 46px; }   /* clear of the sound button */
+  .bar .grow { flex: 1; }
+  .icon-btn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); }
+  .icon-btn svg { width: 22px; height: 22px; }
+  .live-pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 100px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em; color: #ff6b6b; border: 1px solid rgba(255, 90, 90, 0.55); }
+  .live-pill i { width: 8px; height: 8px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 8px #ff5a5a; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+  .live-pill.off { color: var(--muted); border-color: var(--line); }
+  .live-pill.off i { background: var(--muted); box-shadow: none; animation: none; }
+  .qr { width: min(78%, 260px); aspect-ratio: 1; margin: 16px auto 0; border-radius: 24px; padding: 6px; background: #f2f0ea; box-shadow: 0 0 0 3px var(--red), 0 0 30px rgba(255, 77, 94, 0.5); }
+  .qr svg { display: block; width: 100%; height: 100%; }
+  .share { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px auto 0; padding: 11px 18px; border-radius: 100px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; }
+  .who { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
+  .who span { display: inline-flex; align-items: center; gap: 8px; padding: 5px 6px 5px 5px; border-radius: 100px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; animation: in 0.4s var(--ease); }
+  .who span .dot { width: 22px; height: 22px; font-size: 0.7rem; }
+  .who span b { padding-right: 8px; }
+  .who span button { width: 24px; height: 24px; border-radius: 50%; color: var(--muted); margin-left: -4px; }
+  .note { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 14px; letter-spacing: 0.04em; }
+
+  /* ---------- the card: press and hold to see it ---------- */
+  .pass-to { text-align: center; margin-top: 12vh; }
+  .pass-to b { display: block; font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(2.6rem, 14vw, 4.2rem); line-height: 1; margin-top: 10px; color: var(--c, var(--ink)); text-shadow: 0 0 18px color-mix(in srgb, var(--c, #fff) 60%, transparent); overflow-wrap: anywhere; }
+  .card {
+    position: relative; width: min(86%, 330px); aspect-ratio: 3 / 4; margin: 22px auto 0;
+    perspective: 1000px; cursor: pointer;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none;
+  }
+  .face {
+    position: absolute; inset: 0; border-radius: 26px; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 22px; text-align: center;
+    transition: transform 0.35s var(--ease);
+  }
+  .back { background: repeating-linear-gradient(45deg, #15101f 0 10px, #1b1428 10px 20px); border: 2px solid rgba(255, 77, 94, 0.55); box-shadow: 0 0 26px rgba(255, 77, 94, 0.25), inset 0 0 40px rgba(0, 0, 0, 0.6); }
+  .back svg { width: 84px; height: 84px; }
+  .back b { letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.85rem; color: var(--muted); }
+  .front { background: #10121c; border: 2px solid var(--cyan); box-shadow: 0 0 30px rgba(37, 227, 238, 0.35); transform: rotateY(180deg); }
+  .front small { letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); font-size: 0.8rem; }
+  .front b { font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(1.9rem, 10vw, 2.7rem); line-height: 1.02; overflow-wrap: anywhere; color: var(--cyan); text-shadow: 0 0 12px rgba(37, 227, 238, 0.6); }
+  .front span { color: var(--muted); font-size: 0.9rem; }
+  .card.imp .front { border-color: var(--red); box-shadow: 0 0 34px rgba(255, 77, 94, 0.5); }
+  .card.imp .front b { color: var(--red); text-shadow: 0 0 14px rgba(255, 77, 94, 0.7); }
+  .card.show .back { transform: rotateY(-180deg); }
+  .card.show .front { transform: rotateY(0); }
+  .card.none { opacity: 0.35; pointer-events: none; }
+  #round.net .card { aspect-ratio: 4 / 3; width: min(92%, 360px); margin-top: 14px; }   /* room for the votes below */
+  #round.net .front b { font-size: clamp(1.6rem, 8.5vw, 2.3rem); }
+  .starts { text-align: center; margin-top: 18px; color: var(--muted); }
+  .starts b { color: var(--ink); }
+
+  /* ---------- voting ---------- */
+  .votes { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 16px; }
+  .votes button { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; text-align: left; }
+  .votes button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .votes button.on { border-color: var(--red); background: rgba(255, 77, 94, 0.14); box-shadow: 0 0 14px rgba(255, 77, 94, 0.35); }
+  .votes button:disabled { opacity: 0.35; }
+  .votes .dot { width: 22px; height: 22px; font-size: 0.7rem; }
+  .sec { margin-top: 26px; text-align: center; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.8rem; color: var(--muted); }
+
+  /* ---------- the reveal ---------- */
+  .lineup { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 26px; }
+  .lineup span { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border-radius: 100px; border: 1px solid var(--line); font-weight: 700; transition: background 0.08s, box-shadow 0.08s, opacity 0.3s; }
+  .lineup span.lit { background: rgba(242, 240, 234, 0.16); box-shadow: 0 0 16px rgba(242, 240, 234, 0.35); }
+  .lineup.done span { opacity: 0.4; }
+  .lineup span.imp { opacity: 1; border-color: var(--red); background: rgba(255, 77, 94, 0.16); box-shadow: 0 0 22px rgba(255, 77, 94, 0.55); }
+  .lineup span.imp::after { content: "IMPOSTER"; position: absolute; left: 50%; top: -12px; transform: translateX(-50%) rotate(-6deg); padding: 1px 6px; border-radius: 4px; background: var(--red); color: #1a0306; font-size: 0.62rem; letter-spacing: 0.12em; animation: stamp 0.35s var(--ease); }
+  @keyframes stamp { from { transform: translateX(-50%) rotate(-6deg) scale(2.4); opacity: 0; } }
+  .lineup span em { font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; margin-left: 2px; }
+  .verdict { text-align: center; margin-top: 34px; opacity: 0; }
+  .verdict.on { animation: pop 0.6s var(--ease) forwards; }
+  @keyframes pop { 0% { opacity: 0; transform: scale(0.5) rotate(-5deg); } 60% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
+  .verdict b { display: block; font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(2.1rem, 10vw, 3.4rem); line-height: 1; overflow-wrap: anywhere; }
+  .verdict b.caught { color: var(--turf); text-shadow: 0 0 16px rgba(57, 255, 136, 0.6); }
+  .verdict b.away { color: var(--red); text-shadow: 0 0 16px rgba(255, 77, 94, 0.6); }
+  .verdict p { margin-top: 14px; color: var(--muted); }
+  .verdict p strong { color: var(--cyan); text-shadow: 0 0 10px rgba(37, 227, 238, 0.5); font-size: 1.3rem; letter-spacing: 0.02em; }
+  .deal { text-align: center; margin-top: 26px; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
+
+  .confetti { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+  .toast {
+    position: fixed; left: 50%; top: max(18px, env(safe-area-inset-top)); z-index: 40;
+    transform: translate(-50%, -140%); padding: 10px 18px; border-radius: 100px;
+    background: #151827; border: 1px solid var(--line); font-weight: 700; white-space: nowrap;
+    transition: transform 0.4s var(--ease);
+  }
+  .toast.on { transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) { .spy .pupils, .spy .lids { animation: none; } .face { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button class="icon-btn to-setup" id="back" hidden aria-label="Back to setup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+  <button class="sound" id="sound" aria-label="Sound on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
+
+  <!-- ===== setting up ===== -->
+  <section class="screen" id="setup">
+    <a class="home" href="./">&larr; PR.</a>
+    <svg class="spy" viewBox="0 0 200 120" aria-hidden="true">
+      <defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <path d="M58 58 C60 22 72 14 100 14 C128 14 140 22 142 58 Z" fill="#140e2a" stroke="#ff4d5e" stroke-width="3" stroke-linejoin="round" filter="url(#glow)"/>
+      <path d="M100 18 C96 26 96 34 100 40" fill="none" stroke="#ff4d5e" stroke-width="2" opacity="0.6"/>
+      <path d="M60 50 H140" stroke="#a77bff" stroke-width="6"/>
+      <ellipse cx="100" cy="60" rx="78" ry="11" fill="#140e2a" stroke="#ff4d5e" stroke-width="3" filter="url(#glow)"/>
+      <g fill="#f2f0ea" filter="url(#glow)"><ellipse cx="80" cy="90" rx="13" ry="9"/><ellipse cx="120" cy="90" rx="13" ry="9"/></g>
+      <g class="pupils" fill="#07080f"><circle cx="80" cy="91" r="4.6"/><circle cx="120" cy="91" r="4.6"/></g>
+      <g class="lids" fill="#07080f"><rect x="66" y="80" width="28" height="20"/><rect x="106" y="80" width="28" height="20"/></g>
+      <path d="M64 77 L95 82 M136 77 L105 82" stroke="#f2f0ea" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <h1>Imposter<span class="glow-red">.</span></h1>
+    <div class="seg" id="mode" role="group" aria-label="How to play">
+      <button data-m="one" class="on">&#128241; One phone</button>
+      <button data-m="all">&#128101; Everyone's phone</button>
+    </div>
+    <div class="cats" id="cats" role="group" aria-label="Category"></div>
+    <div class="field stepper">
+      <button class="step" id="imp-down" aria-label="Fewer imposters">&minus;</button>
+      <span class="lbl">&#128373; imposters</span>
+      <span class="num" id="imp-n" aria-live="polite">1</span>
+      <button class="step" id="imp-up" aria-label="More imposters">+</button>
+    </div>
+    <div id="one-setup">
+      <div class="field stepper">
+        <button class="step" id="pl-down" aria-label="Fewer players">&minus;</button>
+        <span class="lbl">players</span>
+        <span class="num" id="pl-n" aria-live="polite">4</span>
+        <button class="step" id="pl-up" aria-label="More players">+</button>
+      </div>
+      <div class="names" id="names"></div>
+    </div>
+    <div id="all-setup" hidden>
+      <label class="field"><span class="dot" style="--c:#ff4d5e">&#9733;</span><input id="host-name" maxlength="16" placeholder="Your name" autocomplete="off" aria-label="Your name"></label>
+      <p class="note">Friends scan a code and play on their own phones.</p>
+    </div>
+    <p class="deal">Nothing stored here. Everyone's card is for their eyes only.</p>
+  </section>
+
+  <!-- ===== the room (host) ===== -->
+  <section class="screen" id="lobby">
+    <div class="bar">
+      <button class="icon-btn" id="lobby-back" aria-label="Back to setup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <span class="grow"></span>
+      <span class="live-pill off" id="host-pill"><i></i>LIVE</span>
+    </div>
+    <p class="small" style="margin-top:10px">Scan to join</p>
+    <div class="qr" id="qr"></div>
+    <button class="share" id="share-link"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share link</button>
+    <div class="who" id="lobby-who"></div>
+    <p class="note" id="lobby-note"></p>
+  </section>
+
+  <!-- ===== joining (a friend's phone) ===== -->
+  <section class="screen" id="join">
+    <svg class="spy" id="join-spy" viewBox="0 0 200 120" aria-hidden="true"></svg>
+    <h1>Imposter<span class="glow-red">.</span></h1>
+    <label class="field" style="margin-top:26px"><span class="dot" style="--c:#25e3ee">&#9733;</span><input id="join-name" maxlength="16" placeholder="Your name" autocomplete="off" enterkeyhint="go" aria-label="Your name"></label>
+    <p class="note" id="join-note">Joining a game</p>
+  </section>
+  <section class="screen" id="wait">
+    <div class="bar"><span class="grow"></span><span class="live-pill off" id="join-pill"><i></i>LIVE</span></div>
+    <h1 style="margin-top:12vh">You're in<span class="glow-red">.</span></h1>
+    <div class="who" id="wait-who"></div>
+    <p class="note" id="wait-note"></p>
+  </section>
+
+  <!-- ===== one phone: pass it round ===== -->
+  <section class="screen" id="pass">
+    <div class="pass-to"><span class="small">Pass to</span><b id="pass-name"></b></div>
+  </section>
+
+  <!-- ===== a card, and (on everyone's phone) the round ===== -->
+  <section class="screen" id="round">
+    <div class="bar"><span class="small" id="round-n" style="flex:1;text-align:left"></span><span class="live-pill off" id="round-pill" hidden><i></i>LIVE</span></div>
+    <div class="card" id="card" tabindex="0" role="button" aria-label="Press and hold to see your card">
+      <div class="face back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ff4d5e" stroke-width="1.4" stroke-linecap="round"><path d="M12 3a8 8 0 0 0-8 8v2M20 13v-2a8 8 0 0 0-12-6.9"/><path d="M8 21v-7a4 4 0 0 1 8 0v2M12 12v9M16 19v2M4 16v1"/></svg>
+        <b>Hold to see</b>
+      </div>
+      <div class="face front"><small id="card-cat"></small><b id="card-word"></b><span id="card-sub"></span></div>
+    </div>
+    <p class="starts" id="starts"></p>
+    <div id="vote-box" hidden>
+      <p class="sec" id="vote-head">Who's the imposter?</p>
+      <div class="votes" id="votes"></div>
+    </div>
+  </section>
+
+  <!-- ===== the reveal ===== -->
+  <section class="screen" id="reveal">
+    <div class="bar"><span class="small" id="rev-n" style="flex:1;text-align:left"></span></div>
+    <div class="lineup" id="lineup"></div>
+    <div class="verdict" id="verdict"><b id="verdict-b"></b><p>The word was <strong id="verdict-w"></strong></p></div>
+  </section>
+</div>
+
+<button class="cta" id="cta" hidden></button>
+<canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Imposter. — everyone gets the secret word but the imposter, who has to
+   blend in. Played on one phone passed round, or on everyone's own: then
+   the cards go through the same tiny relay as Putt's live scores, each one
+   sealed for one phone alone, so no other phone (or the relay) can see
+   whose card says imposter. Nothing is stored anywhere. */
+(() => {
+  const $ = (s, r) => (r || document).querySelector(s);
+  const COLOURS = ["#ff4fd8", "#25e3ee", "#39ff88", "#ffa53d", "#a77bff", "#ffd23f", "#ff5a5a", "#4d8bff", "#ff8fb1", "#7dffb0", "#f2f0ea", "#c3a6ff"];
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const rnd = (n) => crypto.getRandomValues(new Uint32Array(1))[0] % n;   // fair dealing
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const WORDS = {
+    food: ["&#127828; Food", "Pizza, Sushi, Lasagne, Fish and chips, Pancakes, Curry, Burrito, Roast dinner, Ice cream, Croissant, Spaghetti, Doughnut, Kebab, Popcorn, Omelette, Cheesecake, Sausage roll, Noodles, Scone, Pie, Soup, Trifle, Nachos, Full English"],
+    places: ["&#128205; Places", "Beach, Airport, Hospital, Library, Cinema, Gym, Supermarket, School, Zoo, Museum, Castle, Campsite, Pub, Theme park, Train station, Swimming pool, Farm, Prison, Hotel, Bank, Space station, Submarine, Casino, Ski resort"],
+    animals: ["&#128062; Animals", "Elephant, Penguin, Giraffe, Dog, Cat, Shark, Kangaroo, Owl, Snake, Horse, Dolphin, Lion, Hedgehog, Octopus, Frog, Bee, Panda, Crocodile, Squirrel, Sheep, Flamingo, Gorilla, Spider, Rabbit"],
+    jobs: ["&#128188; Jobs", "Teacher, Doctor, Chef, Pilot, Firefighter, Police officer, Plumber, Astronaut, Farmer, Hairdresser, Dentist, Footballer, Builder, Nurse, Lawyer, Postman, Magician, Vet, Waiter, Artist, Mechanic, Lifeguard, DJ, Detective"],
+    sport: ["&#9917; Sport &amp; games", "Football, Tennis, Golf, Chess, Swimming, Boxing, Darts, Snooker, Cricket, Rugby, Skiing, Bowling, Cycling, Surfing, Basketball, Badminton, Table tennis, Karate, Marathon, Monopoly, Hide and seek, Poker, Ice skating, Mini golf"],
+    home: ["&#127968; Around the house", "Toaster, Sofa, Kettle, Toothbrush, Pillow, Fridge, Mirror, Remote control, Umbrella, Washing machine, Candle, Bin, Lamp, Hoover, Bath, Clock, Houseplant, Ladder, Doorbell, Wardrobe, Microwave, Rug, Radiator, Keys"],
+    events: ["&#127881; Occasions", "Wedding, Birthday, Christmas, Halloween, Funeral, Job interview, First date, Picnic, Barbecue, Sleepover, Graduation, Holiday, Stag do, Road trip, Camping trip, Concert, Exam, Baby shower, New Year's Eve, Parents' evening, Bonfire night, Fancy dress party, Moving house, Driving test"],
+  };
+  const CATS = Object.keys(WORDS);
+  const catName = (c) => { const d = document.createElement("div"); d.innerHTML = WORDS[c][0]; return d.textContent; };
+  const words = (c) => WORDS[c][1].split(", ");
+  const colourOf = (i) => COLOURS[i % COLOURS.length];
+  const initial = (n) => (String(n || "?").trim()[0] || "?").toUpperCase();
+
+  // ---- the state, in the page's own address --------------------------------
+  // one phone:      { m:"one", p:[names], c, k, r, w, wc, im:[i], st, ph, at, used }
+  // the host:       { m:"host", ...room, players, the round (it deals) }
+  // a friend:       { m:"join", L, me, keys }
+  const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const dec = (t) => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/")))));
+  let S = { m: "one", p: ["", "", "", ""], c: "mix", k: 1, r: 0, ph: "setup", used: [], hn: "" };
+  const save = () => { try { history.replaceState(null, "", "#" + enc(S)); } catch (_) {} };
+  const JOIN = location.hash.match(/^#j=([A-Za-z0-9_-]{16,64})\.([A-Za-z0-9_-]{43})$/);
+  if (!JOIN && location.hash.length > 3) { try { const o = dec(location.hash.slice(1)); if (o && o.m) S = Object.assign(S, o); } catch (_) {} }
+
+  // ---- little bits of theatre --------------------------------------------
+  let sound = true, ac = null;
+  const audio = () => {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} }
+    if (ac && ac.state === "suspended") ac.resume().catch(() => {});
+    return ac;
+  };
+  addEventListener("pointerdown", audio, { once: true });
+  const tone = (f, t0, dur, type, vol) => {
+    const a = audio(); if (!a || !sound) return;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, a.currentTime + t0);
+    g.gain.setValueAtTime(0.0001, a.currentTime + t0);
+    g.gain.exponentialRampToValueAtTime(vol || 0.15, a.currentTime + t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + t0 + dur);
+    o.connect(g).connect(a.destination); o.start(a.currentTime + t0); o.stop(a.currentTime + t0 + dur + 0.02);
+  };
+  const sfx = {
+    flip: () => tone(900, 0, 0.05, "triangle", 0.08),
+    tick: () => tone(1200, 0, 0.03, "triangle", 0.08),
+    dun: () => { tone(196, 0, 0.5, "sawtooth", 0.06); tone(185, 0.25, 0.5, "sawtooth", 0.06); tone(147, 0.5, 0.9, "sawtooth", 0.07); },
+    yay: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.08, 0.25, "triangle", 0.13)),
+    vote: () => tone(660, 0, 0.08, "sine", 0.1),
+    join: () => { tone(880, 0, 0.08, "sine", 0.08); tone(1320, 0.08, 0.1, "sine", 0.06); },
+  };
+  $("#sound").addEventListener("click", (e) => {
+    sound = !sound;
+    e.currentTarget.querySelector(".wave").style.display = sound ? "" : "none";
+    e.currentTarget.setAttribute("aria-label", sound ? "Sound on" : "Sound off");
+  });
+  const buzz = (ms) => { if (navigator.vibrate && !(navigator.userActivation && !navigator.userActivation.hasBeenActive)) navigator.vibrate(ms); };
+  let toastT = 0;
+  const toast = (t) => { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("on"), 1800); };
+  const confetti = (cols) => {
+    if (reduced) return;
+    const cv = $("#confetti"), x = cv.getContext("2d");
+    const W = cv.width = innerWidth * devicePixelRatio, H = cv.height = innerHeight * devicePixelRatio;
+    const bits = Array.from({ length: 120 }, () => ({ x: W / 2, y: H * 0.4, vx: (Math.random() - 0.5) * W * 0.03, vy: -Math.random() * H * 0.025 - H * 0.006, r: (3 + Math.random() * 5) * devicePixelRatio, c: cols[(Math.random() * cols.length) | 0], a: Math.random() * 6 }));
+    let f = 0;
+    (function tick() {
+      x.clearRect(0, 0, W, H);
+      bits.forEach((b) => { b.vy += H * 0.0009; b.x += b.vx; b.y += b.vy; b.a += 0.2; x.fillStyle = b.c; x.save(); x.translate(b.x, b.y); x.rotate(b.a); x.fillRect(-b.r, -b.r / 2, b.r * 2, b.r); x.restore(); });
+      if (++f < 110) requestAnimationFrame(tick); else x.clearRect(0, 0, W, H);
+    })();
+  };
+  $("#join-spy").innerHTML = $("#setup .spy").innerHTML.replace(/<defs>[\s\S]*?<\/defs>/, "");   // the spy, borrowed
+
+  // ---- screens and the big button ---------------------------------------------
+  const show = (id) => {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === id));
+    $("#back").hidden = S.m === "join" || ["setup", "lobby", "join", "wait"].includes(id);
+    document.querySelectorAll(".screen .bar").forEach((b) => { b.style.paddingLeft = $("#back").hidden ? "" : "52px"; });
+    scrollTo(0, 0);
+  };
+  $("#back").addEventListener("click", () => { if (S.m === "one") { S.ph = "setup"; save(); } paintSetup(); });
+  let ctaAct = null, armT = 0;
+  const cta = (label, act, opts) => {   // the big button: a label, what it does, and whether it needs a second tap
+    const b = $("#cta");
+    b.hidden = !label; if (!label) return;
+    b.textContent = label; b.classList.toggle("wait", !!(opts && opts.wait)); b.classList.remove("arm");
+    b.dataset.label = label; ctaAct = act; b.dataset.two = opts && opts.two ? 1 : "";
+  };
+  $("#cta").addEventListener("click", () => {
+    audio();
+    const b = $("#cta");
+    if (b.classList.contains("wait")) { buzz(20); return ctaAct && ctaAct(true); }
+    if (b.dataset.two && !b.classList.contains("arm")) {
+      b.classList.add("arm"); b.textContent = "Sure?"; buzz(15);
+      clearTimeout(armT); armT = setTimeout(() => { b.classList.remove("arm"); b.textContent = b.dataset.label; }, 3000);
+      return;
+    }
+    clearTimeout(armT); b.classList.remove("arm");
+    if (ctaAct) ctaAct();
+  });
+
+  // ---- setting up ------------------------------------------------------------------
+  const maxImp = (n) => Math.max(1, Math.min(3, Math.floor((n - 1) / 2)));
+  const paintSetup = () => {
+    show("setup");
+    document.querySelectorAll("#mode button").forEach((b) => b.classList.toggle("on", b.dataset.m === (S.m === "one" ? "one" : "all")));
+    const cats = $("#cats"); cats.innerHTML = "";
+    ["mix", ...CATS].forEach((c) => {
+      const b = document.createElement("button");
+      b.className = "chip" + (S.c === c ? " on" : "");
+      b.innerHTML = c === "mix" ? "&#127922; Mixed" : WORDS[c][0];
+      b.addEventListener("click", () => { S.c = c; save(); paintSetup(); });
+      cats.appendChild(b);
+    });
+    $("#imp-n").textContent = S.k;
+    $("#imp-down").disabled = S.k <= 1; $("#imp-up").disabled = S.k >= 3;
+    const one = S.m === "one";
+    $("#one-setup").hidden = !one; $("#all-setup").hidden = one;
+    $("#pl-n").textContent = S.p.length;
+    $("#pl-down").disabled = S.p.length <= 3; $("#pl-up").disabled = S.p.length >= 20;
+    const box = $("#names"); box.innerHTML = "";
+    S.p.forEach((n, i) => {
+      const f = document.createElement("label"); f.className = "field";
+      f.innerHTML = '<span class="dot"></span><input maxlength="16" autocomplete="off">';
+      $(".dot", f).style.setProperty("--c", colourOf(i)); $(".dot", f).textContent = i + 1;
+      const inp = $("input", f); inp.value = n; inp.placeholder = "Player " + (i + 1); inp.setAttribute("aria-label", "Player " + (i + 1) + " name");
+      inp.addEventListener("input", () => { S.p[i] = inp.value; save(); });
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); const n2 = f.nextElementSibling; n2 ? $("input", n2).focus() : inp.blur(); } });
+      box.appendChild(f);
+    });
+    $("#host-name").value = S.hn || "";
+    if (one) cta("Deal", dealOne); else cta("Open the room", openRoom);
+  };
+  document.querySelectorAll("#mode button").forEach((b) => b.addEventListener("click", () => {
+    if (b.dataset.m === "one") { if (S.m !== "one") { stopRoom(); S.m = "one"; } } else if (S.m === "one") S.m = "host";
+    save(); paintSetup();
+  }));
+  $("#imp-down").addEventListener("click", () => { S.k = Math.max(1, S.k - 1); save(); paintSetup(); });
+  $("#imp-up").addEventListener("click", () => { S.k = Math.min(3, S.k + 1); save(); paintSetup(); });
+  $("#pl-up").addEventListener("click", () => { if (S.p.length < 20) S.p.push(""); save(); paintSetup(); });
+  $("#pl-down").addEventListener("click", () => { if (S.p.length > 3) S.p.pop(); save(); paintSetup(); });
+  $("#host-name").addEventListener("input", (e) => { S.hn = e.target.value; save(); });
+
+  // pick a word nobody's had lately, the imposters and who starts
+  const pickWord = () => {
+    const c = S.c === "mix" ? CATS[rnd(CATS.length)] : S.c;
+    const fresh = words(c).filter((w) => !(S.used || []).includes(w));
+    const w = (fresh.length ? fresh : words(c))[rnd((fresh.length ? fresh : words(c)).length)];
+    S.used = (S.used || []).concat(w).slice(-40);
+    return { w, wc: c };
+  };
+
+  // ---- one phone, passed round --------------------------------------------------
+  const nameAt = (i) => (S.p[i] || "").trim() || "Player " + (i + 1);
+  const dealOne = () => {
+    const n = S.p.length, k = Math.min(S.k, maxImp(n));
+    if (k < S.k) toast(k + " imposter" + (k > 1 ? "s" : "") + " for " + n + " players");
+    Object.assign(S, pickWord(), { im: shuffle([...Array(n).keys()]).slice(0, k), st: rnd(n), r: (S.r || 0) + 1, ph: "pass", at: 0 });
+    save(); paintOne();
+  };
+  const paintOne = () => {
+    if (S.ph === "pass") {
+      show("pass");
+      const b = $("#pass-name"); b.textContent = nameAt(S.at); b.style.setProperty("--c", colourOf(S.at));
+      cta("I'm " + nameAt(S.at), () => { S.ph = "look"; save(); paintOne(); });
+    } else if (S.ph === "look") {
+      show("round"); $("#round").classList.remove("net");
+      $("#round-n").textContent = nameAt(S.at);
+      $("#round-pill").hidden = true; $("#vote-box").hidden = true; $("#starts").textContent = "";
+      setCard({ imp: S.im.includes(S.at), w: S.w, wc: S.wc });
+      const last = S.at === S.p.length - 1;
+      cta(last ? "Done" : "Done · pass it on", (blocked) => {
+        if (blocked) return toast("Hold the card first");
+        S.at++; S.ph = last ? "talk" : "pass"; save(); paintOne();
+      }, { wait: !seen });
+    } else if (S.ph === "talk") {
+      show("pass");
+      const b = $("#pass-name"); b.textContent = nameAt(S.st) + " starts"; b.style.setProperty("--c", colourOf(S.st));
+      $("#pass").querySelector(".small").textContent = "Round " + S.r + " · " + catName(S.wc);
+      cta("Reveal the imposter" + (S.im.length > 1 ? "s" : ""), () => { S.ph = "reveal"; save(); paintOne(); }, { two: true });
+    } else if (S.ph === "reveal") {
+      revealShow({ players: S.p.map((_, i) => ({ id: i, n: nameAt(i) })), imp: S.im, w: S.w, wc: S.wc, r: S.r });
+      cta("Next round", dealOne);
+    }
+    if (S.ph !== "talk") $("#pass").querySelector(".small").textContent = "Pass to";
+  };
+
+  // ---- the card: press and hold ----------------------------------------------------
+  let seen = false;
+  const setCard = (c) => {
+    const card = $("#card"); seen = false;
+    card.classList.remove("show", "imp", "none");
+    if (!c) { card.classList.add("none"); return; }
+    card.classList.toggle("imp", !!c.imp);
+    $("#card-cat").textContent = catName(c.wc);
+    $("#card-word").textContent = c.imp ? "You're the imposter" : c.w;
+    $("#card-sub").textContent = c.imp ? "Blend in. Work out the word." : "Don't give it away";
+  };
+  const peek = (on) => {
+    const card = $("#card");
+    if (card.classList.contains("none") || card.classList.contains("show") === on) return;
+    card.classList.toggle("show", on);
+    if (on) { sfx.flip(); buzz(10); if (!seen) { seen = true; const b = $("#cta"); if (b.classList.contains("wait") && S.m === "one") b.classList.remove("wait"); } }
+  };
+  const card = $("#card");
+  card.addEventListener("pointerdown", (e) => { e.preventDefault(); card.setPointerCapture(e.pointerId); peek(true); });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((t) => card.addEventListener(t, () => peek(false)));
+  card.addEventListener("contextmenu", (e) => e.preventDefault());
+  card.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); peek(true); } });
+  card.addEventListener("keyup", () => peek(false));
+
+  // ---- the reveal: a spotlight runs along the line-up and stops on them ------------
+  let revT = 0;
+  const revealShow = ({ players, imp, w, wc, r, tally }) => {
+    show("reveal");
+    $("#rev-n").textContent = "Round " + r + " · " + catName(wc);
+    const line = $("#lineup"); line.innerHTML = ""; line.classList.remove("done");
+    const chips = players.map((p, i) => {
+      const s = document.createElement("span");
+      s.innerHTML = '<i class="dot"></i><b></b>';
+      $(".dot", s).style.setProperty("--c", colourOf(i)); $(".dot", s).textContent = initial(p.n);
+      $("b", s).textContent = p.n;
+      if (tally) { const em = document.createElement("em"); em.textContent = tally[p.id] ? "×" + tally[p.id] : ""; s.appendChild(em); }
+      line.appendChild(s); return s;
+    });
+    const isImp = (p) => imp.includes(p.id);
+    let verdict = "", cls = "";
+    if (tally) {
+      const top = Math.max(0, ...Object.values(tally)), most = players.filter((p) => top && tally[p.id] === top);
+      const caught = most.length === 1 && isImp(most[0]);
+      verdict = caught ? "Caught!" : "Got away!"; cls = caught ? "caught" : "away";
+    } else { verdict = players.filter(isImp).map((p) => p.n).join(" & "); cls = "away"; }   // one phone: no votes, just who
+    $("#verdict").classList.remove("on");
+    $("#verdict-b").textContent = verdict; $("#verdict-b").className = cls; $("#verdict-w").textContent = w;
+    clearTimeout(revT);
+    // the spotlight: quick at first, slowing, stopping on an imposter
+    const target = players.findIndex(isImp);
+    let i = 0, delay = 60, steps = reduced ? 0 : players.length * 2 + target + 1;   // twice round, then on to them
+    sfx.dun();
+    const run = () => {
+      chips.forEach((c) => c.classList.remove("lit"));
+      if (steps <= 0) {
+        line.classList.add("done");
+        players.forEach((p, j) => { if (isImp(p)) chips[j].classList.add("imp"); });
+        $("#verdict").classList.add("on");
+        buzz([40, 60, 120]);
+        if (cls === "caught") { sfx.yay(); confetti(["#39ff88", "#25e3ee", "#ffd23f"]); } else confetti(["#ff4d5e", "#ff4fd8", "#a77bff"]);
+        return;
+      }
+      chips[i % chips.length].classList.add("lit"); sfx.tick();
+      i++; steps--; delay = Math.min(260, delay * 1.09);
+      revT = setTimeout(run, delay);
+    };
+    revT = setTimeout(run, 500);
+  };
+
+  // =================================================================================
+  // ---- everyone's phone: the room ------------------------------------------------
+  // The relay passes messages between phones in a room. The room key (in the
+  // join link, after the #) seals what everyone may see: who's in, whose go
+  // it is, the votes. Each phone also makes its own key pair and sends the
+  // public half; the host seals each card with a key only that phone can
+  // work out (ECDH), so a card is for one phone's eyes alone.
+  const LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const RELAY = (LOCAL && new URLSearchParams(location.search).get("relay")) || "wss://relay.robbo-online.uk";
+  const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64u = (t) => Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  const aesKey = (k) => crypto.subtle.importKey("raw", unb64u(k), "AES-GCM", false, ["encrypt", "decrypt"]);
+  const newAes = async () => b64u(await crypto.subtle.exportKey("raw", await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])));
+  const seal = async (key, o) => {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(o))));
+    const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12); return b64u(out);
+  };
+  const unseal = async (key, t) => { const b = unb64u(t); return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b.slice(0, 12) }, key, b.slice(12)))); };
+  const EC = { name: "ECDH", namedCurve: "P-256" };
+  const newPair = async () => { const kp = await crypto.subtle.generateKey(EC, true, ["deriveKey"]); return { pub: b64u(await crypto.subtle.exportKey("raw", kp.publicKey)), priv: await crypto.subtle.exportKey("jwk", kp.privateKey) }; };
+  const privKey = (jwk) => crypto.subtle.importKey("jwk", jwk, EC, false, ["deriveKey"]);
+  const between = async (priv, pub) => crypto.subtle.deriveKey({ name: "ECDH", public: await crypto.subtle.importKey("raw", unb64u(pub), EC, false, []) }, priv, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  const rid = () => b64u(crypto.getRandomValues(new Uint8Array(6)));
+
+  // a socket to the room that keeps itself up (as Putt's)
+  const Link = (room, onMsg, onState) => {
+    let ws = null, back = 1000, t = 0, ping = 0, heard = 0, stopped = false;
+    const drop = () => { if (ws) { ws.onclose = ws.onmessage = null; try { ws.close(); } catch (_) {} ws = null; } clearInterval(ping); onState("off"); };
+    const retry = () => { if (stopped) return; clearTimeout(t); t = setTimeout(connect, back); back = Math.min(back * 2, 15000); };
+    const connect = () => {
+      if (stopped || ws) return;
+      clearTimeout(t); onState("connecting");
+      try { ws = new WebSocket(RELAY + "/room/" + room); } catch (_) { ws = null; return retry(); }
+      ws.onopen = () => {
+        back = 1000; heard = Date.now(); onState("on"); onMsg({ t: "open" });
+        ping = setInterval(() => { if (Date.now() - heard > 75000) { drop(); return connect(); } try { ws.send("ping"); } catch (_) {} }, 25000);
+      };
+      ws.onmessage = (e) => { heard = Date.now(); let m; try { m = JSON.parse(e.data); } catch (_) { return; } onMsg(m); };
+      ws.onclose = () => { drop(); retry(); };
+    };
+    const wake = () => {
+      if (stopped || document.visibilityState !== "visible") return;
+      if (!ws) { back = 1000; return connect(); }
+      const asked = Date.now(); try { ws.send("ping"); } catch (_) {}
+      setTimeout(() => { if (ws && heard < asked) { drop(); connect(); } }, 4000);
+    };
+    document.addEventListener("visibilitychange", wake); addEventListener("online", wake);
+    connect();
+    return {
+      send: (o) => { if (ws && ws.readyState === 1) { ws.send(JSON.stringify(o)); return true; } return false; },
+      stop: () => { stopped = true; clearTimeout(t); document.removeEventListener("visibilitychange", wake); removeEventListener("online", wake); drop(); },
+    };
+  };
+  const pill = (el, st) => { el.classList.toggle("off", st !== "on"); el.lastChild.textContent = st === "on" ? "LIVE" : st === "connecting" ? "…" : "OFFLINE"; };
+  let qrLib = null;
+  const loadQR = () => qrLib || (qrLib = new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = "assets/vendor/qrcode.js"; sc.onload = () => ok(window.qrcode); sc.onerror = () => { qrLib = null; no(); }; document.head.appendChild(sc); }));
+  const joinUrl = () => location.href.split("#")[0] + "#j=" + S.L.r + "." + S.L.k;
+
+  // -- the host: deals the cards, keeps the votes ---------------------------------
+  let link = null, kRoom = null, myPriv = null, beat = 0, sockState = "off";
+  const cardKeys = new Map();   // player id → the key only they share with this phone
+  const hostStart = async () => {
+    if (!S.L) {
+      const pair = await newPair();
+      S.L = { r: rid() + rid() + rid(), k: await newAes() }; S.pub = pair.pub; S.priv = pair.priv;
+      S.me = rid(); S.pl = [{ id: S.me, n: (S.hn || "").trim() || "Host" }]; S.ph = "lobby"; S.r = 0;
+      save();
+    }
+    if (link) return;
+    kRoom = await aesKey(S.L.k); myPriv = await privKey(S.priv);
+    link = Link(S.L.r, onHost, (st) => { sockState = st; pill($("#host-pill"), st); pill($("#round-pill"), st); });
+    beat = setInterval(publish, 15000);
+  };
+  const stopRoom = () => { if (link) { link.stop(); link = null; } clearInterval(beat); delete S.L; delete S.pl; cardKeys.clear(); };
+  const publicState = () => ({
+    ph: S.ph, host: S.me, hp: S.pub, r: S.r || 0, wc: S.ph === "lobby" ? "" : S.wc,
+    pl: S.pl.map((p) => ({ id: p.id, n: p.n })), rp: S.rp || [], st: S.st, vd: Object.keys(S.votes || {}),
+    rv: S.ph === "reveal" ? { imp: S.im, w: S.w, tally: tallyOf() } : null,
+  });
+  const publish = async () => { if (link && kRoom) { try { link.send({ t: "S", v: await seal(kRoom, publicState()) }); } catch (_) {} } };
+  const tallyOf = () => { const t = {}; Object.values(S.votes || {}).forEach((v) => { t[v] = (t[v] || 0) + 1; }); return t; };
+  const sendCard = async (id) => {
+    if (id === S.me || !(S.rp || []).includes(id)) return;
+    const p = S.pl.find((x) => x.id === id); if (!p || !p.pub) return;
+    let key = cardKeys.get(id);
+    if (!key || key.pub !== p.pub) { key = { pub: p.pub, k: await between(myPriv, p.pub) }; cardKeys.set(id, key); }
+    const imp = S.im.includes(id);
+    link.send({ t: "D", to: id, v: await seal(key.k, { r: S.r, imp, w: imp ? "" : S.w, wc: S.wc }) });
+  };
+  const onHost = async (m) => {
+    if (m.t === "open") return publish();
+    if (m.t !== "J" && m.t !== "V") return;
+    let o; try { o = await unseal(kRoom, m.v); } catch (_) { return; }
+    if (!o || typeof o.id !== "string") return;
+    if (m.t === "J") {
+      const n = String(o.n || "").trim().slice(0, 16) || "Player", pub = typeof o.pub === "string" ? o.pub.slice(0, 120) : "";
+      let p = S.pl.find((x) => x.id === o.id);
+      if (!p) { if (S.pl.length >= 20) return; p = { id: o.id.slice(0, 12), n, pub }; S.pl.push(p); sfx.join(); toast(n + " joined"); }
+      else { p.n = n; p.pub = pub; }
+      save(); paintRoom(); publish();
+      if (S.ph !== "lobby") sendCard(p.id);   // back after a reload: their card again
+    } else if (m.t === "V") castVote(o.id, o.f, o.r);
+  };
+  const castVote = (who, f, r) => {
+    if (S.ph !== "round" || r !== S.r || !(S.rp || []).includes(who) || !(S.rp || []).includes(f) || f === who) return;
+    S.votes = S.votes || {}; S.votes[who] = f; save();
+    if (who !== S.me) sfx.vote();
+    if (Object.keys(S.votes).length >= S.rp.length) return hostReveal();
+    publish(); paintRoom();
+  };
+  const dealRoom = (blocked) => {
+    if (blocked) return toast("3 or more to play");
+    const ids = S.pl.map((p) => p.id), k = Math.min(S.k, maxImp(ids.length));
+    if (k < S.k) toast(k + " imposter" + (k > 1 ? "s" : "") + " for " + ids.length + " players");
+    Object.assign(S, pickWord(), { rp: ids, im: shuffle(ids.slice()).slice(0, k), st: ids[rnd(ids.length)], r: (S.r || 0) + 1, ph: "round", votes: {} });
+    save(); seen = false;
+    ids.forEach(sendCard); publish(); paintRoom();
+  };
+  const hostReveal = () => { S.ph = "reveal"; save(); publish(); paintRoom(); };
+  const openRoom = async () => {
+    if (!(window.crypto && crypto.subtle)) return toast("This browser can't open a room");
+    await hostStart();
+    const me = S.pl.find((p) => p.id === S.me); if (me) me.n = (S.hn || "").trim() || "Host";
+    if (S.ph === "setup") S.ph = "lobby";
+    save(); paintRoom(); publish();
+  };
+  $("#lobby-back").addEventListener("click", () => { paintSetup(); });
+  $("#share-link").addEventListener("click", async () => {
+    const url = joinUrl();
+    try { if (navigator.share) await navigator.share({ title: "Imposter. — join the game", url }); else { await navigator.clipboard.writeText(url); toast("Link copied"); } } catch (_) {}
+  });
+  const paintQR = async () => {
+    const box = $("#qr"), url = joinUrl();
+    if (box.dataset.url === url) return;
+    box.innerHTML = ""; box.dataset.url = url;
+    try {
+      const qr = (await loadQR())(0, "L"); qr.addData(url); qr.make();
+      const n = qr.getModuleCount(); let d = "";
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += "M" + c + " " + r + "h1v1h-1z";
+      box.innerHTML = '<svg viewBox="-2 -2 ' + (n + 4) + " " + (n + 4) + '" shape-rendering="crispEdges" role="img" aria-label="QR code to join"><path fill="#07080f" d="' + d + '"/></svg>';
+    } catch (_) { box.dataset.url = ""; }
+  };
+  const whoChips = (box, pl, opts) => {
+    box.innerHTML = "";
+    pl.forEach((p, i) => {
+      const s = document.createElement("span");
+      s.innerHTML = '<i class="dot"></i><b></b>';
+      $(".dot", s).style.setProperty("--c", colourOf(i)); $(".dot", s).textContent = initial(p.n); $("b", s).textContent = p.n;
+      if (opts && opts.remove && p.id !== S.me) {
+        const x = document.createElement("button"); x.innerHTML = "&times;"; x.setAttribute("aria-label", "Remove " + p.n);
+        x.addEventListener("click", () => { S.pl = S.pl.filter((q) => q.id !== p.id); save(); paintRoom(); publish(); });
+        s.appendChild(x);
+      }
+      box.appendChild(s);
+    });
+  };
+  // the room, as everyone sees it: the host paints from its own state, a friend from the host's
+  const paintRoom = () => {
+    const P = S.m === "host" ? publicState() : view;
+    if (!P) return;
+    const me = S.me;
+    const inRound = (P.rp || []).includes(me);
+    if (S.m === "host" && P.ph === "lobby") {
+      show("lobby"); paintQR();
+      whoChips($("#lobby-who"), S.pl, { remove: true });
+      $("#lobby-note").textContent = S.pl.length < 3 ? "3 or more to play" : S.pl.length + " in · " + (S.c === "mix" ? "Mixed" : catName(S.c));
+      cta("Deal", dealRoom, { wait: S.pl.length < 3 });
+      return;
+    }
+    if (P.ph === "lobby" || (P.ph !== "lobby" && !inRound && P.ph !== "reveal")) {
+      show("wait"); whoChips($("#wait-who"), P.pl);
+      const host = P.pl.find((p) => p.id === P.host);
+      $("#wait-note").textContent = P.ph === "lobby" ? "Waiting for " + (host ? host.n : "the host") + " to deal" : "You're in from the next round";
+      cta("");
+      return;
+    }
+    if (P.ph === "round") {
+      show("round"); $("#round").classList.add("net");
+      $("#round-pill").hidden = false;
+      $("#round-n").textContent = "Round " + P.r;
+      const mine = S.m === "host" ? { imp: S.im.includes(S.me), w: S.w, wc: S.wc } : (myCard && myCard.r === P.r ? myCard : null);
+      if (($("#card").dataset.r | 0) !== P.r || !!mine !== !$("#card").classList.contains("none")) { setCard(mine); $("#card").dataset.r = mine ? P.r : 0; }
+      const st = P.pl.find((p) => p.id === P.st);
+      $("#starts").innerHTML = ""; if (st) { $("#starts").append(document.createElement("b")); $("#starts b").textContent = st.n; $("#starts").append(" starts"); }
+      // the votes: tap who you think it is (change your mind until the reveal)
+      $("#vote-box").hidden = false;
+      const mineV = S.m === "host" ? (S.votes || {})[S.me] : myVote[P.r];
+      const vs = $("#votes"); vs.innerHTML = "";
+      P.pl.filter((p) => P.rp.includes(p.id)).forEach((p) => {
+        const i = P.pl.indexOf(p), b = document.createElement("button");
+        b.innerHTML = '<i class="dot"></i><span></span>'; $(".dot", b).style.setProperty("--c", colourOf(i)); $(".dot", b).textContent = initial(p.n);
+        $("span", b).textContent = p.n; b.disabled = p.id === me; b.classList.toggle("on", mineV === p.id);
+        b.addEventListener("click", () => vote(p.id));
+        vs.appendChild(b);
+      });
+      $("#vote-head").textContent = "Who's the imposter? · " + (P.vd || []).length + "/" + P.rp.length;
+      if (S.m === "host") cta("Reveal", hostReveal, { two: true }); else cta("");
+      return;
+    }
+    if (P.ph === "reveal" && P.rv) {
+      if ($("#reveal").classList.contains("on") && $("#reveal").dataset.r == P.r) return;
+      $("#reveal").dataset.r = P.r;
+      const players = P.pl.filter((p) => (P.rp || []).includes(p.id));
+      revealShow({ players, imp: P.rv.imp, w: P.rv.w, wc: P.wc, r: P.r, tally: P.rv.tally });
+      if (S.m === "host") cta("Next round", dealRoom); else cta("");
+    }
+  };
+  const vote = async (f) => {
+    sfx.vote(); buzz(10);
+    if (S.m === "host") return castVote(S.me, f, S.r);
+    myVote[view.r] = f; paintRoom();
+    link.send({ t: "V", v: await seal(kRoom, { id: S.me, f, r: view.r }) });
+  };
+
+  // -- a friend's phone: join, get a card, vote --------------------------------------
+  let view = null, myCard = null, hostKey = null, joinT = 0;
+  const myVote = {};
+  const joinStart = async () => {
+    kRoom = await aesKey(S.L.k); myPriv = await privKey(S.priv);
+    link = Link(S.L.r, onJoin, (st) => { pill($("#join-pill"), st); pill($("#round-pill"), st); });
+    clearInterval(joinT);
+    joinT = setInterval(() => { if (!view || !view.pl.some((p) => p.id === S.me) || ((view.rp || []).includes(S.me) && view.ph === "round" && (!myCard || myCard.r !== view.r))) sayHello(); }, 6000);
+  };
+  const sayHello = async () => { if (link) link.send({ t: "J", v: await seal(kRoom, { id: S.me, n: S.n, pub: S.pub }) }); };
+  const onJoin = async (m) => {
+    if (m.t === "open") return sayHello();
+    if (m.t === "S") {
+      let o; try { o = await unseal(kRoom, m.v); } catch (_) { return; }
+      if (!o || !Array.isArray(o.pl)) return;
+      const was = view; view = o;
+      if (!hostKey || hostKey.pub !== o.hp) hostKey = { pub: o.hp, k: await between(myPriv, o.hp) };
+      if (!o.pl.some((p) => p.id === S.me)) sayHello();
+      if (was && was.r !== o.r) seen = false;
+      paintRoom();
+    } else if (m.t === "D" && m.to === S.me && hostKey) {
+      let o; try { o = await unseal(hostKey.k, m.v); } catch (_) { return; }   // not ours to read
+      if (!myCard || myCard.r !== o.r) { myCard = o; buzz([15, 30, 15]); }
+      paintRoom();
+    }
+  };
+  const startJoining = async ([, r, k]) => {
+    const pair = await newPair();
+    S = { m: "join", L: { r, k }, me: rid(), pub: pair.pub, priv: pair.priv, n: "" };
+    save();
+    show("join"); paintJoin();
+  };
+  const paintJoin = () => { show("join"); cta("Join", joinNow); $("#join-name").value = S.n || ""; };
+  const joinNow = () => {
+    const n = $("#join-name").value.trim();
+    if (!n) { toast("Your name first"); return $("#join-name").focus(); }
+    S.n = n.slice(0, 16); save();
+    show("wait"); $("#wait-note").textContent = "Joining…"; cta("");
+    joinStart();
+  };
+  $("#join-name").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); joinNow(); } });
+
+  // ---- go --------------------------------------------------------------------------
+  if (JOIN) startJoining(JOIN);
+  else if (S.m === "join" && S.L) { if (S.n) { show("wait"); joinStart(); } else paintJoin(); }
+  else if (S.m === "host" && S.L && S.ph !== "setup") { hostStart().then(() => { paintRoom(); publish(); }); }
+  else if (S.m === "one" && S.ph && S.ph !== "setup") paintOne();
+  else paintSetup();
+})();
+</script>
+</body>
+</html>
