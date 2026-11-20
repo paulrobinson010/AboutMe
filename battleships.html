@@ -154,6 +154,8 @@
     box-shadow: 0 0 22px rgba(37, 227, 238, 0.5), 0 12px 40px rgba(0, 0, 0, 0.5);
   }
   .cta:active { transform: scale(0.97); }
+  #play .again { margin-top: 12px; padding: 15px; }
+  #play + .seg, #play + .seg + .seg { margin-top: 18px; }
   .cta.wait { background: #12343a; color: rgba(242, 240, 234, 0.5); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); }
 
   /* two phones */
@@ -218,6 +220,7 @@
 
   <!-- the battle -->
   <section id="play" hidden>
+    <button class="cta again" id="again" hidden>Again</button>
     <div class="label"><span class="small" id="t-label">Enemy waters</span><span class="fleet" id="fleet-t"></span></div>
     <div class="grid target" id="g-target"></div>
     <div class="below">
@@ -624,7 +627,9 @@
     duo.send({ k: "sync", g: S.g, rd: S.rd[0], out: S.sh[0].map((x) => x.c), inc: S.sh[1], seen: S.sh[0].filter((x) => x.r !== undefined).length, hrd: S.rd[1], hfl: !!S.fl[1], fl: S.win >= 0 ? S.fl[0] : null });
   }
   const netFirst = () => ((S.g % 2 === 0) === (S.role === "host") ? 0 : 1);   // the host starts the even games
-  const newNetGame = (g) => { Object.assign(S, { g, fl: [randomFleet(), null], sh: [[], []], rd: [false, false], first: netFirst(), win: -1 }); placeFor = 0; };
+  const newNetGame = (g) => {   // (g first: who starts depends on the new game's number)
+    S.g = g; Object.assign(S, { fl: [randomFleet(), null], sh: [[], []], rd: [false, false], first: netFirst(), win: -1 }); placeFor = 0;
+  };
   const fireNet = async (c) => {
     S.sh[0].push({ c }); sfx.fire(); save(); paintPlay();
     await aimPing(0, c);
@@ -654,14 +659,15 @@
       mine = x; changed = true;
     });
     if (Array.isArray(o.fl) && o.fl.length === 5 && !S.fl[1]) { S.fl[1] = o.fl; changed = true; }
+    // answer straight away (the friend's waiting on these results), then put on the show
+    if (changed || (o.seen | 0) < S.sh[1].length || (Array.isArray(o.inc) ? o.inc.length : 0) < S.sh[0].length || o.hrd !== S.rd[0] || (S.win >= 0 && !o.hfl)) { save(true); sendSync(); }
     if (changed) {
-      save(true);
       render();
       if (mine) { paintPlay({ p: 0, c: mine.c }); land(mine, 0); const over = checkWin(); await say(mine, 0, over ? 900 : 1200); render(); }
+      if (fresh.length) busy = true;   // hold fire till their bomb's landed (it might be the last one)
       for (const x of fresh) { await aimPing(1, x.c); paintPlay({ p: 1, c: x.c }); land(x, 1); const over = checkWin(); await say(x, 1, over ? 900 : 1100); render(); }
+      if (fresh.length) { busy = false; render(); }
     }
-    // reply if anything moved, or they're missing something of ours
-    if (changed || (o.seen | 0) < S.sh[1].length || (Array.isArray(o.inc) ? o.inc.length : 0) < S.sh[0].length || o.hrd !== S.rd[0] || (S.win >= 0 && !o.hfl)) sendSync();
   };
   function goOnline() {
     if (duo || !S.L) return;
@@ -704,9 +710,15 @@
     S.first = S.g % 2; S.fl = [randomFleet(), S.m === "cpu" ? null : randomFleet()]; placeFor = 0;
     save(); render();
   };
+  // the opponent and level choices: up top, or tucked under the grids once a game's over
+  const settingsBelow = (below) => {
+    const m = $("#mode"), l = $("#level"), at = below ? $("#play") : $("#score");
+    if (below ? m.previousElementSibling !== at : m.nextElementSibling !== l || l.nextElementSibling !== at) { at.parentNode.insertBefore(m, below ? at.nextSibling : at); m.after(l); }
+  };
+  $("#again").addEventListener("click", () => { audio(); buzz(10); again(); });
   function render() {
     const net2 = S.m === "net", paired = !net2 || (S.L && S.L.peer);
-    $("#mode").hidden = false;
+    $("#mode").hidden = false; $("#again").hidden = true;
     document.querySelectorAll("#mode button").forEach((b) => b.classList.toggle("on", b.dataset.m === S.m));
     document.querySelectorAll("#level button").forEach((b) => b.classList.toggle("on", +b.dataset.l === S.lv));
     $("#level").hidden = S.m !== "cpu" || (S.sh[0].length > 0 && S.win < 0);
@@ -719,7 +731,7 @@
       if (S.L) Duo.qr($("#qr"), Duo.joinUrl(S.L));
       $("#lobby-note").textContent = S.role === "guest" ? (net.full ? "That game's full" : "Joining…") : "Waiting for a friend…";
       $("#share").hidden = S.role === "guest"; $("#lobby .qr").hidden = S.role === "guest";
-      return cta("");
+      settingsBelow(false); return cta("");
     }
     // placing
     const me = S.m === "two" ? placeFor : 0;
@@ -728,13 +740,15 @@
       if (!S.fl[placeFor]) { S.fl[placeFor] = randomFleet(); save(); }
       $("#place").hidden = false; $("#play").hidden = true;
       $("#place-who").textContent = S.m === "two" ? N[placeFor] + " · place your fleet" : "Place your fleet";
-      paintPlace();
+      paintPlace(); settingsBelow(false);
       return cta("");
     }
     $("#place").hidden = true; $("#play").hidden = false;
     $("#mode").hidden = S.win < 0; $("#level").hidden = S.win < 0 || S.m !== "cpu";   // out of the way while the shells fly
+    settingsBelow(S.win >= 0);   // and after, below the grids, so nothing jumps and Again stays in reach
     paintPlay();
-    if (S.win >= 0) cta("Again", again);
+    $("#again").hidden = S.win < 0;
+    if (S.win >= 0) cta("");
     else if (net2 && !S.rd[1]) cta("Friend's placing their fleet…", null, true);
     else cta("");
   }
