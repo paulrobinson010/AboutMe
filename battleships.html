@@ -675,6 +675,9 @@
       room: S.L, role: S.role, me: S.me,
       onPeer: () => { save(true); if (S.role === "host") { buzz([20, 40, 20]); sfx.win(); } render(); },
       onMsg: onFriend,
+      // waiting on them: they're placing, it's their go, our shot's in the air, or we've not seen their fleet at the end
+      waiting: () => !!(S.L && S.L.peer) && (S.win < 0 ? S.rd[0] && (!S.rd[1] || pending() || nextUp() === 1) : !S.fl[1]),
+      nudge: sendSync,
       onState: (st) => { net = st; paintPill(); if (!$("#play").hidden) paintPlay(); else render(); },
     });
   }

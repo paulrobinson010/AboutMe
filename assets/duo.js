@@ -41,16 +41,22 @@ window.Duo = (() => {
       ws.onmessage = (e) => { heard = Date.now(); let m; try { m = JSON.parse(e.data); } catch (_) { return; } onMsg(m); };
       ws.onclose = () => { drop(); retry(); };
     };
-    const wake = () => {
-      if (stopped || document.visibilityState !== "visible") return;
+    // is the line really up? A phone can keep a socket that looks open long
+    // after it's gone (a trip to another app, wifi to 4G): ask the relay, and
+    // if it doesn't answer in a few seconds, start again
+    const check = () => {
+      if (stopped) return;
       if (!ws) { back = 1000; return connect(); }
+      if (ws.readyState !== 1) return;   // still connecting
       const asked = Date.now(); try { ws.send("ping"); } catch (_) {}
       setTimeout(() => { if (ws && heard < asked) { drop(); connect(); } }, 4000);
     };
+    const wake = () => { if (document.visibilityState === "visible") check(); };
     document.addEventListener("visibilitychange", wake); addEventListener("online", wake);
     connect();
     return {
       send: (o) => { if (ws && ws.readyState === 1) { ws.send(JSON.stringify(o)); return true; } return false; },
+      check,
       stop: () => { stopped = true; clearTimeout(t); document.removeEventListener("visibilitychange", wake); removeEventListener("online", wake); drop(); },
     };
   };
@@ -59,18 +65,27 @@ window.Duo = (() => {
   // paired). role: "host" | "guest". me: this phone's id.
   // onMsg(o): a message from the partner ({ k: "hi" } when they say hello).
   // onState({ sock, peer, full }): the line, and whether the partner's about.
-  const connect = ({ room, role, me, onMsg, onState, onPeer }) => {
-    let key = null, link = null, sock = "off", heard = 0, full = false, lastHi = 0, beat = 0, live = 0;
+  // waiting(): true while this phone is waiting on the partner (their go, an
+  // answer to ours); then nudge() is called every few seconds to send this
+  // phone's state again, so a message lost on the way costs seconds, not a game.
+  const connect = ({ room, role, me, onMsg, onState, onPeer, waiting, nudge }) => {
+    let key = null, link = null, sock = "off", heard = 0, full = false, lastHi = 0, beat = 0, live = 0, poke = 0;
+    // sealing and unsealing take a moment each; queue them so messages go
+    // out, and are dealt with, in the order they were sent
+    let outQ = Promise.resolve(), inQ = Promise.resolve();
     const peerUp = () => Date.now() - heard < 45000;
     const tell = () => onState && onState({ sock, peer: peerUp(), paired: !!room.peer, full });
-    const raw = async (o) => { if (link && key) link.send({ t: "D", v: await seal(key, Object.assign({ from: me, role }, o)) }); };
+    const raw = (o) => { if (!key) return; const msg = Object.assign({ from: me, role }, o); outQ = outQ.then(() => seal(key, msg)).then((v) => { if (link) link.send({ t: "D", v }); }).catch(() => {}); };
     const hi = () => { lastHi = Date.now(); raw({ k: "hi" }); };
     aes(room.k).then((k) => {
       key = k;
-      link = Link(room.r, async (m) => {
+      link = Link(room.r, (m) => {
         if (m.t === "open") return hi();
         if (m.t !== "D" || typeof m.v !== "string") return;
-        let o; try { o = await unseal(key, m.v); } catch (_) { return; }   // not our room's
+        const got = unseal(key, m.v).catch(() => null);   // one that won't open isn't our room's
+        inQ = inQ.then(() => got).then(take);
+      }, (st) => { sock = st; tell(); });
+      const take = (o) => {
         if (!o || o.from === me || typeof o.from !== "string") return;
         if (o.k === "full") { if (o.to === me) { full = true; tell(); } return; }
         if (o.role === role) return;   // two hosts, or two guests: not for us
@@ -80,14 +95,19 @@ window.Duo = (() => {
         heard = Date.now(); tell();
         if (o.k === "hi") { if (fresh || Date.now() - lastHi > 3000) hi(); }
         onMsg(o);
-      }, (st) => { sock = st; tell(); });
+      };
     });
     beat = setInterval(hi, 15000);
     live = setInterval(tell, 5000);
+    poke = setInterval(() => {
+      if (!link || !room.peer || !waiting || !waiting()) return;
+      nudge && nudge();
+      if (Date.now() - heard > 5000) link.check();   // heard nothing for a while: is our line dead?
+    }, 2000);
     return {
       send: (o) => raw(o),
       peerUp,
-      stop: () => { clearInterval(beat); clearInterval(live); if (link) link.stop(); link = null; },
+      stop: () => { clearInterval(beat); clearInterval(live); clearInterval(poke); if (link) link.stop(); link = null; },
     };
   };
 

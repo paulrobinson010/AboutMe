@@ -511,6 +511,8 @@
         else if (o.k === "st" && o.n < S.n) sendState();   // they're behind: catch them up
       },
       onState: (st) => { netState = st; paint(); },
+      waiting: () => !S.end && S.t !== mySide(),   // their go: keep reminding them where we are
+      nudge: sendState,
     });
   }
   function goOffline() { if (duo) duo.stop(); duo = null; delete S.L; delete S.role; delete S.me; netState = { sock: "off", peer: false, full: false }; }
