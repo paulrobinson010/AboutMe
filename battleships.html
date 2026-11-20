@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#07080f">
+<title>Battleships. — sink the fleet</title>
+<meta name="description" content="Glow-in-the-dark battleships. Take on the computer, a friend on the same phone, or a friend on their own phone by QR code. Nothing stored.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: "Syne"; font-weight: 800; font-display: swap; src: url("assets/fonts/syne-latin-800-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 500; font-display: swap; src: url("assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 700; font-display: swap; src: url("assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
+
+  /* Night at sea on a sonar screen: cyan water, neon hulls, orange fire. */
+  :root {
+    --bg: #07080f;
+    --ink: #f2f0ea;
+    --muted: rgba(242, 240, 234, 0.55);
+    --line: rgba(242, 240, 234, 0.12);
+    --sea: #25e3ee;
+    --hit: #ff7a2f;
+    --pink: #ff4fd8;
+    --gold: #ffd23f;
+    --turf: #39ff88;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  html { background: var(--bg); -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+  body {
+    min-height: 100svh; color: var(--ink);
+    font-family: "Space Grotesk", system-ui, sans-serif; font-weight: 500;
+    background:
+      radial-gradient(90% 50% at 50% -10%, rgba(37, 227, 238, 0.16), transparent 70%),
+      radial-gradient(70% 40% at 100% 100%, rgba(255, 122, 47, 0.1), transparent 70%),
+      var(--bg);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation; overflow-x: hidden;
+    user-select: none; -webkit-user-select: none;
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  .wrap { width: min(100%, 520px); margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom)); position: relative; }
+  .home { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 16px; color: var(--muted); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.14em; }
+  .sound { position: absolute; top: max(6px, env(safe-area-inset-top)); right: 12px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+  .sound svg { width: 20px; height: 20px; }
+  h1 { font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(1.8rem, 9.4vw, 3rem); line-height: 0.95; letter-spacing: -0.02em; text-align: center; margin-top: 26px; }
+  h1 span { color: var(--sea); text-shadow: 0 0 8px var(--sea), 0 0 26px rgba(37, 227, 238, 0.6); }
+  .small { text-align: center; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.78rem; }
+
+  .seg { display: flex; gap: 6px; padding: 5px; margin: 16px auto 0; border-radius: 100px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
+  .seg button { flex: 1; padding: 10px 0; border-radius: 100px; font-weight: 700; color: var(--muted); transition: background 0.2s, color 0.2s; white-space: nowrap; font-size: 0.9rem; }
+  .seg button.on { background: var(--ink); color: var(--bg); }
+  .seg.lv { margin-top: 8px; }
+  .seg.lv button { font-size: 0.84rem; padding: 8px 0; }
+
+  /* ---------- the score ---------- */
+  .score { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; font-weight: 700; }
+  .score span { color: var(--muted); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  .score b { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+  .score b.bump { animation: bump 0.6s var(--ease); }
+  @keyframes bump { 30% { transform: scale(1.5); color: var(--gold); text-shadow: 0 0 12px var(--gold); } }
+  .score i { font-style: normal; color: var(--muted); }
+
+  /* ---------- the grids ---------- */
+  .grid { position: relative; width: min(100%, 380px, 48svh); aspect-ratio: 1; margin: 10px auto 0; touch-action: none; }
+  .grid svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  #g-place { width: min(100%, 380px, 44svh); }
+  .below { display: flex; align-items: center; gap: 14px; width: min(100%, 380px); margin: 12px auto 0; }
+  .grid.mini { flex: none; width: min(44%, 170px, 24svh); margin: 0; }
+  .side { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+  .side .status { margin-top: 0; min-height: 70px; }
+  .side .status b { font-size: clamp(1.3rem, 6.4vw, 1.9rem); }
+  .water { fill: rgba(37, 227, 238, 0.05); stroke: rgba(37, 227, 238, 0.55); stroke-width: 0.6; }
+  .lines line { stroke: rgba(37, 227, 238, 0.18); stroke-width: 0.25; }
+  .sweep { transform-box: view-box; transform-origin: 50px 50px; animation: sweep 4s linear infinite; pointer-events: none; }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+  .grid.mini .sweep { display: none; }
+  .ship rect { stroke-width: 0.9; }
+  .ship.drag rect { stroke-dasharray: 2 1.2; }
+  .ship.bad rect { stroke: #ff5a5a !important; fill: rgba(255, 90, 90, 0.2) !important; }
+  .ship.sunk rect { stroke: var(--hit) !important; fill: rgba(255, 122, 47, 0.18) !important; animation: sunk 1.2s ease-in-out infinite alternate; }
+  @keyframes sunk { to { opacity: 0.55; } }
+  .ship.ghost rect { stroke-dasharray: 1.6 1.2; opacity: 0.75; }
+  .miss { fill: var(--sea); }
+  .miss.new { transform-box: fill-box; transform-origin: center; animation: plop 0.5s var(--ease); }
+  @keyframes plop { from { transform: scale(3); opacity: 0; } }
+  .ring { fill: none; stroke: var(--sea); stroke-width: 0.6; transform-box: fill-box; transform-origin: center; animation: ripple 0.9s ease-out forwards; }
+  @keyframes ripple { from { transform: scale(0.3); opacity: 1; } to { transform: scale(2.6); opacity: 0; } }
+  .hitm path { stroke: var(--hit); stroke-width: 1.4; stroke-linecap: round; }
+  .hitm circle { fill: var(--hit); }
+  .hitm.new { transform-box: fill-box; transform-origin: center; animation: boom 0.55s var(--ease); }
+  @keyframes boom { 0% { transform: scale(2.6); } 40% { transform: scale(0.8); } 100% { transform: none; } }
+  .spark { fill: var(--gold); transform-box: fill-box; transform-origin: center; animation: spark 0.7s ease-out forwards; }
+  @keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
+  .ping { fill: none; stroke: var(--gold); stroke-width: 0.8; transform-box: fill-box; transform-origin: center; animation: ping 0.4s ease-in forwards; }
+  .ping { animation-duration: 0.32s; }
+  @keyframes ping { from { transform: scale(3.2); opacity: 0.2; } to { transform: scale(0.6); opacity: 1; } }
+  .aim { fill: none; stroke: var(--pink); stroke-width: 0.7; transition: transform 0.18s ease-out; }
+  .cellhit { fill: transparent; }
+  .grid.target .cellhit { cursor: crosshair; }
+  .grid.shake { animation: shake 0.4s; }
+  @keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+  .grid.dim { opacity: 0.5; transition: opacity 0.3s; }
+
+  .label { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; }
+  .fleet { display: flex; gap: 5px; align-items: center; }
+  .fleet i { display: block; height: 7px; border-radius: 4px; background: var(--sea); box-shadow: 0 0 6px rgba(37, 227, 238, 0.6); }
+  .fleet i.down { background: var(--hit); opacity: 0.45; box-shadow: none; }
+
+  .status { min-height: 46px; margin-top: 8px; text-align: center; display: grid; place-items: center; }
+  .status b { font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(1.5rem, 8vw, 2.2rem); line-height: 1; }
+  .status b.pop { animation: pop 0.5s var(--ease); }
+  .status b.hit { color: var(--hit); text-shadow: 0 0 14px rgba(255, 122, 47, 0.7); }
+  .status b.miss { color: var(--sea); text-shadow: 0 0 12px rgba(37, 227, 238, 0.6); }
+  .status b.win { color: var(--gold); text-shadow: 0 0 14px rgba(255, 210, 63, 0.7); }
+  .status b.lose { color: #ff5a5a; text-shadow: 0 0 14px rgba(255, 90, 90, 0.6); }
+  .status .hint { color: var(--muted); letter-spacing: 0.08em; font-size: 0.92rem; }
+  @keyframes pop { 0% { transform: scale(0.4) rotate(-6deg); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: none; } }
+
+  .tools { display: flex; justify-content: center; gap: 10px; margin-top: 12px; }
+  .tools button, .share { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 100px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); font-weight: 700; }
+  .tools button:active { transform: scale(0.96); }
+  .tools .go { order: 2; flex: 1; max-width: 220px; justify-content: center; background: var(--sea); color: #031417; border-color: transparent; font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.1rem; box-shadow: 0 0 18px rgba(37, 227, 238, 0.45); }
+
+  .cta {
+    width: min(100%, 380px); margin: 14px auto 0;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 17px; border-radius: 22px;
+    background: var(--sea); color: #031417;
+    font-family: "Syne", sans-serif; font-weight: 800; font-size: min(1.2rem, 5.2vw); white-space: nowrap;
+    box-shadow: 0 0 22px rgba(37, 227, 238, 0.5), 0 12px 40px rgba(0, 0, 0, 0.5);
+  }
+  .cta:active { transform: scale(0.97); }
+  .cta.wait { background: #12343a; color: rgba(242, 240, 234, 0.5); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); }
+
+  /* two phones */
+  .lobby { text-align: center; margin-top: 18px; }
+  .qr { width: min(70%, 240px); aspect-ratio: 1; margin: 12px auto 0; border-radius: 22px; padding: 6px; background: #f2f0ea; box-shadow: 0 0 0 3px var(--sea), 0 0 30px rgba(37, 227, 238, 0.5); }
+  .qr svg { display: block; width: 100%; height: 100%; }
+  .share { margin-top: 14px; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 100px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; color: #ff6b6b; border: 1px solid rgba(255, 90, 90, 0.55); }
+  .pill i { width: 8px; height: 8px; border-radius: 50%; background: #ff5a5a; box-shadow: 0 0 8px #ff5a5a; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+  .pill.off { color: var(--muted); border-color: var(--line); }
+  .pill.off i { background: var(--muted); box-shadow: none; animation: none; }
+  .netline { text-align: center; margin-top: 10px; }
+
+  /* the curtain between turns, on one phone */
+  .curtain { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; align-content: center; gap: 10px; text-align: center; padding: 24px;
+    background: radial-gradient(60% 40% at 50% 45%, rgba(37, 227, 238, 0.18), transparent 70%), rgba(7, 8, 15, 0.97); }
+  .curtain b { font-family: "Syne", sans-serif; font-weight: 800; font-size: clamp(2.2rem, 12vw, 3.4rem); line-height: 1; color: var(--sea); text-shadow: 0 0 16px rgba(37, 227, 238, 0.6); }
+  .curtain svg { width: 120px; height: 70px; overflow: visible; }
+  .curtain .bob { animation: bob 2.2s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(3px) rotate(-2deg); } }
+  .deal { text-align: center; margin-top: 22px; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
+  .confetti { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .sweep, .ship.sunk rect, .curtain .bob { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="home" href="./">&larr; PR.</a>
+  <button class="sound" id="sound" aria-label="Sound on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
+  <h1>Battleships<span>.</span></h1>
+  <div class="seg" id="mode" role="group" aria-label="Opponent">
+    <button data-m="cpu">&#129302; vs Robo</button>
+    <button data-m="two">&#128101; 2 players</button>
+    <button data-m="net">&#128241; 2 phones</button>
+  </div>
+  <div class="seg lv" id="level" role="group" aria-label="How good Robo is">
+    <button data-l="0">Cadet</button>
+    <button data-l="1">Captain</button>
+    <button data-l="2">Admiral</button>
+  </div>
+  <div class="score" id="score"><span id="n0">You</span><b id="s0">0</b><i>–</i><b id="s1">0</b><span id="n1">Robo</span></div>
+
+  <!-- two phones: waiting for the friend -->
+  <div class="lobby" id="lobby" hidden>
+    <p class="small">Friend scans to play</p>
+    <div class="qr" id="qr"></div>
+    <button class="share" id="share"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share link</button>
+    <p class="small" id="lobby-note" style="margin-top:14px">Waiting for a friend…</p>
+  </div>
+
+  <!-- placing the fleet -->
+  <section id="place" hidden>
+    <p class="small" id="place-who" style="margin-top:16px">Place your fleet</p>
+    <p class="small" style="margin-top:4px;opacity:0.7;text-transform:none;letter-spacing:0.04em">Drag to move · tap to turn</p>
+    <div class="tools">
+      <button class="go" id="ready">Ready</button>
+      <button id="shuffle"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>Shuffle</button>
+    </div>
+    <div class="grid" id="g-place"></div>
+  </section>
+
+  <!-- the battle -->
+  <section id="play" hidden>
+    <div class="label"><span class="small" id="t-label">Enemy waters</span><span class="fleet" id="fleet-t"></span></div>
+    <div class="grid target" id="g-target"></div>
+    <div class="below">
+      <div class="grid mini" id="g-own"></div>
+      <div class="side">
+        <div class="status" id="status" aria-live="polite"></div>
+        <span class="small" id="o-label">Your fleet</span>
+        <span class="fleet" id="fleet-o"></span>
+      </div>
+    </div>
+  </section>
+  <button class="cta" id="cta" hidden></button>
+  <p class="netline" id="netline" hidden><span class="pill" id="pill"><i></i><b>LIVE</b></span></p>
+  <p class="deal">Nothing stored here. Your fleet stays on your phone.</p>
+</div>
+<div class="curtain" id="curtain" hidden>
+  <svg viewBox="0 0 120 70" aria-hidden="true"><g class="bob"><path d="M10 40 H110 L96 58 H24 Z" fill="#140e2a" stroke="#25e3ee" stroke-width="2.5" stroke-linejoin="round"/><path d="M40 40 V26 H70 V40 M50 26 V16 H60 V26" fill="#140e2a" stroke="#ff4fd8" stroke-width="2.2" stroke-linejoin="round"/><path d="M84 40 V32 H96" fill="none" stroke="#ffd23f" stroke-width="2.2"/></g><path d="M0 64 q7.5 -5 15 0 t15 0 t15 0 t15 0 t15 0 t15 0 t15 0 t15 0" fill="none" stroke="#25e3ee" stroke-width="2" opacity="0.6"/></svg>
+  <span class="small">Pass to</span>
+  <b id="curtain-who">Player 2</b>
+  <span class="small" style="margin-top:8px">No peeking</span>
+  <button class="cta" id="curtain-go" style="margin-top:22px;width:min(80vw,320px)"></button>
+</div>
+<canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
+
+<script src="assets/duo.js"></script>
+<script>
+/* Battleships. — against Robo, a friend passing the phone, or a friend on
+   their own phone. The game lives in the page's own address. On two
+   phones each fleet stays on its own phone: a shot goes across, the phone
+   it hit says what it hit, and that's all that's ever sent. */
+(() => {
+  const $ = (s, r) => (r || document).querySelector(s);
+  const NS = "http://www.w3.org/2000/svg";
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const rnd = (n) => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+  const pick = (a) => a[rnd(a.length)];
+  const SHIPS = [{ n: "Carrier", len: 5, col: "#ff4fd8" }, { n: "Battleship", len: 4, col: "#a77bff" }, { n: "Cruiser", len: 3, col: "#39ff88" }, { n: "Submarine", len: 3, col: "#ffd23f" }, { n: "Destroyer", len: 2, col: "#4d8bff" }];
+
+  // ---- the state -------------------------------------------------------------------
+  // fl[p]: player p's fleet, five { x, y, v }; sh[p]: p's shots at the other,
+  // { c, r: 0 miss / 1 hit / 2 sunk, s: the ship sunk } (r is missing while a
+  // shot's on its way, on two phones); rd: ready; first: who fires first;
+  // win: -1 still going. On two phones this phone is always player 0.
+  const blank = (m) => ({ m, lv: 1, sc: [0, 0], g: 0, fl: [null, null], sh: [[], []], rd: [false, false], first: 0, at: 0, win: -1 });
+  let S = blank("cpu");
+  const enc = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const dec = (t) => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/")))));
+  const save = (fromFriend) => { try { history.replaceState(null, "", "#" + enc(S)); } catch (_) {} if (!fromFriend && S.m === "net") sendSync(); };
+  const JOIN = Duo.fromHash();
+  if (JOIN) S = Object.assign(blank("net"), { role: "guest", me: Duo.id(6), L: JOIN });
+  else try { const o = location.hash.length > 3 && dec(location.hash.slice(1)); if (o && o.m && Array.isArray(o.sh)) S = Object.assign(blank(o.m), o); } catch (_) {}
+
+  // ---- ships and cells -----------------------------------------------------------------
+  const cellsOf = (i, s) => Array.from({ length: SHIPS[i].len }, (_, k) => (s.y + (s.v ? k : 0)) * 10 + s.x + (s.v ? 0 : k));
+  const fits = (i, s, fleet, skip) => {
+    const len = SHIPS[i].len;
+    if (s.x < 0 || s.y < 0 || (s.v ? s.y + len > 10 || s.x > 9 : s.x + len > 10 || s.y > 9)) return false;
+    const mine = cellsOf(i, s);
+    return fleet.every((o, j) => j === i || j === skip || !o || !cellsOf(j, o).some((c) => mine.includes(c)));
+  };
+  const randomFleet = () => {   // ships don't touch, if it can manage it
+    for (let tries = 0; tries < 50; tries++) {
+      const f = [], used = new Set();
+      let ok = true;
+      for (let i = 0; i < SHIPS.length && ok; i++) {
+        let placed = false;
+        for (let k = 0; k < 300 && !placed; k++) {
+          const s = { x: rnd(10), y: rnd(10), v: rnd(2) };
+          if (!fits(i, s, f)) continue;
+          const cs = cellsOf(i, s);
+          if (k < 250 && cs.some((c) => [-11, -10, -9, -1, 0, 1, 9, 10, 11].some((d) => { const n = c + d; return n >= 0 && n < 100 && Math.abs((n % 10) - (c % 10)) <= 1 && used.has(n); }))) continue;
+          f[i] = s; cs.forEach((c) => used.add(c)); placed = true;
+        }
+        ok = placed;
+      }
+      if (ok) return f;
+    }
+  };
+  const whose = (fleet, c) => fleet ? fleet.findIndex((s, i) => cellsOf(i, s).includes(c)) : -1;
+  // what a shot at fleet does, given the shots already taken at it
+  const resolve = (fleet, prior, c) => {
+    const i = whose(fleet, c);
+    if (i < 0) return { c, r: 0 };
+    const hits = new Set(prior.filter((x) => x.r).map((x) => x.c).concat(c));
+    return cellsOf(i, fleet[i]).every((k) => hits.has(k)) ? { c, r: 2, s: i, p: { ...fleet[i] } } : { c, r: 1 };   // a sunk ship shows where it was
+  };
+  const sunkCount = (shots) => shots.filter((x) => x.r === 2).length;
+  const nextUp = () => (S.first + S.sh[0].length + S.sh[1].length) % 2;   // who fires next
+
+  // ---- Robo -------------------------------------------------------------------------
+  // Cadet shoots about at random. Captain hunts on a chequerboard and, once
+  // it hits, works along the ship. Admiral weighs every place each surviving
+  // ship could still be, and shoots where most of them overlap.
+  const roboShot = () => {
+    const mine = S.sh[1], shot = new Set(mine.map((x) => x.c));
+    const sunkCells = new Set(), sunkShips = new Set();
+    mine.filter((x) => x.r === 2).forEach((x) => { sunkShips.add(x.s); cellsOf(x.s, S.fl[0][x.s]).forEach((c) => sunkCells.add(c)); });
+    const open = [...Array(100).keys()].filter((c) => !shot.has(c));
+    const live = mine.filter((x) => x.r === 1 && !sunkCells.has(x.c)).map((x) => x.c);
+    const nb = (c) => [c % 10 ? c - 1 : -1, c % 10 < 9 ? c + 1 : -1, c - 10, c + 10].filter((n) => n >= 0 && n < 100 && !shot.has(n));
+    if (S.lv === 0) return live.length && rnd(2) ? (pick(live.flatMap(nb)) ?? pick(open)) : pick(open);
+    if (S.lv === 1) {
+      if (live.length) {
+        if (live.length > 1) {   // in a line: carry on along it
+          const v = live.every((c) => c % 10 === live[0] % 10), sorted = live.slice().sort((a, b) => a - b), step = v ? 10 : 1;
+          const ends = [sorted[0] - step, sorted[sorted.length - 1] + step].filter((n) => n >= 0 && n < 100 && !shot.has(n) && (v || Math.floor(n / 10) === Math.floor(sorted[0] / 10)));
+          if (ends.length) return pick(ends);
+        }
+        const around = live.flatMap(nb); if (around.length) return pick(around);
+      }
+      const even = open.filter((c) => (c % 10 + Math.floor(c / 10)) % 2 === 0);
+      return pick(even.length ? even : open);
+    }
+    const heat = new Array(100).fill(0), misses = new Set(mine.filter((x) => !x.r).map((x) => x.c));
+    SHIPS.forEach((sh, i) => {
+      if (sunkShips.has(i)) return;
+      for (let v = 0; v < 2; v++) for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) {
+        if (v ? y + sh.len > 10 : x + sh.len > 10) continue;
+        const cs = Array.from({ length: sh.len }, (_, k) => (y + (v ? k : 0)) * 10 + x + (v ? 0 : k));
+        if (cs.some((c) => misses.has(c) || sunkCells.has(c))) continue;
+        const covers = cs.filter((c) => live.includes(c)).length;
+        if (live.length && !covers) continue;
+        const w = live.length ? Math.pow(8, covers) : 1;
+        cs.forEach((c) => { if (!shot.has(c)) heat[c] += w; });
+      }
+    });
+    const top = Math.max(...open.map((c) => heat[c]));
+    return pick(open.filter((c) => heat[c] === top));
+  };
+
+  // ---- sound, buzz, confetti ---------------------------------------------------------
+  let sound = true, ac = null;
+  const audio = () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} } if (ac && ac.state === "suspended") ac.resume().catch(() => {}); return ac; };
+  addEventListener("pointerdown", audio, { once: true });
+  const tone = (f, t0, dur, type, vol, f2) => {
+    const a = audio(); if (!a || !sound) return;
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + t0;
+    o.type = type || "sine"; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.15, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+  };
+  const noise = (t0, dur, vol, from, to) => {   // a filtered burst: spray, or a bang
+    const a = audio(); if (!a || !sound) return;
+    const n = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime + t0;
+    src.buffer = buf; f.type = "lowpass"; f.frequency.setValueAtTime(from, t); f.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(vol, t); src.connect(f).connect(g).connect(a.destination); src.start(t);
+  };
+  const sfx = {
+    fire: () => tone(1400, 0, 0.35, "sine", 0.05, 300),
+    splash: () => { noise(0, 0.5, 0.25, 3000, 300); tone(260, 0, 0.3, "sine", 0.06, 90); },
+    boom: () => { noise(0, 0.7, 0.5, 900, 60); tone(110, 0, 0.5, "sawtooth", 0.08, 40); },
+    sunk: () => { sfx.boom(); [392, 330, 262, 196].forEach((f, i) => tone(f, 0.35 + i * 0.14, 0.3, "triangle", 0.09)); },
+    win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.08, 0.3, "triangle", 0.13)),
+    lose: () => [392, 370, 349, 262].forEach((f, i) => tone(f, i * 0.28, i === 3 ? 0.8 : 0.26, "sawtooth", 0.06)),
+    tick: () => tone(1500, 0, 0.03, "triangle", 0.06),
+    nope: () => tone(150, 0, 0.12, "square", 0.06),
+  };
+  $("#sound").addEventListener("click", (e) => { sound = !sound; e.currentTarget.querySelector(".wave").style.display = sound ? "" : "none"; });
+  const buzz = (ms) => { if (navigator.vibrate && !(navigator.userActivation && !navigator.userActivation.hasBeenActive)) navigator.vibrate(ms); };
+  const confetti = (cols) => {
+    if (reduced) return;
+    const cv = $("#confetti"), x = cv.getContext("2d"), W = cv.width = innerWidth * devicePixelRatio, H = cv.height = innerHeight * devicePixelRatio;
+    const bits = Array.from({ length: 130 }, () => ({ x: W / 2, y: H * 0.4, vx: (Math.random() - 0.5) * W * 0.03, vy: -Math.random() * H * 0.025 - H * 0.006, r: (3 + Math.random() * 5) * devicePixelRatio, c: cols[(Math.random() * cols.length) | 0], a: Math.random() * 6 }));
+    let f = 0;
+    (function tick() { x.clearRect(0, 0, W, H); bits.forEach((b) => { b.vy += H * 0.0009; b.x += b.vx; b.y += b.vy; b.a += 0.2; x.fillStyle = b.c; x.save(); x.translate(b.x, b.y); x.rotate(b.a); x.fillRect(-b.r, -b.r / 2, b.r * 2, b.r); x.restore(); }); if (++f < 110) requestAnimationFrame(tick); else x.clearRect(0, 0, W, H); })();
+  };
+
+  // ---- drawing a grid ---------------------------------------------------------------
+  const el = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
+  const grid = (box) => {   // the water, the lines and a radar sweep; layers to draw into
+    box.innerHTML = "";
+    const svg = el("svg", { viewBox: "-1 -1 102 102" });
+    svg.innerHTML = '<defs><filter id="gl' + box.id + '" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="0.9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+      + '<linearGradient id="sw' + box.id + '" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#25e3ee" stop-opacity="0"/><stop offset="1" stop-color="#25e3ee" stop-opacity="0.16"/></linearGradient>'
+      + '<clipPath id="cl' + box.id + '"><rect width="100" height="100" rx="3"/></clipPath></defs>'
+      + '<rect class="water" width="100" height="100" rx="3"/>';
+    const lines = el("g", { class: "lines" });
+    for (let k = 1; k < 10; k++) { lines.appendChild(el("line", { x1: k * 10, y1: 0, x2: k * 10, y2: 100 })); lines.appendChild(el("line", { x1: 0, y1: k * 10, x2: 100, y2: k * 10 })); }
+    svg.appendChild(lines);
+    const sw = el("g", { "clip-path": "url(#cl" + box.id + ")" }); sw.appendChild(el("path", { class: "sweep", d: "M50 50 L120 50 A70 70 0 0 0 99.5 0.5 Z", fill: "url(#sw" + box.id + ")" }));
+    svg.appendChild(sw);
+    const L = {}; ["ships", "marks", "fx", "hit"].forEach((k) => { L[k] = el("g", k === "hit" ? {} : { filter: "url(#gl" + box.id + ")" }); svg.appendChild(L[k]); });
+    box.appendChild(svg);
+    return Object.assign(L, { svg });
+  };
+  const shipEl = (i, s, extra) => {
+    const len = SHIPS[i].len, w = s.v ? 10 : len * 10, h = s.v ? len * 10 : 10, col = SHIPS[i].col;
+    const g = el("g", { class: "ship" + (extra ? " " + extra : ""), "data-i": i });
+    g.appendChild(el("rect", { x: s.x * 10 + 1.4, y: s.y * 10 + 1.4, width: w - 2.8, height: h - 2.8, rx: 3.4, fill: col, "fill-opacity": 0.2, stroke: col }));
+    // portholes
+    for (let k = 0; k < len; k++) g.appendChild(el("circle", { cx: s.x * 10 + 5 + (s.v ? 0 : k * 10), cy: s.y * 10 + 5 + (s.v ? k * 10 : 0), r: 0.9, fill: col, opacity: 0.7 }));
+    return g;
+  };
+  const cxy = (c) => [(c % 10) * 10 + 5, Math.floor(c / 10) * 10 + 5];
+  const markEl = (x, isNew) => {
+    const [cx, cy] = cxy(x.c);
+    if (!x.r) return el("circle", { class: "miss" + (isNew ? " new" : ""), cx, cy, r: 1.5 });
+    const g = el("g", { class: "hitm" + (isNew ? " new" : "") });
+    g.appendChild(el("circle", { cx, cy, r: 2 }));
+    g.appendChild(el("path", { d: `M${cx - 3.4} ${cy - 3.4}L${cx + 3.4} ${cy + 3.4}M${cx + 3.4} ${cy - 3.4}L${cx - 3.4} ${cy + 3.4}` }));
+    return g;
+  };
+  const splash = (L, c, hit) => {   // the moment it lands
+    if (reduced) return;
+    const [cx, cy] = cxy(c);
+    if (!hit) { [0, 1].forEach((k) => { const r = el("circle", { class: "ring", cx, cy, r: 3, style: "animation-delay:" + k * 0.18 + "s" }); L.fx.appendChild(r); setTimeout(() => r.remove(), 1300); }); return; }
+    for (let k = 0; k < 10; k++) {
+      const a = k / 10 * Math.PI * 2 + Math.random() * 0.4, d = 8 + Math.random() * 6;
+      const p = el("circle", { class: "spark", cx, cy, r: 1, style: `--dx:${(Math.cos(a) * d).toFixed(1)}px;--dy:${(Math.sin(a) * d).toFixed(1)}px` });
+      L.fx.appendChild(p); setTimeout(() => p.remove(), 800);
+    }
+  };
+  const fleetBar = (box, shots) => {   // the five ships, crossed off as they go
+    box.innerHTML = "";
+    const down = new Set(shots.filter((x) => x.r === 2).map((x) => x.s));
+    SHIPS.forEach((s, i) => { const b = document.createElement("i"); b.style.width = s.len * 6 + "px"; b.classList.toggle("down", down.has(i)); box.appendChild(b); });
+  };
+
+  // ---- placing the fleet -----------------------------------------------------------------
+  let PL = null, placeFor = 0;
+  const paintPlace = () => {
+    const fleet = S.fl[placeFor];
+    if (!PL) PL = grid($("#g-place"));
+    PL.ships.innerHTML = "";
+    fleet.forEach((s, i) => PL.ships.appendChild(shipEl(i, s)));
+  };
+  // drag a ship to move it; tap it to turn it
+  (() => {
+    const box = $("#g-place");
+    let drag = null;
+    const cellAt = (e) => { const r = box.getBoundingClientRect(); return [Math.floor((e.clientX - r.left) / r.width * 10), Math.floor((e.clientY - r.top) / r.height * 10)]; };
+    box.addEventListener("pointerdown", (e) => {
+      const fleet = S.fl[placeFor]; if (!fleet) return;
+      const [x, y] = cellAt(e), c = y * 10 + x, i = whose(fleet, c);
+      if (i < 0) return;
+      const s = fleet[i];
+      drag = { i, off: s.v ? y - s.y : x - s.x, start: [x, y], moved: false, orig: { ...s } };
+      box.setPointerCapture(e.pointerId);
+      const g = PL.ships.querySelector('[data-i="' + i + '"]'); if (g) g.classList.add("drag");
+    });
+    box.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const fleet = S.fl[placeFor], [x, y] = cellAt(e), s = fleet[drag.i];
+      if (x !== drag.start[0] || y !== drag.start[1]) drag.moved = true;
+      const n = { x: s.v ? x : x - drag.off, y: s.v ? y - drag.off : y, v: s.v };
+      if ((n.x !== s.x || n.y !== s.y) && fits(drag.i, n, fleet)) { fleet[drag.i] = n; paintPlace(); sfx.tick(); const g = PL.ships.querySelector('[data-i="' + drag.i + '"]'); if (g) g.classList.add("drag"); }
+    });
+    const up = () => {
+      if (!drag) return;
+      const fleet = S.fl[placeFor], i = drag.i;
+      if (!drag.moved) {   // a tap: turn it about its first square (or nudge it in)
+        const s = fleet[i], len = SHIPS[i].len;
+        let n = null;
+        for (let k = 0; k < len && !n; k++) { const t = { x: s.v ? s.x - k : s.x, y: s.v ? s.y : s.y - k, v: 1 - s.v }; if (fits(i, t, fleet)) n = t; }
+        if (n) { fleet[i] = n; sfx.tick(); buzz(8); } else { sfx.nope(); buzz(25); const b = $("#g-place"); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); }
+      }
+      drag = null; save(); paintPlace();
+    };
+    box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
+  })();
+  $("#ready").addEventListener("click", () => { audio(); ready(); });
+  $("#shuffle").addEventListener("click", () => { S.fl[placeFor] = randomFleet(); sfx.splash(); save(); paintPlace(); });
+
+  // ---- the battle -------------------------------------------------------------------
+  let TG = null, OW = null, busy = false, flash = null;   // flash: a result showing for a moment
+  const names = () => S.m === "cpu" ? ["You", "Robo"] : S.m === "net" ? ["You", "Friend"] : ["Player 1", "Player 2"];
+  // whose view the screen is: on one phone passed round, the player whose go it is
+  const viewer = () => S.m === "two" ? (S.win >= 0 ? S.win : flash ? flash.p : nextUp()) : 0;
+  const paintPlay = (newShot) => {
+    const me = viewer(), them = 1 - me, N = names();
+    if (!TG) TG = grid($("#g-target"));
+    if (!OW) OW = grid($("#g-own"));
+    // the enemy's waters: my shots, their sunk ships (and at the end, the rest of them)
+    TG.ships.innerHTML = ""; TG.marks.innerHTML = "";
+    S.sh[me].filter((x) => x.r === 2).forEach((x) => { const s = S.fl[them] ? S.fl[them][x.s] : null; if (s) TG.ships.appendChild(shipEl(x.s, s, "sunk")); else if (x.p) TG.ships.appendChild(shipEl(x.s, x.p, "sunk")); });
+    if (S.win >= 0 && S.fl[them]) S.fl[them].forEach((s, i) => { if (!S.sh[me].some((x) => x.r === 2 && x.s === i)) TG.ships.appendChild(shipEl(i, s, "ghost")); });
+    S.sh[me].forEach((x) => { if (x.r !== undefined) TG.marks.appendChild(markEl(x, newShot && newShot.p === me && newShot.c === x.c)); });
+    // my fleet, and their shots at it
+    OW.ships.innerHTML = ""; OW.marks.innerHTML = "";
+    if (S.fl[me]) S.fl[me].forEach((s, i) => OW.ships.appendChild(shipEl(i, s, S.sh[them].some((x) => x.r === 2 && x.s === i) ? "sunk" : "")));
+    S.sh[them].forEach((x) => { if (x.r !== undefined) OW.marks.appendChild(markEl(x, newShot && newShot.p === them && newShot.c === x.c)); });
+    fleetBar($("#fleet-t"), S.sh[me]); fleetBar($("#fleet-o"), S.sh[them]);
+    $("#t-label").textContent = S.m === "two" ? N[them] + "'s waters" : "Enemy waters";
+    $("#o-label").textContent = S.m === "two" ? N[me] + "'s fleet" : "Your fleet";
+    const myGo = S.win < 0 && !flash && !busy && nextUp() === me && (S.m !== "net" || (net.peer && S.rd[1] && !pending()));
+    $("#g-target").classList.toggle("dim", S.win < 0 && !myGo && !flash);
+    // the line under the target grid
+    const st = $("#status");
+    if (flash) { st.innerHTML = '<b class="pop ' + flash.cls + '"></b>'; st.firstChild.textContent = flash.text; }
+    else if (S.win >= 0) { const w = S.m === "two" ? N[S.win] + " wins!" : S.win === 0 ? "You win!" : N[1] + " wins!"; st.innerHTML = '<b class="pop ' + (S.m === "two" || S.win === 0 ? "win" : "lose") + '"></b>'; st.firstChild.textContent = w; }
+    else st.innerHTML = '<span class="hint">' + (myGo ? "Your shot · tap their waters" : S.m === "cpu" ? "Robo's aiming…" : S.m === "net" ? (!net.peer ? "Friend's away…" : !S.rd[1] ? "Friend's placing their fleet…" : pending() ? "Splash…" : "Friend's aiming…") : "") + "</span>";
+  };
+  const pending = () => S.sh[0].some((x) => x.r === undefined);
+  const say = (x, p, delay) => {   // the result of a shot, for a moment
+    const N = names(), you = S.m !== "two" ? p === 0 : true;
+    const text = x.r === 2 ? (you ? "Sunk their " : (S.m === "cpu" ? "Robo sank your " : S.m === "net" ? "Friend sank your " : "Sunk ")) + SHIPS[x.s].n + "!" : x.r ? (you ? "Hit!" : "They hit you!") : (you ? "Miss" : "They missed");
+    flash = { text, cls: x.r ? "hit" : "miss", p };
+    return new Promise((res) => setTimeout(() => { flash = null; res(); }, delay));
+  };
+  const land = (x, p) => {   // effects of shot x by player p
+    const onTarget = S.m === "two" ? true : p === 0, L = onTarget ? TG : OW;
+    if (x.r === 2) { sfx.sunk(); buzz([40, 30, 80]); } else if (x.r) { sfx.boom(); buzz([30, 20, 40]); } else sfx.splash();
+    splash(L, x.c, !!x.r);
+    if (x.r) { const g = onTarget ? $("#g-target") : $("#g-own"); g.classList.remove("shake"); void g.offsetWidth; g.classList.add("shake"); }
+  };
+  const checkWin = () => {
+    if (S.win >= 0) return false;
+    const w = sunkCount(S.sh[0]) === 5 ? 0 : sunkCount(S.sh[1]) === 5 ? 1 : -1;
+    if (w < 0) return false;
+    S.win = w; S.sc[w]++;
+    save();
+    const good = S.m === "two" || w === 0;
+    setTimeout(() => { (good ? sfx.win : sfx.lose)(); confetti(good ? ["#25e3ee", "#ffd23f", "#f2f0ea"] : ["#ff7a2f", "#ff5a5a"]); const b = $("#s" + w); b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); }, 700);
+    return true;
+  };
+  // one phone (Robo, or passed round): resolve it here
+  const fireLocal = async (p, c) => {
+    busy = true;
+    const x = resolve(S.fl[1 - p], S.sh[p], c);
+    S.sh[p].push(x); save();
+    sfx.fire(); await aimPing(p, c);
+    paintPlay({ p, c }); land(x, p);
+    const over = checkWin();
+    await say(x, p, over ? 900 : x.r === 2 ? 1400 : x.r ? 850 : 650);
+    busy = false;
+    render();
+    if (!over && S.m === "two") curtain(nextUp());
+    else if (!over && S.m === "cpu" && nextUp() === 1) roboTurn();
+  };
+  const aimPing = (p, c) => new Promise((res) => {   // the shell coming in
+    const onTarget = S.m === "two" ? true : p === 0, L = onTarget ? TG : OW;
+    if (reduced || !L) return res();
+    const [cx, cy] = cxy(c), r = el("circle", { class: "ping", cx, cy, r: 3.5 });
+    L.fx.appendChild(r); setTimeout(() => { r.remove(); res(); }, 320);
+  });
+  const roboTurn = () => {
+    busy = true; render();
+    // a crosshair wanders over your fleet, then settles
+    const c = roboShot(), aim = el("rect", { class: "aim", x: -4.5, y: -4.5, width: 9, height: 9, rx: 1.5 });
+    OW.fx.appendChild(aim);
+    let k = 0; const hops = 2 + rnd(2);
+    const hop = () => {
+      const t = k < hops ? rnd(100) : c, [x, y] = cxy(t);
+      aim.style.transform = "translate(" + x + "px," + y + "px)"; sfx.tick();
+      if (k++ < hops) setTimeout(hop, 150); else setTimeout(() => { aim.remove(); busy = false; fireLocal(1, c); }, 200);
+    };
+    hop();
+  };
+  $("#g-target").addEventListener("click", (e) => {
+    audio();
+    if (S.win >= 0) return;
+    const me = viewer(), r = $("#g-target").getBoundingClientRect();
+    const x = Math.floor((e.clientX - r.left) / r.width * 10), y = Math.floor((e.clientY - r.top) / r.height * 10);
+    if (x < 0 || y < 0 || x > 9 || y > 9) return;
+    const c = y * 10 + x;
+    if (busy || flash || nextUp() !== me || (S.m === "net" && (!net.peer || !S.rd[1] || pending()))) { buzz(15); return; }
+    if (S.sh[me].some((s) => s.c === c)) { sfx.nope(); buzz(25); const g = $("#g-target"); g.classList.remove("shake"); void g.offsetWidth; g.classList.add("shake"); return; }
+    if (S.m === "net") return fireNet(c);
+    fireLocal(me, c);
+  });
+
+  // ---- one phone, two players: the curtain between goes ------------------------------
+  const curtain = (p, then) => {
+    const cu = $("#curtain"); $("#curtain-who").textContent = names()[p];
+    cu.hidden = false; S.cu = p; save();
+    const go = $("#curtain-go"); go.textContent = "I'm " + names()[p];
+    go.onclick = () => { audio(); cu.hidden = true; delete S.cu; save(); buzz(10); (then || render)(); };
+  };
+
+  // ---- two phones ---------------------------------------------------------------------
+  // Each phone sends its whole side of things: its shots so far, and the
+  // results of the friend's shots at it (which only it can work out). The
+  // friend folds that in, so a dropped message or a reload just catches up.
+  var duo = null, net = { sock: "off", peer: false, full: false };
+  function sendSync() {
+    if (!duo) return;
+    duo.send({ k: "sync", g: S.g, rd: S.rd[0], out: S.sh[0].map((x) => x.c), inc: S.sh[1], seen: S.sh[0].filter((x) => x.r !== undefined).length, hrd: S.rd[1], hfl: !!S.fl[1], fl: S.win >= 0 ? S.fl[0] : null });
+  }
+  const netFirst = () => ((S.g % 2 === 0) === (S.role === "host") ? 0 : 1);   // the host starts the even games
+  const newNetGame = (g) => { Object.assign(S, { g, fl: [randomFleet(), null], sh: [[], []], rd: [false, false], first: netFirst(), win: -1 }); placeFor = 0; };
+  const fireNet = async (c) => {
+    S.sh[0].push({ c }); sfx.fire(); save(); paintPlay();
+    await aimPing(0, c);
+  };
+  const onFriend = async (o) => {
+    if (o.k === "hi") return sendSync();
+    if (o.k !== "sync" || !Number.isInteger(o.g)) return;
+    if (o.g < S.g) return sendSync();
+    let changed = false;
+    if (o.g > S.g) { newNetGame(o.g); changed = true; flash = null; }
+    if (S.rd[1] !== !!o.rd) { S.rd[1] = !!o.rd; changed = true; }
+    // their shots at me: work out each new one, in turn
+    const outs = Array.isArray(o.out) ? o.out : [], fresh = [];
+    for (let j = S.sh[1].length; j < outs.length && S.win < 0; j++) {
+      const c = outs[j];
+      if (!Number.isInteger(c) || c < 0 || c > 99 || S.sh[1].some((x) => x.c === c)) break;
+      if (S.sh[0].length < j + (S.first === 1 ? 0 : 1)) break;   // not their go yet
+      const x = resolve(S.fl[0], S.sh[1], c); S.sh[1].push(x); fresh.push(x); changed = true;
+    }
+    // the results of my shots at them
+    let mine = null;
+    (Array.isArray(o.inc) ? o.inc : []).forEach((r, i) => {
+      const x = S.sh[0][i];
+      if (!x || x.c !== r.c || x.r !== undefined) return;
+      x.r = r.r === 2 ? 2 : r.r ? 1 : 0;
+      if (x.r === 2 && Number.isInteger(r.s) && r.s >= 0 && r.s < 5) { x.s = r.s; if (r.p && Number.isInteger(r.p.x) && Number.isInteger(r.p.y)) x.p = { x: r.p.x, y: r.p.y, v: r.p.v ? 1 : 0 }; }
+      mine = x; changed = true;
+    });
+    if (Array.isArray(o.fl) && o.fl.length === 5 && !S.fl[1]) { S.fl[1] = o.fl; changed = true; }
+    if (changed) {
+      save(true);
+      render();
+      if (mine) { paintPlay({ p: 0, c: mine.c }); land(mine, 0); const over = checkWin(); await say(mine, 0, over ? 900 : 1200); render(); }
+      for (const x of fresh) { paintPlay({ p: 1, c: x.c }); land(x, 1); const over = checkWin(); await say(x, 1, over ? 900 : 1100); render(); }
+    }
+    // reply if anything moved, or they're missing something of ours
+    if (changed || (o.seen | 0) < S.sh[1].length || (Array.isArray(o.inc) ? o.inc.length : 0) < S.sh[0].length || o.hrd !== S.rd[0] || (S.win >= 0 && !o.hfl)) sendSync();
+  };
+  function goOnline() {
+    if (duo || !S.L) return;
+    duo = Duo.connect({
+      room: S.L, role: S.role, me: S.me,
+      onPeer: () => { save(true); if (S.role === "host") { buzz([20, 40, 20]); sfx.win(); } render(); },
+      onMsg: onFriend,
+      onState: (st) => { net = st; paintPill(); if (!$("#play").hidden) paintPlay(); else render(); },
+    });
+  }
+  function goOffline() { if (duo) duo.stop(); duo = null; delete S.L; delete S.role; delete S.me; net = { sock: "off", peer: false, full: false }; }
+  const paintPill = () => {
+    const p = $("#pill"), live = net.sock === "on" && net.peer;
+    p.classList.toggle("off", !live); $("b", p).textContent = live ? "LIVE" : net.sock !== "on" ? "OFFLINE" : "FRIEND AWAY";
+  };
+  $("#share").addEventListener("click", () => S.L && Duo.share(Duo.joinUrl(S.L), "Battleships. — play me", () => {}));
+
+  // ---- the big button ---------------------------------------------------------------
+  let ctaAct = null;
+  const cta = (label, act, wait) => {
+    const b = $("#cta"); b.hidden = !label; if (!label) return;
+    b.textContent = label; b.classList.toggle("wait", !!wait); ctaAct = act;
+  };
+  $("#cta").addEventListener("click", () => { audio(); if (!$("#cta").classList.contains("wait") && ctaAct) ctaAct(); else buzz(15); });
+
+  // ---- which screen ---------------------------------------------------------------------
+  const ready = () => {   // a fleet's placed
+    buzz([15, 30, 15]); sfx.splash();
+    if (S.m === "cpu") { S.rd = [true, true]; S.fl[1] = randomFleet(); save(); render(); if (nextUp() === 1) roboTurn(); return; }
+    if (S.m === "two") {
+      S.rd[placeFor] = true; save();
+      if (!S.rd[1]) { placeFor = 1; if (!S.fl[1]) S.fl[1] = randomFleet(); save(); return curtain(1, render); }
+      return curtain(nextUp(), render);
+    }
+    S.rd[0] = true; save(); render();
+  };
+  const again = () => {
+    S.g++; S.sh = [[], []]; S.rd = [false, false]; S.win = -1; flash = null;
+    if (S.m === "net") { newNetGame(S.g); save(); return render(); }
+    S.first = S.g % 2; S.fl = [randomFleet(), S.m === "cpu" ? null : randomFleet()]; placeFor = 0;
+    save(); render();
+  };
+  function render() {
+    const net2 = S.m === "net", paired = !net2 || (S.L && S.L.peer);
+    $("#mode").hidden = false;
+    document.querySelectorAll("#mode button").forEach((b) => b.classList.toggle("on", b.dataset.m === S.m));
+    document.querySelectorAll("#level button").forEach((b) => b.classList.toggle("on", +b.dataset.l === S.lv));
+    $("#level").hidden = S.m !== "cpu" || (S.sh[0].length > 0 && S.win < 0);
+    const N = names(); $("#n0").textContent = N[0]; $("#n1").textContent = N[1]; $("#s0").textContent = S.sc[0]; $("#s1").textContent = S.sc[1];
+    $("#netline").hidden = !net2 || !paired; paintPill();
+    // waiting for a friend to scan
+    $("#lobby").hidden = paired;
+    if (!paired) {
+      $("#place").hidden = $("#play").hidden = true;
+      if (S.L) Duo.qr($("#qr"), Duo.joinUrl(S.L));
+      $("#lobby-note").textContent = S.role === "guest" ? (net.full ? "That game's full" : "Joining…") : "Waiting for a friend…";
+      $("#share").hidden = S.role === "guest"; $("#lobby .qr").hidden = S.role === "guest";
+      return cta("");
+    }
+    // placing
+    const me = S.m === "two" ? placeFor : 0;
+    if (!S.rd[me] || (S.m === "two" && !(S.rd[0] && S.rd[1]))) {
+      placeFor = S.m === "two" ? (S.rd[0] ? 1 : 0) : 0;
+      if (!S.fl[placeFor]) { S.fl[placeFor] = randomFleet(); save(); }
+      $("#place").hidden = false; $("#play").hidden = true;
+      $("#place-who").textContent = S.m === "two" ? N[placeFor] + " · place your fleet" : "Place your fleet";
+      paintPlace();
+      return cta("");
+    }
+    $("#place").hidden = true; $("#play").hidden = false;
+    $("#mode").hidden = S.win < 0; $("#level").hidden = S.win < 0 || S.m !== "cpu";   // out of the way while the shells fly
+    paintPlay();
+    if (S.win >= 0) cta("Again", again);
+    else if (net2 && !S.rd[1]) cta("Friend's placing their fleet…", null, true);
+    else cta("");
+  }
+
+  // ---- settings ------------------------------------------------------------------------
+  const restart = (m) => {
+    const lv = S.lv; if (S.m === "net") goOffline();
+    S = Object.assign(blank(m), { lv }); S.fl[0] = randomFleet(); placeFor = 0; flash = null; busy = false;
+    $("#curtain").hidden = true;
+  };
+  document.querySelectorAll("#mode button").forEach((b) => b.addEventListener("click", async () => {
+    if (busy || S.m === b.dataset.m) return;
+    const m = b.dataset.m;
+    if (m === "net" && !Duo.ok()) return;
+    restart(m);
+    if (m === "net") { S.role = "host"; S.me = Duo.id(6); S.L = await Duo.newRoom(); S.first = netFirst(); goOnline(); }
+    save(); render();
+  }));
+  document.querySelectorAll("#level button").forEach((b) => b.addEventListener("click", () => { if (busy) return; S.lv = +b.dataset.l; save(); render(); }));
+
+  // ---- go -----------------------------------------------------------------------------
+  if (!S.fl[0]) { S.fl[0] = randomFleet(); if (S.m !== "net") save(); }
+  if (S.m === "net") { if (JOIN) S.first = netFirst(); save(true); goOnline(); }
+  render();
+  if (S.m === "two" && S.cu !== undefined) curtain(S.cu, render);
+  else if (S.m === "cpu" && S.rd[0] && S.win < 0 && nextUp() === 1) roboTurn();
+})();
+</script>
+</body>
+</html>
