@@ -95,9 +95,29 @@
   @keyframes boom { 0% { transform: scale(2.6); } 40% { transform: scale(0.8); } 100% { transform: none; } }
   .spark { fill: var(--gold); transform-box: fill-box; transform-origin: center; animation: spark 0.7s ease-out forwards; }
   @keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
-  .ping { fill: none; stroke: var(--gold); stroke-width: 0.8; transform-box: fill-box; transform-origin: center; animation: ping 0.4s ease-in forwards; }
-  .ping { animation-duration: 0.32s; }
-  @keyframes ping { from { transform: scale(3.2); opacity: 0.2; } to { transform: scale(0.6); opacity: 1; } }
+  /* the bomb: whistles in from the sky, its shadow growing under it */
+  .fx > * { transform-box: fill-box; transform-origin: center; animation-fill-mode: both !important; }
+  .bomb { animation: drop 0.42s cubic-bezier(0.5, 0, 0.9, 0.6) forwards; }
+  .bomb .body { fill: #1b1e2e; stroke: var(--pink); stroke-width: 0.5; }
+  .bomb .fin { fill: var(--pink); }
+  @keyframes drop { 0% { transform: translate(var(--fx), -42px) scale(2.3) rotate(var(--fr)); opacity: 0; } 18% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+  .shadow { fill: #000; opacity: 0.45; animation: shadow 0.42s ease-in forwards; }
+  @keyframes shadow { from { transform: scale(0.15); opacity: 0; } }
+  /* a hit: a flash, a fireball, a shockwave, sparks, then smoke drifting off */
+  .flash { fill: #fff; animation: flash 0.3s ease-out forwards; }
+  @keyframes flash { from { transform: scale(0.4); opacity: 1; } to { transform: scale(4.2); opacity: 0; } }
+  .fire { animation: fire 0.7s ease-out forwards; }
+  @keyframes fire { 0% { transform: scale(0.15); opacity: 1; } 35% { transform: scale(1.25); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+  .shock { fill: none; stroke: var(--hit); stroke-width: 0.7; animation: ripple 0.55s ease-out forwards; }
+  .smoke { fill: #8f93a8; opacity: 0; animation: smoke 1.3s ease-out forwards; }
+  @keyframes smoke { 0% { transform: scale(0.4); opacity: 0; } 20% { opacity: 0.5; } 100% { transform: translate(var(--dx), -16px) scale(2.2); opacity: 0; } }
+  /* a miss: a column of water, droplets thrown up and falling back, foam, rings */
+  .foam { fill: #dffbff; animation: foam 0.5s ease-out forwards; }
+  @keyframes foam { from { transform: scale(0.2); opacity: 0.95; } to { transform: scale(1.6); opacity: 0; } }
+  .column { fill: #9ff3fa; transform-origin: 50% 100% !important; animation: column 0.6s ease-out forwards; }
+  @keyframes column { 0% { transform: scaleY(0) scaleX(0.6); opacity: 0.95; } 40% { transform: scaleY(1); opacity: 0.9; } 100% { transform: scaleY(0.15) scaleX(1.5); opacity: 0; } }
+  .drip { fill: #c8fbff; animation: drip 0.75s forwards; }
+  @keyframes drip { 0% { transform: none; animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); } 45% { transform: translate(calc(var(--dx) * 0.6), calc(var(--h) * -1)); animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.5); } 100% { transform: translate(var(--dx), 1.5px) scale(0.6); opacity: 0; } }
   .aim { fill: none; stroke: var(--pink); stroke-width: 0.7; transition: transform 0.18s ease-out; }
   .cellhit { fill: transparent; }
   .grid.target .cellhit { cursor: crosshair; }
@@ -162,7 +182,7 @@
 </head>
 <body>
 <div class="wrap">
-  <a class="home" href="./">&larr; PR.</a>
+  <a class="home" href="play.html">&larr; Play.</a>
   <button class="sound" id="sound" aria-label="Sound on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
   <h1>Battleships<span>.</span></h1>
   <div class="seg" id="mode" role="group" aria-label="Opponent">
@@ -381,7 +401,7 @@
     svg.appendChild(lines);
     const sw = el("g", { "clip-path": "url(#cl" + box.id + ")" }); sw.appendChild(el("path", { class: "sweep", d: "M50 50 L120 50 A70 70 0 0 0 99.5 0.5 Z", fill: "url(#sw" + box.id + ")" }));
     svg.appendChild(sw);
-    const L = {}; ["ships", "marks", "fx", "hit"].forEach((k) => { L[k] = el("g", k === "hit" ? {} : { filter: "url(#gl" + box.id + ")" }); svg.appendChild(L[k]); });
+    const L = {}; ["ships", "marks", "fx", "hit"].forEach((k) => { L[k] = el("g", k === "hit" ? { class: k } : { class: k, filter: "url(#gl" + box.id + ")" }); svg.appendChild(L[k]); });
     box.appendChild(svg);
     return Object.assign(L, { svg });
   };
@@ -402,15 +422,37 @@
     g.appendChild(el("path", { d: `M${cx - 3.4} ${cy - 3.4}L${cx + 3.4} ${cy + 3.4}M${cx + 3.4} ${cy - 3.4}L${cx - 3.4} ${cy + 3.4}` }));
     return g;
   };
-  const splash = (L, c, hit) => {   // the moment it lands
-    if (reduced) return;
-    const [cx, cy] = cxy(c);
-    if (!hit) { [0, 1].forEach((k) => { const r = el("circle", { class: "ring", cx, cy, r: 3, style: "animation-delay:" + k * 0.18 + "s" }); L.fx.appendChild(r); setTimeout(() => r.remove(), 1300); }); return; }
-    for (let k = 0; k < 10; k++) {
-      const a = k / 10 * Math.PI * 2 + Math.random() * 0.4, d = 8 + Math.random() * 6;
-      const p = el("circle", { class: "spark", cx, cy, r: 1, style: `--dx:${(Math.cos(a) * d).toFixed(1)}px;--dy:${(Math.sin(a) * d).toFixed(1)}px` });
-      L.fx.appendChild(p); setTimeout(() => p.remove(), 800);
+  const fx = (L, tag, a, life, delay) => {   // a bit of effect that tidies itself away
+    const e = el(tag, a); if (delay) e.style.animationDelay = delay + "s";
+    L.fx.appendChild(e); setTimeout(() => e.remove(), life + (delay || 0) * 1000); return e;
+  };
+  const blast = (L, c, big) => {   // a hit: boom
+    const [cx, cy] = cxy(c), n = big ? 12 : 7;
+    fx(L, "circle", { class: "flash", cx, cy, r: 3 }, 400);
+    [["#ff4f4f", 2, 1.2, 3.6], ["#ff7a2f", -2.2, 1, 4], ["#ffd23f", 0, -0.6, 4.6], ["#fff3b0", 0.3, -1.4, 2.4]].forEach(([fill, dx, dy, r], k) => fx(L, "circle", { class: "fire", cx: cx + dx, cy: cy + dy, r, fill }, 900, k * 0.05));
+    fx(L, "circle", { class: "shock", cx, cy, r: 4.5 }, 700);
+    for (let k = 0; k < n; k++) {
+      const a = k / n * Math.PI * 2 + Math.random() * 0.4, d = (big ? 13 : 10) + Math.random() * 8;
+      fx(L, "circle", { class: "spark", cx, cy, r: 1.2, style: `--dx:${(Math.cos(a) * d).toFixed(1)}px;--dy:${(Math.sin(a) * d).toFixed(1)}px` }, 800);
     }
+    [-3.5, 0.5, 4].forEach((dx, k) => fx(L, "circle", { class: "smoke", cx: cx + dx * 0.4, cy, r: 2.8, style: `--dx:${dx}px` }, 1800, 0.3 + k * 0.12));
+  };
+  const plunge = (L, c) => {   // a miss: sploosh
+    const [cx, cy] = cxy(c);
+    fx(L, "circle", { class: "foam", cx, cy, r: 3.4 }, 600);
+    fx(L, "ellipse", { class: "column", cx, cy: cy - 6, rx: 2, ry: 6.4 }, 700);
+    for (let k = 0; k < 11; k++) {
+      const dx = (k - 5) * 2.1 + (Math.random() - 0.5) * 1.4, h = 10 + Math.random() * 8 - Math.abs(k - 5) * 0.9;
+      fx(L, "circle", { class: "drip", cx, cy: cy - 1.5, r: 0.8 + Math.random() * 0.6, style: `--dx:${dx.toFixed(1)}px;--h:${h.toFixed(1)}px` }, 850, Math.random() * 0.06);
+    }
+    [0, 1, 2].forEach((k) => fx(L, "circle", { class: "ring", cx, cy, r: 4 }, 1000, 0.1 + k * 0.18));
+  };
+  const splash = (L, x) => {   // the moment it lands
+    if (reduced || !L) return;
+    if (!x.r) return plunge(L, x.c);
+    blast(L, x.c, x.r === 2);
+    // sunk: the rest of the ship goes up too, one bit after another
+    if (x.r === 2 && x.p && x.s >= 0) cellsOf(x.s, x.p).filter((c) => c !== x.c).forEach((c, k) => setTimeout(() => blast(L, c, false), 140 + k * 130));
   };
   const fleetBar = (box, shots) => {   // the five ships, crossed off as they go
     box.innerHTML = "";
@@ -502,7 +544,7 @@
   const land = (x, p) => {   // effects of shot x by player p
     const onTarget = S.m === "two" ? true : p === 0, L = onTarget ? TG : OW;
     if (x.r === 2) { sfx.sunk(); buzz([40, 30, 80]); } else if (x.r) { sfx.boom(); buzz([30, 20, 40]); } else sfx.splash();
-    splash(L, x.c, !!x.r);
+    splash(L, x);
     if (x.r) { const g = onTarget ? $("#g-target") : $("#g-own"); g.classList.remove("shake"); void g.offsetWidth; g.classList.add("shake"); }
   };
   const checkWin = () => {
@@ -529,11 +571,14 @@
     if (!over && S.m === "two") curtain(nextUp());
     else if (!over && S.m === "cpu" && nextUp() === 1) roboTurn();
   };
-  const aimPing = (p, c) => new Promise((res) => {   // the shell coming in
+  const aimPing = (p, c) => new Promise((res) => {   // the bomb whistling in
     const onTarget = S.m === "two" ? true : p === 0, L = onTarget ? TG : OW;
     if (reduced || !L) return res();
-    const [cx, cy] = cxy(c), r = el("circle", { class: "ping", cx, cy, r: 3.5 });
-    L.fx.appendChild(r); setTimeout(() => { r.remove(); res(); }, 320);
+    const [cx, cy] = cxy(c), side = onTarget ? -1 : 1;
+    const sh = fx(L, "circle", { class: "shadow", cx, cy, r: 2.4 }, 430);
+    const b = el("g", { class: "bomb", style: `--fx:${side * 16}px;--fr:${side * -30}deg` });
+    b.innerHTML = `<path class="fin" d="M${cx - 1.9} ${cy - 4.6}L${cx} ${cy - 2.4}L${cx + 1.9} ${cy - 4.6}Z"/><ellipse class="body" cx="${cx}" cy="${cy}" rx="1.9" ry="2.6"/><circle cx="${cx - 0.6}" cy="${cy - 0.8}" r="0.5" fill="#f2f0ea" opacity="0.7"/>`;
+    L.fx.appendChild(b); setTimeout(() => { b.remove(); sh.remove(); res(); }, 420);
   });
   const roboTurn = () => {
     busy = true; render();
@@ -613,7 +658,7 @@
       save(true);
       render();
       if (mine) { paintPlay({ p: 0, c: mine.c }); land(mine, 0); const over = checkWin(); await say(mine, 0, over ? 900 : 1200); render(); }
-      for (const x of fresh) { paintPlay({ p: 1, c: x.c }); land(x, 1); const over = checkWin(); await say(x, 1, over ? 900 : 1100); render(); }
+      for (const x of fresh) { await aimPing(1, x.c); paintPlay({ p: 1, c: x.c }); land(x, 1); const over = checkWin(); await say(x, 1, over ? 900 : 1100); render(); }
     }
     // reply if anything moved, or they're missing something of ours
     if (changed || (o.seen | 0) < S.sh[1].length || (Array.isArray(o.inc) ? o.inc.length : 0) < S.sh[0].length || o.hrd !== S.rd[0] || (S.win >= 0 && !o.hfl)) sendSync();
