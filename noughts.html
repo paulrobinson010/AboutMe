@@ -116,7 +116,8 @@
   .seg { display: flex; gap: 6px; padding: 5px; margin: 24px auto 0; border-radius: 100px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
   .seg button { flex: 1; padding: 10px 0; border-radius: 100px; font-weight: 700; color: var(--muted); transition: background 0.2s, color 0.2s; white-space: nowrap; }
   .seg button.on { background: var(--ink); color: var(--bg); }
-  .seg.lv { margin-top: 10px; }
+  .seg.top { margin-top: 16px; }
+  .seg.lv { margin-top: 24px; }
   .seg.lv button { font-size: 0.88rem; }
   .switch { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 10px; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); text-align: left; }
   .switch span { flex: 1; }
@@ -143,6 +144,10 @@
   <a class="home" href="./">&larr; PR.</a>
   <button class="sound" id="sound" aria-label="Sound on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
   <h1>Noughts<span class="x">.</span></h1>
+  <div class="seg top" id="mode" role="group" aria-label="Opponent">
+    <button data-m="cpu">&#129302; vs Robo</button>
+    <button data-m="two">&#128101; 2 players</button>
+  </div>
 
   <div class="score">
     <div class="side x" id="side-x"><svg class="mk" viewBox="0 0 30 30"><path d="M7 7L23 23M23 7L7 23" stroke="#ff4fd8" stroke-width="4.5" stroke-linecap="round"/></svg><span class="who" id="name-x">You</span><b id="sc-x">0</b></div>
@@ -175,10 +180,6 @@
   <div class="result" id="result" aria-live="polite"></div>
   <button class="again" id="again" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>Again</button>
 
-  <div class="seg" id="mode" role="group" aria-label="Opponent">
-    <button data-m="cpu">&#129302; vs Robo</button>
-    <button data-m="two">&#128101; 2 players</button>
-  </div>
   <div class="seg lv" id="level" role="group" aria-label="How good Robo is">
     <button data-l="0">Rookie</button>
     <button data-l="1">Pub champ</button>
